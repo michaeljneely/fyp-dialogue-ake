@@ -33,6 +33,7 @@ Thumbs.db
 
 # Test results
 coverage/
+.coveralls.yml
 
 # Ignore built ts files
 dist/**/*
