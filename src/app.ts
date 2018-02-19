@@ -16,7 +16,7 @@ import * as bluebird from "bluebird";
 const MongoStore = mongo(session);
 
 // Load environment variables from .env file, where API keys and passwords are configured
-dotenv.config({ path: ".env.example" });
+dotenv.config({ path: ".env" });
 
 // Controllers (route handlers)
 import * as homeController from "./controllers/home";
@@ -32,7 +32,7 @@ import * as passportConfig from "./config/passport";
 const app = express();
 
 // Connect to MongoDB
-const mongoUrl = process.env.MONGOLAB_URI;
+const mongoUrl = process.env.MONGODB_URI;
 (<any>mongoose).Promise = bluebird;
 mongoose.connect(mongoUrl, {useMongoClient: true}).then(
   () => { /** ready to use. The `mongoose.connect()` promise resolves to undefined. */ },
