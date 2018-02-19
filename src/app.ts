@@ -21,7 +21,6 @@ dotenv.config({ path: ".env.example" });
 // Controllers (route handlers)
 import * as homeController from "./controllers/home";
 import * as userController from "./controllers/user";
-import * as apiController from "./controllers/api";
 import * as contactController from "./controllers/contact";
 import * as parseController from "./controllers/parse";
 
@@ -108,20 +107,6 @@ app.get("/account/unlink/:provider", passportConfig.isAuthenticated, userControl
 app.get("/parse", async (req: express.Request, resp: express.Response) => {
     const json: JSON = await parseController.parse();
     resp.json(json);
-});
-
-/**
- * API examples routes.
- */
-app.get("/api", apiController.getApi);
-app.get("/api/facebook", passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.getFacebook);
-
-/**
- * OAuth authentication routes. (Sign in)
- */
-app.get("/auth/facebook", passport.authenticate("facebook", { scope: ["email", "public_profile"] }));
-app.get("/auth/facebook/callback", passport.authenticate("facebook", { failureRedirect: "/login" }), (req, res) => {
-  res.redirect(req.session.returnTo || "/");
 });
 
 module.exports = app;
