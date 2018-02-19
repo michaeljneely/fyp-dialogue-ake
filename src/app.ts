@@ -23,6 +23,7 @@ import * as homeController from "./controllers/home";
 import * as userController from "./controllers/user";
 import * as apiController from "./controllers/api";
 import * as contactController from "./controllers/contact";
+import * as parseController from "./controllers/parse";
 
 
 // API keys and Passport configuration
@@ -104,6 +105,10 @@ app.post("/account/profile", passportConfig.isAuthenticated, userController.post
 app.post("/account/password", passportConfig.isAuthenticated, userController.postUpdatePassword);
 app.post("/account/delete", passportConfig.isAuthenticated, userController.postDeleteAccount);
 app.get("/account/unlink/:provider", passportConfig.isAuthenticated, userController.getOauthUnlink);
+app.get("/parse", async (req: express.Request, resp: express.Response) => {
+    const json: JSON = await parseController.parse();
+    resp.json(json);
+});
 
 /**
  * API examples routes.
