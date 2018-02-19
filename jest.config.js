@@ -1,4 +1,10 @@
 module.exports = {
+	collectCoverageFrom: [
+		"**/src/**/*.ts",
+		"**/src/*.ts",
+		"!**/src/config/passport.ts",
+		"!**/src/types/*.ts"
+	],
 	globals: {
 		'ts-jest': {
 			tsConfigFile: 'tsconfig.json'
