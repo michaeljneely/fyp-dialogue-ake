@@ -2,7 +2,7 @@ import * as express from "express";
 import * as compression from "compression";  // compresses requests
 import * as session from "express-session";
 import * as bodyParser from "body-parser";
-import * as logger from "morgan";
+import * as morgan from "morgan";
 import * as lusca from "lusca";
 import * as dotenv from "dotenv";
 import * as mongo from "connect-mongo";
@@ -13,15 +13,24 @@ import * as passport from "passport";
 import * as expressValidator from "express-validator";
 import * as bluebird from "bluebird";
 
-const MongoStore = mongo(session);
-
 // Load environment variables from .env file, where API keys and passwords are configured
-dotenv.config({ path: ".env.example" });
+dotenv.config({ path: ".env" });
+
+// Import Utils
+import { logger, Stream } from "./utils/logger";
+import { asyncMiddleware } from "./utils/asyncMiddleware";
+
+// Morgan Stream
+const stream = new Stream();
+
+
+const MongoStore = mongo(session);
 
 // Controllers (route handlers)
 import * as homeController from "./controllers/home";
 import * as userController from "./controllers/user";
 import * as contactController from "./controllers/contact";
+import * as parseController from "./controllers/parse";
 
 
 // API keys and Passport configuration
@@ -31,7 +40,7 @@ import * as passportConfig from "./config/passport";
 const app = express();
 
 // Connect to MongoDB
-const mongoUrl = process.env.MONGOLAB_URI;
+const mongoUrl = process.env.MONGODB_URI;
 (<any>mongoose).Promise = bluebird;
 mongoose.connect(mongoUrl, {useMongoClient: true}).then(
   () => { /** ready to use. The `mongoose.connect()` promise resolves to undefined. */ },
@@ -45,7 +54,7 @@ app.set("port", process.env.PORT || 3000);
 app.set("views", path.join(__dirname, "../views"));
 app.set("view engine", "pug");
 app.use(compression());
-app.use(logger("dev"));
+app.use(morgan("tiny", { stream }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(expressValidator());
@@ -103,5 +112,10 @@ app.post("/account/profile", passportConfig.isAuthenticated, userController.post
 app.post("/account/password", passportConfig.isAuthenticated, userController.postUpdatePassword);
 app.post("/account/delete", passportConfig.isAuthenticated, userController.postDeleteAccount);
 app.get("/account/unlink/:provider", passportConfig.isAuthenticated, userController.getOauthUnlink);
+app.get("/parse", parseController.index);
+app.post("/parse", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const parsed = await parseController.parse(req.body.sentence);
+    res.json(parsed);
+}));
 
 module.exports = app;
