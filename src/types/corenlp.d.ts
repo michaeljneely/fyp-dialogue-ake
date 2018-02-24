@@ -34,6 +34,7 @@ declare module "corenlp" {
             public lemmas(): Array<string>;
             public lemma(index: number): string;
             public nerTags(): Array<string>;
+            public tokens(): Array<Token>;
         }
 
         class Document extends Annotable {
@@ -45,6 +46,21 @@ declare module "corenlp" {
             public fromJSON(data: JSON): Document;
             public toJSON(): JSON;
             public static fromJSON(data: JSON): Document;
+        }
+
+        class Token extends Annotable {
+            constructor(word: string);
+            public toString(): string;
+            public index(): number;
+            public word(): string;
+            public originalText(): string;
+            public characterOffsetBegin(): number;
+            public characterOffsetEnd(): number;
+            public before(): string;
+            public after(): string;
+            public lemma(): string;
+            public pos(): string;
+
         }
     }
 
