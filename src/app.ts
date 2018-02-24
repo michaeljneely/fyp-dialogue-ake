@@ -12,6 +12,7 @@ import * as mongoose from "mongoose";
 import * as passport from "passport";
 import * as expressValidator from "express-validator";
 import * as bluebird from "bluebird";
+import { ConnectorServer } from "corenlp";
 
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv.config({ path: ".env" });
@@ -38,6 +39,9 @@ import * as passportConfig from "./config/passport";
 
 // Create Express server
 const app = express();
+
+// Connect to CoreNLP Server
+const connector = new ConnectorServer({ dsn: process.env.CoreNLPAddress});
 
 // Connect to MongoDB
 const mongoUrl = process.env.MONGODB_URI;
@@ -114,7 +118,7 @@ app.post("/account/delete", passportConfig.isAuthenticated, userController.postD
 app.get("/account/unlink/:provider", passportConfig.isAuthenticated, userController.getOauthUnlink);
 app.get("/parse", parseController.index);
 app.post("/parse", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const parsed = await parseController.parse(req.body.sentence);
+    const parsed = await parseController.parseDoc(connector, req.body.sentence);
     res.json(parsed);
 }));
 

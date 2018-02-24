@@ -1,7 +1,5 @@
 declare module "corenlp" {
 
-    import * as _ from "lodash";
-
     namespace CoreNLP.simple {
         class Annotator {
             constructor(name: string, options: any, dependencies: Array<Annotator>);
@@ -36,6 +34,17 @@ declare module "corenlp" {
             public lemmas(): Array<string>;
             public lemma(index: number): string;
             public nerTags(): Array<string>;
+        }
+
+        class Document extends Annotable {
+            constructor(text: string);
+            public toString(): string;
+            public sentences(): Array<Sentence>;
+            public sentence(index: number): Sentence;
+            public setLanguage(iso: string): string;
+            public fromJSON(data: JSON): Document;
+            public toJSON(): JSON;
+            public static fromJSON(data: JSON): Document;
         }
     }
 
