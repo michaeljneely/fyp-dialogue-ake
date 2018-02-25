@@ -48,6 +48,7 @@
     "passport-local": "^1.0.0",
     "pug": "^2.0.0-rc.4",
     "request": "^2.83.0",
+    "rouge": "1.0.3",
     "winston": "2.4.0"
   },
   "devDependencies": {
