@@ -1,23 +1,18 @@
 import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
 import { logger } from "../utils/logger";
 import { rougeN } from "../services/rouge";
+import { Term, TermMap, doubleNormalizedTermCompare, rawFrequencyTermCompare, logNormalizedTermCompare, dlNormalizedTermCompare } from "../models/term";
 
 const props = new Properties({
-    annotators: "tokenize,ssplit,lemma",
+    annotators: "tokenize,ssplit,pos,lemma,ner,parse,relation",
 });
 
+// TF-IDuF? -> Store all user words for some 'idf' like calculation
+
 const posFilter = ["CD", "FW", "JJ", "JJR", "JJS", "NN", "NNS", "NNP", "NNPS", "RB", "RBR", "RBS", "VB", "VBG", "VBN", "VBP", "VBZ"];
+const nounFilter = ["NN", "NNS", "NNP", "NNPS"];
 
-type TermMap = Map<string, Term>;
-
-type Term = {
-    lemma: string;
-    rawFrequencyTF: number;
-    dlNormalizedTf: number;
-    logNormalizedTF: number;
-    doubleNormalizedTF: number;
-};
-
+// TF Varieties:
 // raw tf
 // document length normalized tf
 // logarithmic normalized tf
@@ -35,7 +30,7 @@ function buildTermFrequencyMapFromNLPDocument(document: CoreNLP.simple.Document)
     };
     document.sentences().forEach((sentence: CoreNLP.simple.Sentence) => {
         sentence.tokens().forEach((token: CoreNLP.simple.Token) => {
-            if (posFilter.indexOf(token.pos()) > -1) {
+            if (nounFilter.indexOf(token.pos()) > -1) {
                 const lemma: string = token.lemma();
                 if (!freqMap.has(lemma)) {
                     freqMap.set(lemma, {
@@ -64,33 +59,55 @@ function buildTermFrequencyMapFromNLPDocument(document: CoreNLP.simple.Document)
     return freqMap;
 }
 
-function doubleNormalizedTermCompare(t1: Term, t2: Term): number {
-    if (t1.doubleNormalizedTF > t2.doubleNormalizedTF) {
-        return -1;
-    }
-    if (t1.doubleNormalizedTF < t2.doubleNormalizedTF) {
-        return 1;
-    }
-    return 0;
-}
+
+
 
 export async function tfidf(connector: ConnectorServer, document: string): Promise<JSON> {
     const pipeline = new Pipeline(props, "English", connector);
-    // const processed = document.replace(/[^A-Za-zА-Яа-я0-9_']+/, "");
-    // console.log(processed);
     const sent = new CoreNLP.simple.Document(document);
     const result = await pipeline.annotate(sent) as CoreNLP.simple.Document;
     const map = buildTermFrequencyMapFromNLPDocument(result);
     const yo: Array<Term> = Array.from(map, ([key, value]) => value);
     yo.sort(doubleNormalizedTermCompare);
+    const a = yo.slice(0, 5);
+    yo.sort(dlNormalizedTermCompare);
+    const b = yo.slice(0, 5);
+    yo.sort(rawFrequencyTermCompare);
+    const c = yo.slice(0, 5);
+    yo.sort(logNormalizedTermCompare);
+    const d = yo.slice(0, 5);
+    // sort and slice on all tf versions
+    let as, bs, cs, ds;
+    as = bs = cs = ds = "";
     for (let i = 0; i < 5; i++) {
-        const value = yo[i];
-        console.log(`${value.lemma}:\n
-            raw: ${value.rawFrequencyTF}\n
-            dl: ${value.dlNormalizedTf}\n
-            log: ${value.logNormalizedTF}\n
-            double: ${value.doubleNormalizedTF}]n
-        `);
+        as += `${a[i].lemma} `;
+        bs += `${b[i].lemma} `;
+        cs += `${c[i].lemma} `;
+        ds += `${d[i].lemma} `;
     }
-    return undefined;
+    const summary = "Elaine discusses the limitations of technology";
+    const score1 = rougeN(as, summary);
+    const score2 = rougeN(bs, summary);
+    const score3 = rougeN(cs, summary);
+    const score4 = rougeN(ds, summary);
+    const res = `{
+        "reference summary": "${summary}",
+        "doubleNormalized": {
+            "summary": \"${as}\",
+            "rougeN": ${score1}
+        },
+        "dlNormalized": {
+            "summary": \"${bs}\",
+            "rougeN": ${score2}
+        },
+        "rawFrequency": {
+            "summary": \"${cs}\",
+            "rougeN": ${score3}
+        }
+        ,"logNormalized": {
+            "summary": \"${ds}\",
+            "rougeN": ${score4}
+        }
+    }`;
+    return JSON.parse(res);
 }
