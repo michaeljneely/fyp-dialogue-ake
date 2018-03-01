@@ -60,7 +60,11 @@ declare module "corenlp" {
             public after(): string;
             public lemma(): string;
             public pos(): string;
-
+            public posInfo(): any;
+            public ner(): string;
+            public speaker(): string;
+            public toJSON(): JSON;
+            public static fromJSON(data: JSON): Token;
         }
     }
 

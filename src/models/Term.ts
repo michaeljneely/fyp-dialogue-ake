@@ -1,7 +1,7 @@
 export type TermMap = Map<string, Term>;
 
 export type Term = {
-    token: token;
+    lemma: string;
     rawFrequencyTF: number;
     dlNormalizedTf: number;
     logNormalizedTF: number;

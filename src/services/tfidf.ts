@@ -85,7 +85,7 @@ export async function tfidf(connector: ConnectorServer, document: string): Promi
         cs += `${c[i].lemma} `;
         ds += `${d[i].lemma} `;
     }
-    const summary = "Elaine discusses the limitations of technology";
+    const summary = "Elaine discusses the limitations of";
     const score1 = rougeN(as, summary);
     const score2 = rougeN(bs, summary);
     const score3 = rougeN(cs, summary);
