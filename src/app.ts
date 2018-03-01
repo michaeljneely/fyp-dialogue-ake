@@ -34,6 +34,7 @@ import * as userController from "./controllers/user";
 import * as contactController from "./controllers/contact";
 import * as parseController from "./controllers/parse";
 import * as aclController from "./controllers/acl";
+import * as corpusController from "./controllers/corpus";
 
 
 // API keys and Passport configuration
@@ -126,5 +127,7 @@ app.post("/parse", asyncMiddleware(async (req: express.Request, res: express.Res
     const parsed = await parseController.parseDoc(connector, req.body.sentence);
     res.json(parsed);
 }));
+app.get("/corpus", passportConfig.isAuthenticated, corpusController.displayCorpus);
+app.post("/corpus", passportConfig.isAuthenticated, corpusController.addDocumentToCorpus);
 
 module.exports = app;

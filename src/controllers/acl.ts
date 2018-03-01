@@ -6,6 +6,14 @@ export const grants = {
             "update:own": ["*"],
             "delete:own": ["*"]
         }
+    },
+    admin: {
+        corpus: {
+            "create:any": ["*"],
+            "read:any": ["*"],
+            "update:any": ["*"],
+            "delete:any": ["*"]
+        }
     }
 };
 
