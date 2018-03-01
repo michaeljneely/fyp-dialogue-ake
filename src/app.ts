@@ -12,6 +12,7 @@ import * as mongoose from "mongoose";
 import * as passport from "passport";
 import * as expressValidator from "express-validator";
 import * as bluebird from "bluebird";
+import { AccessControl } from "accesscontrol";
 import { ConnectorServer } from "corenlp";
 
 // Load environment variables from .env file, where API keys and passwords are configured
@@ -32,6 +33,7 @@ import * as homeController from "./controllers/home";
 import * as userController from "./controllers/user";
 import * as contactController from "./controllers/contact";
 import * as parseController from "./controllers/parse";
+import * as aclController from "./controllers/acl";
 
 
 // API keys and Passport configuration
@@ -41,7 +43,10 @@ import * as passportConfig from "./config/passport";
 const app = express();
 
 // Connect to CoreNLP Server
-const connector = new ConnectorServer({ dsn: process.env.CoreNLPAddress});
+export const connector = new ConnectorServer({ dsn: process.env.CoreNLPAddress});
+
+// Enforce Access Control
+export const accessControl = new AccessControl(aclController.grants);
 
 // Connect to MongoDB
 const mongoUrl = process.env.MONGODB_URI;

@@ -1,12 +1,14 @@
 import * as bcrypt from "bcrypt-nodejs";
 import * as crypto from "crypto";
 import * as mongoose from "mongoose";
+import { Role } from "../controllers/acl";
 
 export type UserModel = mongoose.Document & {
   email: string,
   password: string,
   passwordResetToken: string,
   passwordResetExpires: Date,
+  role: Role,
 
   tokens: AuthToken[],
 
@@ -32,6 +34,7 @@ const userSchema = new mongoose.Schema({
   password: String,
   passwordResetToken: String,
   passwordResetExpires: Date,
+  role: String,
 
   profile: {
     name: String,

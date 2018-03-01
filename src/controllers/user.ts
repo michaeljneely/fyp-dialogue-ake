@@ -7,6 +7,7 @@ import { Request, Response, NextFunction } from "express";
 import { IVerifyOptions } from "passport-local";
 import { WriteError } from "mongodb";
 const request = require("express-validator");
+import { accessControl } from "../app";
 
 
 /**
@@ -93,7 +94,8 @@ export let postSignup = (req: Request, res: Response, next: NextFunction) => {
 
   const user = new User({
     email: req.body.email,
-    password: req.body.password
+    password: req.body.password,
+    role: "user"
   });
 
   User.findOne({ email: req.body.email }, (err, existingUser) => {
@@ -119,9 +121,12 @@ export let postSignup = (req: Request, res: Response, next: NextFunction) => {
  * Profile page.
  */
 export let getAccount = (req: Request, res: Response) => {
-  res.render("account/profile", {
-    title: "Account Management"
-  });
+  const permission = accessControl.can(req.user.role).readOwn("account");
+  if (permission.granted) {
+    res.render("account/profile", {
+      title: "Account Management"
+    });
+  }
 };
 
 /**

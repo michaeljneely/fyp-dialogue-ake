@@ -1,12 +1,12 @@
 {
-  "name": "express-typescript-starter",
+  "name": "conversation-summarize",
   "version": "0.1.0",
-  "description": "A starting point for Node.js express apps with TypeScript",
+  "description": "Summarize conversations",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Microsoft/TypeScript-Node-Starter"
+    "url": ""
   },
-  "author": "Bowden Kelly",
+  "author": "Michael Neely",
   "license": "MIT",
   "scripts": {
     "start": "npm run serve",
@@ -26,6 +26,7 @@
     "watch-debug": "concurrently -k -p \"[{name}]\" -n \"Sass,TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-sass\" \"npm run watch-ts\" \"npm run serve-debug\""
   },
   "dependencies": {
+    "accesscontrol": "^2.2.1",
     "async": "^2.6.0",
     "bcrypt-nodejs": "^0.0.3",
     "bluebird": "^3.5.1",
@@ -66,7 +67,7 @@
     "@types/jquery": "^3.2.17",
     "@types/lodash": "^4.14.91",
     "@types/lusca": "^1.5.0",
-    "@types/mongodb": "^2.2.17",
+    "@types/mongodb": "^3.0.5",
     "@types/mongoose": "^4.7.29",
     "@types/morgan": "^1.7.32",
     "@types/node": "^7.0.50",
