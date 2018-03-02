@@ -26,29 +26,24 @@ export let displayCorpus = (req: Request, res: Response) => {
     }
 };
 
-async function addLemma(lemma: string, documentID: mongoose.Schema.Types.ObjectId, frequency: number): Promise<boolean> {
+async function addLemma(lemma: string, documentID: mongoose.Schema.Types.ObjectId, frequency: number): Promise<CorpusLemma> {
   const corpusLemma = await CorpusLemma.findOne({lemma}).exec() as CorpusLemma;
-  let result;
   if (corpusLemma) {
     const df: DocumentFrequency = {
       documentID,
       frequency
     };
     corpusLemma.frequencies.push(df);
-    result = await corpusLemma.save();
+    return corpusLemma.save();
   }
-  else {
-    const newCorpusLemma = new CorpusLemma({
-      lemma,
-      frequencies: [({
-        documentID,
-        frequency
-      })]
-    });
-    result = await newCorpusLemma.save();
-  }
-  console.log("promise:" + result);
-  return (result) ? true : false;
+  const newCorpusLemma = new CorpusLemma({
+    lemma,
+    frequencies: [({
+      documentID,
+      frequency
+    })]
+  }) as CorpusLemma;
+  return newCorpusLemma.save();
 }
 
 export async function addDocumentToCorpus(title: string, text: string): Promise<String> {
@@ -70,14 +65,14 @@ export async function addDocumentToCorpus(title: string, text: string): Promise<
       return new CorpusDocument({title, text: documentText}).save();
     })
     .then((document: CorpusDocumentModel) => {
-      console.log("adding promises");
       const promises = [];
       for (const [lemma, frequency] of frequencyMap.entries()) {
         promises.push(addLemma(lemma, document._id, frequency));
       }
       return Promise.all(promises);
     })
-    .then((results) => {
+    .then((results: Array<CorpusLemma>) => {
+      // potentially do something with results
       return Promise.resolve(title);
     })
     .catch((err: Error) => {
