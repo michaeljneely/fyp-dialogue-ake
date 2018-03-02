@@ -140,8 +140,8 @@ app.post("/corpus", passportConfig.isAuthenticated, asyncMiddleware(async (req: 
         req.flash("errors", errors);
         res.redirect("/corpus");
       }
-      const yo = await corpusController.addDocumentToCorpus(req.body.title, req.body.text);
-      req.flash("success", {msg: "nice!"});
+      const result = await corpusController.addDocumentToCorpus(req.body.title, req.body.text);
+      req.flash("success", {msg: `'${result}' added to corpus!`});
       res.redirect("/corpus");
     } else {
       res.status(403).send("Access Denied");

@@ -7,6 +7,11 @@ import { CorpusLemma, DocumentFrequency } from "../models/CorpusLemma";
 import { parseDocument } from "../services/corenlp";
 import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
 import * as async from "async";
+import * as mongoose from "mongoose";
+
+function cb(err: Error, results: any) {
+  return results;
+}
 export let displayCorpus = (req: Request, res: Response) => {
     const permission = accessControl.can(req.user.role).readAny("corpus");
     if (permission.granted) {
@@ -21,7 +26,32 @@ export let displayCorpus = (req: Request, res: Response) => {
     }
 };
 
-export async function addDocumentToCorpus(title: string, text: string): Promise<boolean> {
+async function addLemma(lemma: string, documentID: mongoose.Schema.Types.ObjectId, frequency: number): Promise<boolean> {
+  const corpusLemma = await CorpusLemma.findOne({lemma}).exec() as CorpusLemma;
+  let result;
+  if (corpusLemma) {
+    const df: DocumentFrequency = {
+      documentID,
+      frequency
+    };
+    corpusLemma.frequencies.push(df);
+    result = await corpusLemma.save();
+  }
+  else {
+    const newCorpusLemma = new CorpusLemma({
+      lemma,
+      frequencies: [({
+        documentID,
+        frequency
+      })]
+    });
+    result = await newCorpusLemma.save();
+  }
+  console.log("promise:" + result);
+  return (result) ? true : false;
+}
+
+export async function addDocumentToCorpus(title: string, text: string): Promise<String> {
   const frequencyMap = new Map<string, number>();
   return parseDocument(text, ["tokenize", "ssplit", "parse", "lemma", "pos"])
     .then((result: CoreNLP.simple.Document) => {
@@ -37,44 +67,20 @@ export async function addDocumentToCorpus(title: string, text: string): Promise<
           documentText += ` ${lemma}`;
         });
       });
-      const cdoc = new CorpusDocument({title, text: documentText});
-      return cdoc.save();
+      return new CorpusDocument({title, text: documentText}).save();
     })
     .then((document: CorpusDocumentModel) => {
-      return async.map(frequencyMap.keys(), (lemma: string) => {
-        const frequency = frequencyMap.get(lemma);
-        CorpusLemma.findOne({lemma}).exec()
-          .then((cLemma: CorpusLemma) => {
-            if (cLemma) {
-              // if lemma already exists add new doc lemma
-              cLemma.frequencies.push({
-                documentID: document.id,
-                frequency: frequencyMap.get(lemma)
-              });
-              return cLemma.save();
-            }
-            else {
-              // save new lemma
-              const cLemma2 = new CorpusLemma({
-                lemma,
-                frequencies: [({
-                  documentID: document._id,
-                  frequency: frequency
-                })]
-              });
-              return cLemma2.save();
-            }
-          })
-          .catch((err: Error) => {
-              throw err;
-          });
-      });
+      console.log("adding promises");
+      const promises = [];
+      for (const [lemma, frequency] of frequencyMap.entries()) {
+        promises.push(addLemma(lemma, document._id, frequency));
+      }
+      return Promise.all(promises);
     })
     .then((results) => {
-      console.log(`YO ${results}`);
-      return Promise.resolve(true);
+      return Promise.resolve(title);
     })
-    . catch((err: Error) => {
+    .catch((err: Error) => {
       console.log(err);
       return Promise.reject(err);
     });

@@ -1,7 +1,7 @@
 import * as mongoose from "mongoose";
 
 export interface DocumentFrequency {
-    documentID: string;
+    documentID: mongoose.Schema.Types.ObjectId;
     frequency: number;
 }
 
