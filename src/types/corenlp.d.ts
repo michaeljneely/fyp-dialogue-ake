@@ -1,6 +1,9 @@
 declare module "corenlp" {
 
     namespace CoreNLP.simple {
+        type AnnotatorOption = "tokenize" | "cleanxml" | "ssplit" |  "pos" | "lemma" | "ner" | "regexner"
+        | "sentiment" | "truecase" | "parse" | "depparse" | "dcoref" | "relation" | "natlog" | "quote";
+        type Annotators = Array<AnnotatorOption>;
         class Annotator {
             constructor(name: string, options: any, dependencies: Array<Annotator>);
             public toString(): string;

@@ -14,6 +14,8 @@ import * as expressValidator from "express-validator";
 import * as bluebird from "bluebird";
 import { AccessControl } from "accesscontrol";
 import { ConnectorServer } from "corenlp";
+import { shim } from "promise.prototype.finally";
+shim();
 
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv.config({ path: ".env" });
@@ -128,6 +130,22 @@ app.post("/parse", asyncMiddleware(async (req: express.Request, res: express.Res
     res.json(parsed);
 }));
 app.get("/corpus", passportConfig.isAuthenticated, corpusController.displayCorpus);
-app.post("/corpus", passportConfig.isAuthenticated, corpusController.addDocumentToCorpus);
+app.post("/corpus", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const permission = accessControl.can(req.user.role).readAny("corpus");
+    if (permission.granted) {
+      req.assert("title", "Document must have a title").notEmpty();
+      req.assert("text", "Document must contain text").notEmpty();
+      const errors = req.validationErrors();
+      if (errors) {
+        req.flash("errors", errors);
+        res.redirect("/corpus");
+      }
+      const yo = await corpusController.addDocumentToCorpus(req.body.title, req.body.text);
+      req.flash("success", {msg: "nice!"});
+      res.redirect("/corpus");
+    } else {
+      res.status(403).send("Access Denied");
+    }
+}));
 
 module.exports = app;

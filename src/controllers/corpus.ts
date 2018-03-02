@@ -1,15 +1,12 @@
-import * as async from "async";
-import * as crypto from "crypto";
-import * as nodemailer from "nodemailer";
-import * as passport from "passport";
-import { default as User, UserModel, AuthToken } from "../models/User";
 import { Request, Response, NextFunction } from "express";
-import { IVerifyOptions } from "passport-local";
 import { WriteError } from "mongodb";
 const request = require("express-validator");
-import { accessControl } from "../app";
+import { accessControl, connector } from "../app";
 import CorpusDocument, { CorpusDocumentModel } from "../models/CorpusDocument";
-
+import { CorpusLemma, DocumentFrequency } from "../models/CorpusLemma";
+import { parseDocument } from "../services/corenlp";
+import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
+import * as async from "async";
 export let displayCorpus = (req: Request, res: Response) => {
     const permission = accessControl.can(req.user.role).readAny("corpus");
     if (permission.granted) {
@@ -24,23 +21,61 @@ export let displayCorpus = (req: Request, res: Response) => {
     }
 };
 
-export let addDocumentToCorpus = (req: Request, res: Response, next: NextFunction) => {
-    const permission = accessControl.can(req.user.role).readAny("corpus");
-    if (permission.granted) {
-        req.assert("title", "Document must have a title").notEmpty();
-        req.assert("text", "Document must contain text").notEmpty();
-        const errors = req.validationErrors();
-        if (errors) {
-            req.flash("errors", errors);
-            return res.redirect("/corpus");
-        }
-        const document = new CorpusDocument({title: req.body.title, text: req.body.text});
-        document.save((err: WriteError) => {
-            if (err) { return next(err); }
-            req.flash("success", { msg: "Document has been added." });
+export async function addDocumentToCorpus(title: string, text: string): Promise<boolean> {
+  const frequencyMap = new Map<string, number>();
+  return parseDocument(text, ["tokenize", "ssplit", "parse", "lemma", "pos"])
+    .then((result: CoreNLP.simple.Document) => {
+      let documentText = "";
+      result.sentences().forEach((sentence: CoreNLP.simple.Sentence) => {
+        sentence.tokens().forEach((token: CoreNLP.simple.Token) => {
+          const lemma = token.lemma();
+          if (!frequencyMap.has(lemma)) {
+            frequencyMap.set(lemma, 1);
+          } else {
+            frequencyMap.set(lemma, frequencyMap.get(lemma) + 1);
+          }
+          documentText += ` ${lemma}`;
+        });
+      });
+      const cdoc = new CorpusDocument({title, text: documentText});
+      return cdoc.save();
+    })
+    .then((document: CorpusDocumentModel) => {
+      return async.map(frequencyMap.keys(), (lemma: string) => {
+        const frequency = frequencyMap.get(lemma);
+        CorpusLemma.findOne({lemma}).exec()
+          .then((cLemma: CorpusLemma) => {
+            if (cLemma) {
+              // if lemma already exists add new doc lemma
+              cLemma.frequencies.push({
+                documentID: document.id,
+                frequency: frequencyMap.get(lemma)
+              });
+              return cLemma.save();
+            }
+            else {
+              // save new lemma
+              const cLemma2 = new CorpusLemma({
+                lemma,
+                frequencies: [({
+                  documentID: document._id,
+                  frequency: frequency
+                })]
+              });
+              return cLemma2.save();
+            }
+          })
+          .catch((err: Error) => {
+              throw err;
           });
-        res.redirect("/corpus");
-    } else {
-      res.status(403).send("Access Denied");
-    }
-};
+      });
+    })
+    .then((results) => {
+      console.log(`YO ${results}`);
+      return Promise.resolve(true);
+    })
+    . catch((err: Error) => {
+      console.log(err);
+      return Promise.reject(err);
+    });
+}
