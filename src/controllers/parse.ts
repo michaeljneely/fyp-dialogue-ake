@@ -1,7 +1,7 @@
 import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
 import { Request, Response } from "express";
 import { logger } from "../utils/logger";
-import { tfidf } from "../services/tfidf";
+import { tfidfSummary } from "../services/tfidf";
 
 const props = new Properties({
   annotators: "tokenize,ssplit,pos,lemma,ner,parse,relation",
@@ -21,5 +21,5 @@ export async function parse(connector: ConnectorServer, sentence: string): Promi
 }
 
 export async function parseDoc(connector: ConnectorServer, document: string): Promise<JSON> {
-  return tfidf(connector, document);
+  return tfidfSummary(connector, document);
 }

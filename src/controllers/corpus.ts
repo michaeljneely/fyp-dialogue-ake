@@ -1,18 +1,16 @@
-import { Request, Response, NextFunction } from "express";
+import * as express from "express";
 import { WriteError } from "mongodb";
 const request = require("express-validator");
 import { accessControl, connector } from "../app";
 import CorpusDocument, { CorpusDocumentModel } from "../models/CorpusDocument";
 import { CorpusLemma, DocumentFrequency } from "../models/CorpusLemma";
-import { parseDocument } from "../services/corenlp";
-import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
-import * as async from "async";
-import * as mongoose from "mongoose";
+import * as corpusService from "../services/corpus" ;
+import * as passportConfig from "../config/passport";
+import { asyncMiddleware } from "../utils/asyncMiddleware";
 
-function cb(err: Error, results: any) {
-  return results;
-}
-export let displayCorpus = (req: Request, res: Response) => {
+const corpusAPI = express.Router();
+
+const displayCorpus = (req: express.Request, res: express.Response) => {
     const permission = accessControl.can(req.user.role).readAny("corpus");
     if (permission.granted) {
       CorpusDocument.find((err, documents: Array<CorpusDocumentModel>) => {
@@ -26,57 +24,40 @@ export let displayCorpus = (req: Request, res: Response) => {
     }
 };
 
-async function addLemma(lemma: string, documentID: mongoose.Schema.Types.ObjectId, frequency: number): Promise<CorpusLemma> {
-  const corpusLemma = await CorpusLemma.findOne({lemma}).exec() as CorpusLemma;
-  if (corpusLemma) {
-    const df: DocumentFrequency = {
-      documentID,
-      frequency
-    };
-    corpusLemma.frequencies.push(df);
-    return corpusLemma.save();
+async function addDocumentToCorpus(req: express.Request, res: express.Response) {
+  console.log("2");
+  const permission = accessControl.can(req.user.role).readAny("corpus");
+  if (permission.granted) {
+      console.log("3");
+      req.assert("title", "Document must have a title").notEmpty();
+      req.assert("text", "Document must contain text").notEmpty();
+      const errors = req.validationErrors();
+      if (errors) {
+        req.flash("errors", errors);
+        res.redirect("back");
+      }
+      else {
+        try {
+          console.log("4");
+          const title = await corpusService.addDocumentToCorpus(req.body.title, req.body.text);
+          console.log("10");
+          req.flash("success", {msg: `'${title}' added to corpus.`});
+        } catch (error) {
+          req.flash("errors", {msg: error});
+        } finally {
+          res.redirect("/corpus");
+        }
+      }
   }
-  const newCorpusLemma = new CorpusLemma({
-    lemma,
-    frequencies: [({
-      documentID,
-      frequency
-    })]
-  }) as CorpusLemma;
-  return newCorpusLemma.save();
+  else {
+    res.status(403).send("Access Denied");
+  }
 }
 
-export async function addDocumentToCorpus(title: string, text: string): Promise<String> {
-  const frequencyMap = new Map<string, number>();
-  return parseDocument(text, ["tokenize", "ssplit", "parse", "lemma", "pos"])
-    .then((result: CoreNLP.simple.Document) => {
-      let documentText = "";
-      result.sentences().forEach((sentence: CoreNLP.simple.Sentence) => {
-        sentence.tokens().forEach((token: CoreNLP.simple.Token) => {
-          const lemma = token.lemma();
-          if (!frequencyMap.has(lemma)) {
-            frequencyMap.set(lemma, 1);
-          } else {
-            frequencyMap.set(lemma, frequencyMap.get(lemma) + 1);
-          }
-          documentText += ` ${lemma}`;
-        });
-      });
-      return new CorpusDocument({title, text: documentText}).save();
-    })
-    .then((document: CorpusDocumentModel) => {
-      const promises = [];
-      for (const [lemma, frequency] of frequencyMap.entries()) {
-        promises.push(addLemma(lemma, document._id, frequency));
-      }
-      return Promise.all(promises);
-    })
-    .then((results: Array<CorpusLemma>) => {
-      // potentially do something with results
-      return Promise.resolve(title);
-    })
-    .catch((err: Error) => {
-      console.log(err);
-      return Promise.reject(err);
-    });
-}
+corpusAPI.get("/corpus", passportConfig.isAuthenticated, displayCorpus);
+corpusAPI.post("/corpus", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.log("1");
+    return addDocumentToCorpus(req, res);
+}));
+
+export default corpusAPI;

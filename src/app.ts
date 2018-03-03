@@ -36,7 +36,7 @@ import * as userController from "./controllers/user";
 import * as contactController from "./controllers/contact";
 import * as parseController from "./controllers/parse";
 import * as aclController from "./controllers/acl";
-import * as corpusController from "./controllers/corpus";
+import corpusAPI from "./controllers/corpus";
 
 
 // API keys and Passport configuration
@@ -129,23 +129,6 @@ app.post("/parse", asyncMiddleware(async (req: express.Request, res: express.Res
     const parsed = await parseController.parseDoc(connector, req.body.sentence);
     res.json(parsed);
 }));
-app.get("/corpus", passportConfig.isAuthenticated, corpusController.displayCorpus);
-app.post("/corpus", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const permission = accessControl.can(req.user.role).readAny("corpus");
-    if (permission.granted) {
-      req.assert("title", "Document must have a title").notEmpty();
-      req.assert("text", "Document must contain text").notEmpty();
-      const errors = req.validationErrors();
-      if (errors) {
-        req.flash("errors", errors);
-        res.redirect("/corpus");
-      }
-      const result = await corpusController.addDocumentToCorpus(req.body.title, req.body.text);
-      req.flash("success", {msg: `'${result}' added to corpus!`});
-      res.redirect("/corpus");
-    } else {
-      res.status(403).send("Access Denied");
-    }
-}));
+app.use(corpusAPI);
 
 module.exports = app;
