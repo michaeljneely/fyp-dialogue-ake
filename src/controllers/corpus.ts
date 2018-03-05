@@ -7,6 +7,8 @@ import { CorpusLemma, DocumentFrequency } from "../models/CorpusLemma";
 import * as corpusService from "../services/corpus" ;
 import * as passportConfig from "../config/passport";
 import { asyncMiddleware } from "../utils/asyncMiddleware";
+import * as path from "path";
+import * as fs from "fs-extra";
 
 const corpusAPI = express.Router();
 
@@ -54,10 +56,46 @@ async function addDocumentToCorpus(req: express.Request, res: express.Response) 
   }
 }
 
+async function buildCorpus(req: express.Request, res: express.Response) {
+  const files = await fs.readdir(path.join(__dirname, "../../corpus"));
+  return CorpusDocument.remove({})
+      .then(() => {
+          return CorpusLemma.remove({});
+      })
+      .then(() => {
+          const promises: Array<Promise<String>> = [];
+          files.forEach((filename: string) => {
+              promises.push(fs.readFile(path.join(__dirname, "../../corpus", filename), "utf8"));
+          });
+          return Promise.all(promises);
+      })
+      .then((files: Array<String>) => {
+          const promises: Array<Promise<String>> = [];
+          files.forEach((file: string, index: number) => {
+              promises.push(corpusService.addDocumentToCorpus(`file ${index}`, file));
+          });
+          return Promise.all(promises);
+      })
+      .then((titles: Array<String>) => {
+          titles.forEach((title: string) => {
+              console.log(`document '${title}' added to corpus.`);
+          });
+          req.flash("success", {msg: "Corpus Rebuilt"});
+      })
+      .catch((err: Error) => {
+        req.flash("errors", {msg: err.message});
+      })
+      .finally(() => {
+        res.redirect("/corpus");
+      });
+}
+
 corpusAPI.get("/corpus", passportConfig.isAuthenticated, displayCorpus);
 corpusAPI.post("/corpus", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.log("1");
     return addDocumentToCorpus(req, res);
 }));
-
+corpusAPI.post("/rebuildcorpus", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  return buildCorpus(req, res);
+}));
 export default corpusAPI;

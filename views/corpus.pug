@@ -5,15 +5,18 @@ block content
     .page-header
         h3 Corpus
 
-    #accordion
-        each document, index in corpus
-            .card
-                .card-header(id=`heading${index}`)
-                    h5.mb-0
-                        button.btn.btn-link(data-toggle='collapse', data-target=`#collapse${index}`, aria-expanded='false', aria-controls=`collapse${index}`)
-                            | #{document.title}
-                .collapse.show(id=`collapse${index}`, aria-labelledby=`heading${index}`, data-parent='#accordion')
-                    .card-body #{document.text}
+    form.form-horizontal(action='/rebuildcorpus', method='POST')
+        input(type='hidden', name='_csrf', value=_csrf)
+        .form-group
+                .col-sm-offset-2.col-sm-8
+                    button.btn.btn-primary(type='submit')
+                        i.fa.fa-envelope
+                        | Rebuild Corpus
+
+    h4 Corpus
+    each document, index in corpus
+        p #{document.title}
+
     h4 Add Document
     form.form-horizontal(method='POST')
         input(type='hidden', name='_csrf', value=_csrf)

@@ -3,7 +3,7 @@ import { CorpusLemma, DocumentFrequency } from "../models/CorpusLemma";
 import { parseDocument } from "./corenlp";
 import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
 import { Schema } from "mongoose";
-import { posFilter } from "../utils/posFilter";
+import { posFilter } from "../constants/posFilter";
 
 export async function corpusIDF(lemma: string): Promise<number> {
     const corpusLemma = await CorpusLemma.findOne({lemma}).exec() as CorpusLemma;
@@ -41,12 +41,13 @@ export async function addLemma(lemma: string, documentID: Schema.Types.ObjectId,
 export async function addDocumentToCorpus(title: string, text: string): Promise<string> {
     console.log("5");
     const frequencyMap = new Map<string, number>();
-    return parseDocument(text, ["tokenize", "ssplit", "parse", "lemma", "pos"])
+    return parseDocument(text)
       .then((result: CoreNLP.simple.Document) => {
         console.log("6");
         let documentText = "";
         result.sentences().forEach((sentence: CoreNLP.simple.Sentence) => {
           sentence.tokens().forEach((token: CoreNLP.simple.Token) => {
+            console.log(token.ner());
             if (posFilter.indexOf(token.pos()) === -1) {
               const lemma = token.lemma();
               if (!frequencyMap.has(lemma)) {

@@ -2,24 +2,31 @@ import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
 import { Request, Response } from "express";
 import { logger } from "../utils/logger";
 import { tfidfSummary } from "../services/tfidf";
-
-const props = new Properties({
-  annotators: "tokenize,ssplit,pos,lemma,ner,parse,relation",
-});
+import { annotators } from "../constants/annotators";
 
 export let index = (req: Request, res: Response) => {
   res.render("parse", {
     title: "Parse"
   });
 };
-export async function parse(connector: ConnectorServer, sentence: string): Promise<JSON> {
-    const pipeline = new Pipeline(props, "English", connector);
-    const sent = new CoreNLP.simple.Sentence(sentence);
-    const result = await pipeline.annotate(sent) as CoreNLP.simple.Sentence;
-    logger.info(`parsing: '${sentence}'`);
-    return JSON.parse(CoreNLP.util.Tree.fromSentence(result, false).dump());
+export async function freeParse(connector: ConnectorServer, text: string): Promise<JSON> {
+    try {
+      const pipeline = new Pipeline(annotators, "English", connector);
+      const sent = new CoreNLP.simple.Document(text);
+      const result = await pipeline.annotate(sent) as CoreNLP.simple.Document;
+      logger.info(`parsing: '${text}'`);
+      return result.toJSON();
+    } catch (error) {
+      return Promise.reject(error);
+    }
 }
 
 export async function parseDoc(connector: ConnectorServer, document: string): Promise<JSON> {
   return tfidfSummary(connector, document);
 }
+
+export let freeIndex = (req: Request, res: Response) => {
+  res.render("freeparse", {
+    title: "Free Parse"
+  });
+};

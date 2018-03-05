@@ -3,11 +3,8 @@ import { logger } from "../utils/logger";
 import { rougeN } from "../services/rouge";
 import { corpusIDF } from "./corpus";
 import { parseDocument } from "./corenlp";
-import { posFilter } from "../utils/posFilter";
-
-const props = new Properties({
-    annotators: "tokenize,ssplit,pos,lemma,parse",
-});
+import { posFilter } from "../constants/posFilter";
+import { annotators } from "../constants/annotators";
 
 type termStats = {
     tf: number,
@@ -61,7 +58,7 @@ function buildTermFrequencyMapFromNLPDocument(document: CoreNLP.simple.Document)
 }
 
 export async function tfidfSummary(connector: ConnectorServer, document: string, words: number = 5): Promise<JSON> {
-    const doc = await parseDocument(document, ["tokenize", "ssplit", "pos", "lemma", "parse"]);
+    const doc = await parseDocument(document);
     const map = buildTermFrequencyMapFromNLPDocument(doc);
     console.log(map);
     const iA = new Array() as idfArray;

@@ -130,5 +130,10 @@ app.post("/parse", asyncMiddleware(async (req: express.Request, res: express.Res
     res.json(parsed);
 }));
 app.use(corpusAPI);
+app.post("/freeparse", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const parsed = await parseController.freeParse(connector, req.body.text);
+  res.json(parsed);
+}));
+app.get("/freeparse", parseController.freeIndex);
 
 module.exports = app;
