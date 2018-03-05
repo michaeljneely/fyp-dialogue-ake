@@ -58,7 +58,7 @@ function buildTermFrequencyMapFromNLPDocument(document: CoreNLP.simple.Document)
 }
 
 export async function tfidfSummary(connector: ConnectorServer, document: string, words: number = 5): Promise<JSON> {
-    const doc = await parseDocument(document);
+    const doc = await parseDocument(document, false);
     const map = buildTermFrequencyMapFromNLPDocument(doc);
     console.log(map);
     const iA = new Array() as idfArray;

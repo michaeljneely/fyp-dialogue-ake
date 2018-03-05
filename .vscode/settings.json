@@ -12,11 +12,15 @@
     "cSpell.words": [
         "accesscontrol",
         "definitelytyped",
+        "deserialize",
         "labelledby",
         "lcov",
         "lusca",
+        "resave",
+        "sameorigin",
         "ssplit",
         "stopwords",
-        "tfidf"
+        "tfidf",
+        "xframe"
     ]
 }
