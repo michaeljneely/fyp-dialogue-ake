@@ -15,29 +15,30 @@ import * as bluebird from "bluebird";
 import { AccessControl } from "accesscontrol";
 import { ConnectorServer } from "corenlp";
 import { shim } from "promise.prototype.finally";
+
+// Add 'finally' to promise chain
 shim();
 
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv.config({ path: ".env" });
 
-// Import Utils
+// Load Logging
 import { logger, Stream } from "./utils/logger";
 import { asyncMiddleware } from "./utils/asyncMiddleware";
 
 // Morgan Stream
 const stream = new Stream();
 
-
+// Initialize Mongo Session Store
 const MongoStore = mongo(session);
 
-// Controllers (route handlers)
+// Routes
 import * as homeController from "./controllers/home";
 import * as userController from "./controllers/user";
 import * as contactController from "./controllers/contact";
 import * as parseController from "./controllers/parse";
 import * as aclController from "./controllers/acl";
 import corpusAPI from "./controllers/corpus";
-
 
 // API keys and Passport configuration
 import * as passportConfig from "./config/passport";
@@ -58,7 +59,7 @@ mongoose.connect(mongoUrl, {useMongoClient: true}).then(
   () => { /** ready to use. The `mongoose.connect()` promise resolves to undefined. */ },
 ).catch(err => {
   console.log("MongoDB connection error. Please make sure MongoDB is running. " + err);
-  // process.exit();
+  process.exit();
 });
 
 // Express configuration
