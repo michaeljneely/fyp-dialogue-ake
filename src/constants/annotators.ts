@@ -5,5 +5,5 @@ export const corpusAnnotators = new Properties({
 });
 
 export const annotators = new Properties({
-    annotators: "tokenize,ssplit,pos,lemma,ner",
+    annotators: "tokenize,ssplit,pos,lemma,ner,depparse",
 });

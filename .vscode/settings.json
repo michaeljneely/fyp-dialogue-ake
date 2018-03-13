@@ -10,8 +10,10 @@
     "tslint.autoFixOnSave": true,
     "tslint.exclude": "**/node_modules/**/*",
     "cSpell.words": [
+        "TFUIDF",
         "accesscontrol",
         "definitelytyped",
+        "depparse",
         "deserialize",
         "labelledby",
         "lcov",

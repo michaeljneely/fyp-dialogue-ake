@@ -38,6 +38,7 @@ import * as userController from "./controllers/user";
 import * as contactController from "./controllers/contact";
 import * as parseController from "./controllers/parse";
 import * as aclController from "./controllers/acl";
+import * as summaryController from "./controllers/summarize";
 import corpusAPI from "./controllers/corpus";
 
 // API keys and Passport configuration
@@ -131,10 +132,17 @@ app.post("/parse", asyncMiddleware(async (req: express.Request, res: express.Res
     res.json(parsed);
 }));
 app.use(corpusAPI);
+// app.use(summaryAPI);
+// app.use(parseAPI);
 app.post("/freeparse", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const parsed = await parseController.freeParse(connector, req.body.text);
   res.json(parsed);
 }));
 app.get("/freeparse", parseController.freeIndex);
+app.get("/randomsummary", summaryController.index);
+app.post("/randomsummary", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const parsed = await summaryController.randomSummary(req.body.text, req.body.wordlength);
+  res.json(parsed);
+}));
 
 module.exports = app;

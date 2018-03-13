@@ -3,10 +3,17 @@ import { Request, Response } from "express";
 import { annotators } from "../constants/annotators";
 import { connector } from "../app";
 import { logger } from "../utils/logger";
-import { RegexPattern } from "aws-sdk/clients/elasticbeanstalk";
+import { summaryRandom } from "../services/summary";
+
+const pipeline = new Pipeline(annotators, "English", connector);
+
+export let index = (req: Request, res: Response) => {
+    res.render("summary", {
+      title: "Summary"
+    });
+  };
 export async function speakerSummary(document: string): Promise<JSON> {
     try {
-        const pipeline = new Pipeline(annotators, "English", connector);
         //  Strip Speakers
         const a = new RegExp(/^((\w+)(?:[\s]?)){2}(?::)/, "gim");
         const speakers: Array<string> = [];
@@ -26,6 +33,18 @@ export async function speakerSummary(document: string): Promise<JSON> {
             speakers
         });
         return bloop;
+      } catch (error) {
+        return Promise.reject(error);
+      }
+}
+
+export async function randomSummary(document: string, wordlength: number): Promise<Array<string>> {
+    try {
+        const sent = new CoreNLP.simple.Document(document);
+        const result = await pipeline.annotate(sent) as CoreNLP.simple.Document;
+        const summary = summaryRandom(result, wordlength);
+        logger.info(summary.toString());
+        return summary;
       } catch (error) {
         return Promise.reject(error);
       }
