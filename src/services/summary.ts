@@ -29,8 +29,9 @@ interface MappedDocument {
     documentText: string;
 }
 
-export async function addUserDocument(text: string, userID: Schema.Types.ObjectId): Promise<void> {
+export async function addUserDocument(text: string, userID: Schema.Types.ObjectId): Promise<Array<string>> {
     let lemmaMap = new Map() as LemmaMap;
+    let summaries = new Array<string>();
     return parseDocument(text, true)
         .then((result: CoreNLP.simple.Document) => {
             return mapDocument(result);
@@ -40,7 +41,7 @@ export async function addUserDocument(text: string, userID: Schema.Types.ObjectI
             const length = mappedDocument.documentLength;
             const termMap = mappedDocument.termMap;
             lemmaMap = mappedDocument.lemmaMap;
-            const summaries = buildSummaries();
+            summaries = buildSummaries(termMap);
             return new UserDocument({
                 owner: userID,
                 date: new Date(),
@@ -57,7 +58,7 @@ export async function addUserDocument(text: string, userID: Schema.Types.ObjectI
             return Promise.all(promises);
         })
         .then(() => {
-            return Promise.resolve();
+            return Promise.resolve(summaries);
         })
         .catch((err: Error) => {
             return Promise.reject(err);
@@ -86,8 +87,15 @@ async function addUserLemma(lemma: string, documentID: Schema.Types.ObjectId, fr
     }
 }
 
-function buildSummaries(): Array<string> {
-    return new Array<string>();
+function buildSummaries(termMap: TermMap): Array<string> {
+    // N random Words
+    // N C_TFIDF
+    // N U_TFIDF
+    // N alpha * C_TFIDF + (1 - alpha) * U_TFIDF
+    // N LDA
+    const random = `nRandom**${summaryRandom(termMap, 5)}`;
+    const summaries = new Array<string>(random);
+    return summaries;
 }
 
 function mapDocument(document: CoreNLP.simple.Document): MappedDocument {

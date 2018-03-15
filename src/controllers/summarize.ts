@@ -40,12 +40,12 @@ export async function speakerSummary(document: string): Promise<JSON> {
       }
 }
 
-export async function randomSummary(document: string, wordlength: number, userID: Schema.Types.ObjectId): Promise<Array<string>> {
+export async function randomSummary(document: string, wordLength: number, userID: Schema.Types.ObjectId): Promise<Array<string>> {
     try {
         const sent = new CoreNLP.simple.Document(document);
         const result = await pipeline.annotate(sent) as CoreNLP.simple.Document;
         const summary = await addUserDocument(document, userID);
-        return new Array<string>();
+        return summary;
       } catch (error) {
         return Promise.reject(error);
       }
