@@ -10,6 +10,7 @@
     "tslint.autoFixOnSave": true,
     "tslint.exclude": "**/node_modules/**/*",
     "cSpell.words": [
+        "NNPS",
         "TFUIDF",
         "accesscontrol",
         "definitelytyped",

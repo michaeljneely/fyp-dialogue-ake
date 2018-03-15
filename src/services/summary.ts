@@ -7,12 +7,91 @@ import { posFilter } from "../constants/posFilter";
 import { annotators } from "../constants/annotators";
 import { Term, TermMap } from "../models/Term";
 import { shuffle } from "../utils/functions";
-import { TerminateEnvironmentMessage } from "aws-sdk/clients/elasticbeanstalk";
+import UserDocument, { UserDocumentModel } from "../models/UserDocument";
+import { Schema } from "mongoose";
+import { UserLemma } from "../models/UserLemma";
+import { DocumentFrequency } from "../models/DocumentFrequency";
 
 const nounFilter = ["NN", "NNS", "NNP", "NNPS"];
 
-function buildTermMapFromNLPDocument(document: CoreNLP.simple.Document): TermMap {
+type LemmaMap = Map<string, number>;
+
+interface MappedDocument {
+    termMap: TermMap;
+    lemmaMap: LemmaMap;
+    documentLength: number;
+    documentText: string;
+}
+
+export async function addUserDocument(text: string, userID: Schema.Types.ObjectId): Promise<void> {
+    let lemmaMap = new Map<string, number>();
+    return parseDocument(text, true)
+        .then((result: CoreNLP.simple.Document) => {
+            return mapDocument(result);
+        })
+        .then((mappedDocument: MappedDocument) => {
+            const text = mappedDocument.documentText;
+            const length = mappedDocument.documentLength;
+            const termMap = mappedDocument.termMap;
+            lemmaMap = mappedDocument.lemmaMap;
+            const summaries = buildSummaries();
+            return new UserDocument({
+                owner: userID,
+                date: new Date(),
+                text,
+                length,
+                summaries
+            }).save();
+        })
+        .then((document: UserDocumentModel) => {
+            const promises = [];
+            for (const [lemma, term] of lemmaMap.entries()) {
+                promises.push(addUserLemma(lemma, document._id, lemmaMap.get(lemma)));
+            }
+            return Promise.all(promises);
+        })
+        .then(() => {
+            return Promise.resolve();
+        })
+        .catch((err: Error) => {
+            return Promise.reject(err);
+        });
+}
+
+async function addUserLemma(lemma: string, documentID: Schema.Types.ObjectId, frequency: number): Promise<UserLemma> {
+    const userLemma = await UserLemma.findOne({lemma}).exec() as UserLemma;
+    if (userLemma) {
+        const df: DocumentFrequency = {
+            documentID,
+            frequency
+        };
+        userLemma.frequencies.push(df);
+        return userLemma.save();
+    }
+    else {
+        const newUserLemma = new UserLemma({
+            lemma,
+            frequencies: [({
+                documentID,
+                frequency
+            })]
+        }) as UserLemma;
+        return newUserLemma.save();
+    }
+}
+
+function buildSummaries(): Array<string> {
+    return new Array<string>();
+}
+
+
+
+// Build lemma -> Term hashmap and Save User Doc
+function mapDocument(document: CoreNLP.simple.Document): MappedDocument {
     const termMap = new Map() as TermMap;
+    const lemmaMap = new Map() as LemmaMap;
+    let documentLength = 0;
+    let documentText = "";
     document.sentences().forEach((sentence: CoreNLP.simple.Sentence) => {
         sentence.tokens().forEach((token: CoreNLP.simple.Token) => {
             if (posFilter.indexOf(token.pos()) === -1) {
@@ -22,14 +101,29 @@ function buildTermMapFromNLPDocument(document: CoreNLP.simple.Document): TermMap
                 }
                 else {
                     termMap.get(lemma).tf++;
-                }            }
+                }
+                if (!lemmaMap.has(lemma)) {
+                    lemmaMap.set(lemma, 1);
+                }
+                else {
+                    lemmaMap.set(lemma, lemmaMap.get(lemma) + 1);
+                }
+                documentLength++;
+                documentText += `${lemma} `;
+            }
         });
     });
-    return termMap;
+    return {
+        termMap,
+        lemmaMap,
+        documentLength,
+        documentText
+    };
 }
 
-export function summaryRandom(document: CoreNLP.simple.Document, wordLength: number): Array<string> {
-    const nouns = [...buildTermMapFromNLPDocument(document).values()].filter((term: Term) => {
+// Return N random Nouns from Document as summary
+export function summaryRandom(termMap: TermMap, wordLength: number): Array<string> {
+    const nouns = [...termMap.values()].filter((term: Term) => {
         return nounFilter.indexOf(term.token.pos()) !== -1;
     });
     return shuffle(nouns).slice(0, wordLength).map((term: Term) => term.token.lemma());

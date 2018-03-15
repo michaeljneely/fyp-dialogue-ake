@@ -1,5 +1,6 @@
 import CorpusDocument, { CorpusDocumentModel } from "../models/CorpusDocument";
-import { CorpusLemma, DocumentFrequency } from "../models/CorpusLemma";
+import { CorpusLemma } from "../models/CorpusLemma";
+import { DocumentFrequency } from "../models/DocumentFrequency";
 import { parseDocument } from "./corenlp";
 import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
 import { Schema } from "mongoose";
@@ -38,7 +39,7 @@ export async function addLemma(lemma: string, documentID: Schema.Types.ObjectId,
         }) as CorpusLemma;
         return newCorpusLemma.save();
     }
-  }
+}
 
 export async function addDocumentToCorpus(title: string, text: string): Promise<string> {
     const frequencyMap = new Map<string, number>();
