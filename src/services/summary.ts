@@ -11,10 +11,16 @@ import UserDocument, { UserDocumentModel } from "../models/UserDocument";
 import { Schema } from "mongoose";
 import { UserLemma } from "../models/UserLemma";
 import { DocumentFrequency } from "../models/DocumentFrequency";
+import User from "../models/User";
 
 const nounFilter = ["NN", "NNS", "NNP", "NNPS"];
 
 type LemmaMap = Map<string, number>;
+
+interface SavedDoc {
+    document: UserDocumentModel;
+    lemmaMap: LemmaMap;
+}
 
 interface MappedDocument {
     termMap: TermMap;
@@ -24,7 +30,7 @@ interface MappedDocument {
 }
 
 export async function addUserDocument(text: string, userID: Schema.Types.ObjectId): Promise<void> {
-    let lemmaMap = new Map<string, number>();
+    let lemmaMap = new Map() as LemmaMap;
     return parseDocument(text, true)
         .then((result: CoreNLP.simple.Document) => {
             return mapDocument(result);
@@ -84,9 +90,6 @@ function buildSummaries(): Array<string> {
     return new Array<string>();
 }
 
-
-
-// Build lemma -> Term hashmap and Save User Doc
 function mapDocument(document: CoreNLP.simple.Document): MappedDocument {
     const termMap = new Map() as TermMap;
     const lemmaMap = new Map() as LemmaMap;

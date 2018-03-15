@@ -4,6 +4,8 @@ import { annotators } from "../constants/annotators";
 import { connector } from "../app";
 import { logger } from "../utils/logger";
 import { summaryRandom } from "../services/summary";
+import { addUserDocument } from "../services/summary";
+import { Schema } from "mongoose";
 
 const pipeline = new Pipeline(annotators, "English", connector);
 
@@ -38,13 +40,12 @@ export async function speakerSummary(document: string): Promise<JSON> {
       }
 }
 
-export async function randomSummary(document: string, wordlength: number): Promise<Array<string>> {
+export async function randomSummary(document: string, wordlength: number, userID: Schema.Types.ObjectId): Promise<Array<string>> {
     try {
         const sent = new CoreNLP.simple.Document(document);
         const result = await pipeline.annotate(sent) as CoreNLP.simple.Document;
-        const summary = summaryRandom(result, wordlength);
-        logger.info(summary.toString());
-        return summary;
+        const summary = await addUserDocument(document, userID);
+        return new Array<string>();
       } catch (error) {
         return Promise.reject(error);
       }

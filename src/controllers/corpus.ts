@@ -3,7 +3,7 @@ import { WriteError } from "mongodb";
 const request = require("express-validator");
 import { accessControl, connector } from "../app";
 import CorpusDocument, { CorpusDocumentModel } from "../models/CorpusDocument";
-import { CorpusLemma, DocumentFrequency } from "../models/CorpusLemma";
+import { CorpusLemma } from "../models/CorpusLemma";
 import * as corpusService from "../services/corpus" ;
 import * as passportConfig from "../config/passport";
 import { asyncMiddleware } from "../utils/asyncMiddleware";

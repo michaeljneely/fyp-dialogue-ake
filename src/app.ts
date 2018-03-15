@@ -141,7 +141,7 @@ app.post("/freeparse", asyncMiddleware(async (req: express.Request, res: express
 app.get("/freeparse", parseController.freeIndex);
 app.get("/randomsummary", summaryController.index);
 app.post("/randomsummary", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const parsed = await summaryController.randomSummary(req.body.text, req.body.wordlength);
+  const parsed = await summaryController.randomSummary(req.body.text, req.body.wordlength, req.user.id);
   res.json(parsed);
 }));
 
