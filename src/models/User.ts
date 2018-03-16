@@ -2,7 +2,8 @@ import * as bcrypt from "bcrypt-nodejs";
 import * as crypto from "crypto";
 import * as mongoose from "mongoose";
 import { Role } from "../controllers/acl";
-import { pre, prop, instanceMethod, staticMethod, Typegoose, ModelType, InstanceType } from "typegoose";
+import { pre, prop, plugin, instanceMethod, staticMethod, Typegoose, ModelType, InstanceType } from "typegoose";
+import * as passportLocalMongoose from "passport-local-mongoose";
 
 /**
  * Password hash middleware.
@@ -21,6 +22,7 @@ import { pre, prop, instanceMethod, staticMethod, Typegoose, ModelType, Instance
     });
 })
 
+@plugin(passportLocalMongoose)
 export class User extends Typegoose {
     @prop({ required: true, unique: true })
     email: string;
@@ -35,13 +37,8 @@ export class User extends Typegoose {
     @prop()
     tokens?: AuthToken[];
     @prop()
-    profile?: {
-        name: string,
-        gender: string,
-        location: string,
-        website: string,
-        picture: string
-    };
+    profile?: Profile;
+
 
     @instanceMethod
     comparePassword(candidatePassword: string, cb: (err: any, isMatch: any) => {}): void {
@@ -71,4 +68,16 @@ export type AuthToken = {
   kind: string
 };
 
-export const UserModel = new User().getModelForClass(User, {schemaOptions: {timestamps: true}});
+export type Profile = {
+    name?: string,
+    gender?: string,
+    location?: string,
+    website?: string,
+    picture?: string
+};
+export const UserModel = new User().getModelForClass(User, {
+    schemaOptions: {
+        timestamps: true
+    },
+    existingMongoose: mongoose
+});
