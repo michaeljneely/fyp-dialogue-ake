@@ -12,10 +12,13 @@
     "cSpell.words": [
         "NNPS",
         "TFUIDF",
+        "Typegoose",
         "accesscontrol",
         "definitelytyped",
         "depparse",
         "deserialize",
+        "gmail",
+        "gravatar",
         "labelledby",
         "lcov",
         "lusca",
@@ -24,6 +27,7 @@
         "ssplit",
         "stopwords",
         "tfidf",
+        "timestamps",
         "xframe"
     ]
 }

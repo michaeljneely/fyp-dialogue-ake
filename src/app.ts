@@ -38,7 +38,7 @@ import * as userController from "./controllers/user";
 import * as contactController from "./controllers/contact";
 import * as parseController from "./controllers/parse";
 import * as aclController from "./controllers/acl";
-import * as summaryController from "./controllers/summarize";
+// import * as summaryController from "./controllers/summarize";
 import corpusAPI from "./controllers/corpus";
 
 // API keys and Passport configuration
@@ -56,8 +56,9 @@ export const accessControl = new AccessControl(aclController.grants);
 // Connect to MongoDB
 const mongoUrl = process.env.MONGODB_URI;
 (<any>mongoose).Promise = bluebird;
-mongoose.connect(mongoUrl, {useMongoClient: true}).then(
-  () => { /** ready to use. The `mongoose.connect()` promise resolves to undefined. */ },
+mongoose.connect(mongoUrl).then(
+  () => { /** ready to use. The `mongoose.connect()` promise resolves to undefined. */
+console.log("connected"); },
 ).catch(err => {
   console.log("MongoDB connection error. Please make sure MongoDB is running. " + err);
   process.exit();
@@ -110,15 +111,6 @@ app.use(express.static(path.join(__dirname, "public"), { maxAge: 31557600000 }))
  * Primary app routes.
  */
 app.get("/", homeController.index);
-app.get("/login", userController.getLogin);
-app.post("/login", userController.postLogin);
-app.get("/logout", userController.logout);
-app.get("/forgot", userController.getForgot);
-app.post("/forgot", userController.postForgot);
-app.get("/reset/:token", userController.getReset);
-app.post("/reset/:token", userController.postReset);
-app.get("/signup", userController.getSignup);
-app.post("/signup", userController.postSignup);
 app.get("/contact", contactController.getContact);
 app.post("/contact", contactController.postContact);
 app.get("/account", passportConfig.isAuthenticated, userController.getAccount);
@@ -134,15 +126,15 @@ app.post("/parse", asyncMiddleware(async (req: express.Request, res: express.Res
 app.use(corpusAPI);
 // app.use(summaryAPI);
 // app.use(parseAPI);
-app.post("/freeparse", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const parsed = await parseController.freeParse(connector, req.body.text);
-  res.json(parsed);
-}));
-app.get("/freeparse", parseController.freeIndex);
-app.get("/randomsummary", summaryController.index);
-app.post("/randomsummary", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const parsed = await summaryController.randomSummary(req.body.text, req.body.wordlength, req.user.id);
-  res.json(parsed);
-}));
+// app.post("/freeparse", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+//   const parsed = await parseController.freeParse(connector, req.body.text);
+//   res.json(parsed);
+// }));
+// app.get("/freeparse", parseController.freeIndex);
+// app.get("/randomsummary", summaryController.index);
+// app.post("/randomsummary", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+//   const parsed = await summaryController.randomSummary(req.body.text, req.body.wordlength, req.user.id);
+//   res.json(parsed);
+// }));
 
 module.exports = app;

@@ -1,17 +1,17 @@
-import CorpusDocument, { CorpusDocumentModel } from "../models/CorpusDocument";
-import { CorpusLemma } from "../models/CorpusLemma";
-import { DocumentFrequency } from "../models/DocumentFrequency";
+import { CorpusDocument, CorpusDocumentModel } from "../models/CorpusDocument";
+import { CorpusLemma, CorpusLemmaModel } from "../models/CorpusLemma";
+import { DocumentFrequency, DocumentFrequencyModel } from "../models/DocumentFrequency";
 import { parseDocument } from "./corenlp";
 import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
-import { Schema } from "mongoose";
+import * as mongoose from "mongoose";
 import { posFilter } from "../constants/posFilter";
 import * as path from "path";
 import * as fs from "fs-extra";
 import { logger } from "../utils/logger";
 
 export async function corpusIDF(lemma: string): Promise<number> {
-    const corpusLemma = await CorpusLemma.findOne({lemma}).exec() as CorpusLemma;
-    const collectionSize = await CorpusDocument.find().count();
+    const corpusLemma = await CorpusLemmaModel.findOne({lemma}).exec() as CorpusLemma;
+    const collectionSize = await CorpusDocumentModel.find().count();
     if (collectionSize) {
         const docsContainingLemma = (corpusLemma) ? corpusLemma.frequencies.length : 1;
         return Promise.resolve(Math.log(collectionSize / docsContainingLemma));
@@ -19,28 +19,20 @@ export async function corpusIDF(lemma: string): Promise<number> {
     return Promise.reject("issue");
 }
 
-export async function addLemma(lemma: string, documentID: Schema.Types.ObjectId, frequency: number): Promise<CorpusLemma> {
-    const corpusLemma = await CorpusLemma.findOne({lemma}).exec() as CorpusLemma;
+// REWRITE
+export async function addLemma(lemma: string, documentID: mongoose.Schema.Types.ObjectId, frequency: number): Promise<CorpusLemma> {
+    let corpusLemma = await CorpusLemmaModel.findOne({lemma});
+    const documentFrequency = new DocumentFrequencyModel({ documentID, frequency });
     if (corpusLemma) {
-        const df: DocumentFrequency = {
-            documentID,
-            frequency
-        };
-        corpusLemma.frequencies.push(df);
-        return corpusLemma.save();
+        corpusLemma.frequencies.push(documentFrequency);
     }
     else {
-        const newCorpusLemma = new CorpusLemma({
-            lemma,
-            frequencies: [({
-                documentID,
-                frequency
-            })]
-        }) as CorpusLemma;
-        return newCorpusLemma.save();
+        corpusLemma = new CorpusLemmaModel({lemma, frequencies: [documentFrequency]});
     }
+    await corpusLemma.save();
+    const result = await CorpusLemmaModel.findOne({lemma});
+    return result;
 }
-
 export async function addDocumentToCorpus(title: string, text: string): Promise<string> {
     const frequencyMap = new Map<string, number>();
     return parseDocument(text, true)
@@ -50,19 +42,19 @@ export async function addDocumentToCorpus(title: string, text: string): Promise<
                 sentence.tokens().forEach((token: CoreNLP.simple.Token) => {
                     if (posFilter.indexOf(token.pos()) === -1) {
                         const lemma = token.lemma();
-                        if (!frequencyMap.has(lemma)) {
-                            frequencyMap.set(lemma, 1);
+                        if (frequencyMap.has(lemma)) {
+                            frequencyMap.set(lemma, frequencyMap.get(lemma) + 1);
                         }
                         else {
-                            frequencyMap.set(lemma, frequencyMap.get(lemma) + 1);
+                            frequencyMap.set(lemma, 1);
                         }
                         documentText += ` ${lemma}`;
                     }
                 });
             });
-            return new CorpusDocument({title, text: documentText}).save();
+            return new CorpusDocumentModel({title, text: documentText}).save();
         })
-        .then((document: CorpusDocumentModel) => {
+        .then((document: CorpusDocument & mongoose.Document) => {
             const promises = [];
             for (const [lemma, frequency] of frequencyMap.entries()) {
                 promises.push(addLemma(lemma, document._id, frequency));
@@ -70,8 +62,9 @@ export async function addDocumentToCorpus(title: string, text: string): Promise<
             return Promise.all(promises);
         })
         .then((results: Array<CorpusLemma>) => {
+            console.log(results.length);
             // potentially do something with results
-            return Promise.resolve(title);
+            return Promise.resolve(results.length.toString());
         })
         .catch((err: Error) => {
             return Promise.reject(err);
@@ -79,9 +72,9 @@ export async function addDocumentToCorpus(title: string, text: string): Promise<
 }
 
 export async function buildCorpus(): Promise<Array<string>> {
-    return CorpusDocument.remove({})
+    return CorpusDocumentModel.remove({})
         .then(() => {
-            return CorpusLemma.remove({});
+            return CorpusLemmaModel.remove({});
         })
         .then(() => {
             return fs.readdir(path.join(__dirname, "../../corpus"));

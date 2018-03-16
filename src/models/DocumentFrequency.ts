@@ -1,11 +1,11 @@
-import { Schema } from "mongoose";
+import { prop, Typegoose, ModelType, InstanceType } from "typegoose";
+import * as mongoose from "mongoose";
 
-export interface DocumentFrequency {
-    documentID: Schema.Types.ObjectId;
+export class DocumentFrequency extends Typegoose {
+    @prop({ required: true })
+    documentID: mongoose.Types.ObjectId;
+    @prop({ required: true })
     frequency: number;
 }
 
-export const DocumentFrequencySchema = new Schema({
-    documentID: Schema.Types.ObjectId,
-    frequency: Number
-});
+export const DocumentFrequencyModel = new DocumentFrequency().getModelForClass(DocumentFrequency);

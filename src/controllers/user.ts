@@ -1,14 +1,16 @@
 import * as async from "async";
 import * as crypto from "crypto";
+import * as express from "express";
 import * as nodemailer from "nodemailer";
 import * as passport from "passport";
-import { default as User, UserModel, AuthToken } from "../models/User";
+import { User, UserModel, AuthToken } from "../models/User";
 import { Request, Response, NextFunction } from "express";
 import { IVerifyOptions } from "passport-local";
 import { WriteError } from "mongodb";
 const request = require("express-validator");
 import { accessControl } from "../app";
-
+import * as userService from "../services/user";
+import { asyncMiddleware } from "../utils/asyncMiddleware";
 
 /**
  * GET /login
@@ -39,7 +41,7 @@ export let postLogin = (req: Request, res: Response, next: NextFunction) => {
     return res.redirect("/login");
   }
 
-  passport.authenticate("local", (err: Error, user: UserModel, info: IVerifyOptions) => {
+  passport.authenticate("local", (err: Error, user: User, info: IVerifyOptions) => {
     if (err) { return next(err); }
     if (!user) {
       req.flash("errors", info.message);
@@ -79,7 +81,7 @@ export let getSignup = (req: Request, res: Response) => {
  * POST /signup
  * Create a new local account.
  */
-export let postSignup = (req: Request, res: Response, next: NextFunction) => {
+async function postSignup(req: Request, res: Response) {
   req.assert("email", "Email is not valid").isEmail();
   req.assert("password", "Password must be at least 4 characters long").len({ min: 4 });
   req.assert("confirmPassword", "Passwords do not match").equals(req.body.password);
@@ -92,29 +94,19 @@ export let postSignup = (req: Request, res: Response, next: NextFunction) => {
     return res.redirect("/signup");
   }
 
-  const user = new User({
-    email: req.body.email,
-    password: req.body.password,
-    role: "user"
-  });
-
-  User.findOne({ email: req.body.email }, (err, existingUser) => {
-    if (err) { return next(err); }
-    if (existingUser) {
-      req.flash("errors", { msg: "Account with that email address already exists." });
-      return res.redirect("/signup");
-    }
-    user.save((err) => {
-      if (err) { return next(err); }
-      req.logIn(user, (err) => {
-        if (err) {
-          return next(err);
-        }
-        res.redirect("/");
-      });
+  try {
+    const user = await userService.signup(req.body.email, req.body.password, "user");
+    req.logIn(user, (err) => {
+      if (err) {
+        throw (err);
+      }
+      return res.redirect("/");
     });
-  });
-};
+  } catch (error) {
+    req.flash("errors", { msg: error });
+    return res.redirect("/signup");
+  }
+}
 
 /**
  * GET /account
@@ -135,7 +127,7 @@ export let getAccount = (req: Request, res: Response) => {
  * POST /account/profile
  * Update profile information.
  */
-export let postUpdateProfile = (req: Request, res: Response, next: NextFunction) => {
+export async function postUpdateProfile(req: Request, res: Response, next: NextFunction): {;
   req.assert("email", "Please enter a valid email address.").isEmail();
   req.sanitize("email").normalizeEmail({ gmail_remove_dots: false });
 
@@ -146,7 +138,7 @@ export let postUpdateProfile = (req: Request, res: Response, next: NextFunction)
     return res.redirect("/account");
   }
 
-  User.findById(req.user.id, (err, user: UserModel) => {
+  UserModel.findById(req.user.id, (err, user: User) => {
     if (err) { return next(err); }
     user.email = req.body.email || "";
     user.profile.name = req.body.name || "";
@@ -165,7 +157,7 @@ export let postUpdateProfile = (req: Request, res: Response, next: NextFunction)
       res.redirect("/account");
     });
   });
-};
+}
 
 /**
  * POST /account/password
@@ -385,3 +377,16 @@ export let postForgot = (req: Request, res: Response, next: NextFunction) => {
     res.redirect("/forgot");
   });
 };
+
+const userAPI = express.Router();
+userAPI.get("/login", getLogin);
+userAPI.post("/login", postLogin);
+userAPI.get("/logout", logout);
+userAPI.get("/forgot", userController.getForgot);
+userAPI.post("/forgot", userController.postForgot);
+userAPI.get("/reset/:token", userController.getReset);
+userAPI.post("/reset/:token", userController.postReset);
+userAPI.get("/signup", userController.getSignup);
+userAPI.post("/signup", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  return postSignup(req, res);
+}));

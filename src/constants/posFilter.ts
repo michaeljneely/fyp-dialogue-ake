@@ -1,1 +1,1 @@
-export const posFilter = ["POS", "PRP$", ".", ",", ":", "-"];
+export const posFilter = ["POS", "PRP$", ".", ",", ":", "-", "%"];

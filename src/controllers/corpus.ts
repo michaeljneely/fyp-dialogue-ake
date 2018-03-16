@@ -2,25 +2,27 @@ import * as express from "express";
 import { WriteError } from "mongodb";
 const request = require("express-validator");
 import { accessControl, connector } from "../app";
-import CorpusDocument, { CorpusDocumentModel } from "../models/CorpusDocument";
+import { CorpusDocument } from "../models/CorpusDocument";
 import { CorpusLemma } from "../models/CorpusLemma";
 import * as corpusService from "../services/corpus" ;
 import * as passportConfig from "../config/passport";
 import { asyncMiddleware } from "../utils/asyncMiddleware";
 
-const displayCorpus = (req: express.Request, res: express.Response) => {
+export async function displayCorpus(req: express.Request, res: express.Response) {
     const permission = accessControl.can(req.user.role).readAny("corpus");
+    console.log(permission);
     if (permission.granted) {
-      CorpusDocument.find((err, documents: Array<CorpusDocumentModel>) => {
-        res.render("corpus", {
-            title: "Corpus",
-            corpus: documents
-          });
+      const CorpusDocumentModel = new CorpusDocument().getModelForClass(CorpusDocument);
+      const documents = await CorpusDocumentModel.find({}).exec();
+      console.log(documents);
+      res.render("corpus", {
+        title: "Corpus",
+        corpus: documents
       });
     } else {
       res.status(403).send("Access Denied");
     }
-};
+}
 
 async function addDocumentToCorpus(req: express.Request, res: express.Response) {
   const permission = accessControl.can(req.user.role).readAny("corpus");
@@ -65,7 +67,9 @@ async function buildCorpus(req: express.Request, res: express.Response) {
 // Create Routes
 const corpusAPI = express.Router();
 
-corpusAPI.get("/corpus", passportConfig.isAuthenticated, displayCorpus);
+corpusAPI.get("/corpus", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  return displayCorpus(req, res);
+}));
 corpusAPI.post("/corpus", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     return addDocumentToCorpus(req, res);
 }));

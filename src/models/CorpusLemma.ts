@@ -1,14 +1,12 @@
-import { Document, Schema, model } from "mongoose";
-import { DocumentFrequency, DocumentFrequencySchema } from "./DocumentFrequency";
+import { prop, Typegoose, ModelType, InstanceType } from "typegoose";
+import * as mongoose from "mongoose";
+import { DocumentFrequency } from "./DocumentFrequency";
 
-export interface CorpusLemma extends Document {
+export class CorpusLemma extends Typegoose {
+    @prop({ required: true })
     lemma: string;
+    @prop({ required: true })
     frequencies: Array<DocumentFrequency>;
 }
 
-const CorpusLemmaSchema = new Schema({
-    lemma: String,
-    frequencies: [DocumentFrequencySchema]
-});
-
-export const CorpusLemma = model("CorpusLemma", CorpusLemmaSchema);
+export const CorpusLemmaModel = new CorpusLemma().getModelForClass(CorpusLemma);
