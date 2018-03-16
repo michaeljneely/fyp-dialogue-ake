@@ -9,7 +9,7 @@ import { Request, Response, NextFunction } from "express";
 const LocalStrategy = passportLocal.Strategy;
 
 passport.serializeUser<any, any>((user, done) => {
-  done(undefined, user.id);
+  done(undefined, user._id);
 });
 
 passport.deserializeUser((id, done) => {

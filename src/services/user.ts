@@ -4,23 +4,28 @@ import * as mongoose from "mongoose";
 import { WriteError } from "mongodb";
 
 export async function signup(email: string, password: string, role: Role): Promise<User> {
+    const UserModel = new User().getModelForClass(User, { existingMongoose: mongoose });
     const user = new UserModel({
         email: email,
         password: password,
-        role: "user"
+        role: "user",
+        profile: {
+            name: "",
+            gender: "",
+            location: "",
+            website: "",
+            picture: "",
+        } as Profile
     });
-    console.log("here!");
     const existingUser = await UserModel.findOne({email});
-    console.log(existingUser);
     if (existingUser) {
         return Promise.reject("Account with that email address already exists.");
     }
     else {
-        console.log("booping into here");
         try {
             await user.save();
         } catch (err) {
-            console.log(err);
+           return Promise.reject(err);
         }
         return Promise.resolve(user);
     }

@@ -5,26 +5,24 @@ import { Role } from "../controllers/acl";
 import { pre, prop, plugin, instanceMethod, staticMethod, Typegoose, ModelType, InstanceType } from "typegoose";
 import * as passportLocalMongoose from "passport-local-mongoose";
 
-/**
- * Password hash middleware.
- */
-@pre<User>("save", function(next) {
+@pre<User>("save", async function(next) {
+    console.log("executing pre");
     if (!this.isModified("password")) {
         next();
     }
     bcrypt.genSalt(10, (err, salt) => {
+        console.log("called!!");
         if (err) { return next(err); }
         bcrypt.hash(this.password, salt, undefined, (err: mongoose.Error, hash) => {
         if (err) { return next(err); }
         this.password = hash;
+        console.log(this.password);
         next();
         });
     });
 })
-
-@plugin(passportLocalMongoose)
 export class User extends Typegoose {
-    @prop({ required: true, unique: true })
+    @prop({ required: true, unique: true, index: true })
     email: string;
     @prop({ required: true })
     password: string;
@@ -76,8 +74,9 @@ export type Profile = {
     picture?: string
 };
 export const UserModel = new User().getModelForClass(User, {
+    existingConnection: mongoose.connection,
     schemaOptions: {
         timestamps: true
-    },
-    existingMongoose: mongoose
+    }
 });
+
