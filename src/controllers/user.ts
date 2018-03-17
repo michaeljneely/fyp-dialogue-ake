@@ -61,8 +61,8 @@ export let postLogin = (req: Request, res: Response, next: NextFunction) => {
  * Log out.
  */
 export let logout = (req: Request, res: Response) => {
-  req.logout();
-  res.redirect("/");
+    req.logout();
+    res.redirect("/");
 };
 
 /**
@@ -70,12 +70,12 @@ export let logout = (req: Request, res: Response) => {
  * Signup page.
  */
 export let getSignup = (req: Request, res: Response) => {
-  if (req.user) {
-    return res.redirect("/");
-  }
-  res.render("account/signup", {
-    title: "Create Account"
-  });
+    if (req.user) {
+        return res.redirect("/");
+    }
+    res.render("account/signup", {
+        title: "Create Account"
+    });
 };
 
 /**
@@ -91,21 +91,21 @@ async function postSignup(req: Request, res: Response) {
     const errors = req.validationErrors();
 
     if (errors) {
-      req.flash("errors", errors);
-      return res.redirect("/signup");
+        req.flash("errors", errors);
+        return res.redirect("/signup");
     }
 
     try {
-      const user = await userService.signup(req.body.email, req.body.password, "user");
-      req.logIn(user, (err) => {
-        if (err) {
-          return Promise.reject(err);
-        }
-        return res.redirect("/");
-      });
+        const user = await userService.signup(req.body.email, req.body.password, "user");
+        req.logIn(user, (err) => {
+            if (err) {
+            return Promise.reject(err);
+            }
+            return res.redirect("/");
+        });
     } catch (error) {
-      req.flash("errors", { msg: error });
-      return res.redirect("/signup");
+        req.flash("errors", { msg: error });
+        return res.redirect("/signup");
     }
 }
 
@@ -114,14 +114,14 @@ async function postSignup(req: Request, res: Response) {
  * Profile page.
  */
 export let getAccount = (req: Request, res: Response) => {
-  const permission = accessControl.can(req.user.role).readOwn("account");
-  if (permission.granted) {
-    res.render("account/profile", {
-      title: "Account Management"
-    });
-  } else {
-    res.status(403).send("Access Denied");
-  }
+    const permission = accessControl.can(req.user.role).readOwn("account");
+    if (permission.granted) {
+        res.render("account/profile", {
+            title: "Account Management"
+        });
+    } else {
+        res.status(403).send("Access Denied");
+    }
 };
 
 /**
@@ -129,62 +129,59 @@ export let getAccount = (req: Request, res: Response) => {
  * Update profile information.
  */
 export async function postUpdateProfile(req: Request, res: Response) {
-  req.assert("email", "Please enter a valid email address.").isEmail();
-  req.sanitize("email").normalizeEmail({ gmail_remove_dots: false });
+    req.assert("email", "Please enter a valid email address.").isEmail();
+    req.sanitize("email").normalizeEmail({ gmail_remove_dots: false });
 
-  const errors = req.validationErrors();
+    const errors = req.validationErrors();
 
-  if (errors) {
-    req.flash("errors", errors);
-    return res.redirect("/account");
-  }
+    if (errors) {
+        req.flash("errors", errors);
+        return res.redirect("/account");
+    }
 
-  try {
-      const email = req.body.email || "";
-      const profile = {
-          name: req.body.name || "",
-          gender: req.body.gender || "",
-          location: req.body.location || "",
-          website: req.body.website || "",
-      } as Profile;
+    try {
+        const email = req.body.email || "";
+        const profile: Profile = {
+            name: req.body.name || "",
+            gender: req.body.gender || "",
+            location: req.body.location || "",
+            website: req.body.website || "",
+        };
 
-      await userService.updateProfile(req.user.id, email, profile);
+        await userService.updateProfile(req.user.id, email, profile);
 
-      req.flash("success", { msg: "Profile information has been updated." });
-      res.redirect("/account");
+        req.flash("success", { msg: "Profile information has been updated." });
+        res.redirect("/account");
 
-  } catch (err) {
-      req.flash("errors", {msg: err});
-      return res.redirect("/account");
-  }
+    } catch (err) {
+        req.flash("errors", {msg: err});
+        return res.redirect("/account");
+    }
 }
 
 /**
  * POST /account/password
  * Update current password.
  */
-//
-// export let postUpdatePassword = (req: Request, res: Response, next: NextFunction) => {
-//   req.assert("password", "Password must be at least 4 characters long").len({ min: 4 });
-//   req.assert("confirmPassword", "Passwords do not match").equals(req.body.password);
+export async function postUpdatePassword(req: Request, res: Response) {
+    req.assert("password", "Password must be at least 4 characters long").len({ min: 4 });
+    req.assert("confirmPassword", "Passwords do not match").equals(req.body.password);
 
-//   const errors = req.validationErrors();
+    const errors = req.validationErrors();
 
-//   if (errors) {
-//     req.flash("errors", errors);
-//     return res.redirect("/account");
-//   }
-
-//   User.findById(req.user.id, (err, user: UserModel) => {
-//     if (err) { return next(err); }
-//     user.password = req.body.password;
-//     user.save((err: WriteError) => {
-//       if (err) { return next(err); }
-//       req.flash("success", { msg: "Password has been changed." });
-//       res.redirect("/account");
-//     });
-//   });
-// };
+    if (errors) {
+        req.flash("errors", errors);
+        return res.redirect("/account");
+    }
+    try {
+        await userService.updatePassword(req.user.id, req.body.password);
+        req.flash("success", { msg: "Password has been changed." });
+        res.redirect("/account");
+    } catch (err) {
+        req.flash("error", { msg: "ERROR"});
+        return Promise.reject(err);
+    }
+}
 
 // /**
 //  * POST /account/delete
@@ -302,18 +299,18 @@ export async function postUpdateProfile(req: Request, res: Response) {
 //   });
 // };
 
-// /**
-//  * GET /forgot
-//  * Forgot Password page.
-//  */
-// export let getForgot = (req: Request, res: Response) => {
-//   if (req.isAuthenticated()) {
-//     return res.redirect("/");
-//   }
-//   res.render("account/forgot", {
-//     title: "Forgot Password"
-//   });
-// };
+/**
+ * GET /forgot
+ * Forgot Password page.
+ */
+export let getForgot = (req: Request, res: Response) => {
+    if (req.isAuthenticated()) {
+        return res.redirect("/");
+    }
+    res.render("account/forgot", {
+        title: "Forgot Password"
+    });
+};
 
 // /**
 //  * POST /forgot
@@ -380,10 +377,11 @@ export async function postUpdateProfile(req: Request, res: Response) {
 // };
 
 const userAPI = express.Router();
+
 userAPI.get("/login", getLogin);
 userAPI.post("/login", postLogin);
 userAPI.get("/logout", logout);
-// userAPI.get("/forgot", userController.getForgot);
+userAPI.get("/forgot", getForgot);
 // userAPI.post("/forgot", userController.postForgot);
 // userAPI.get("/reset/:token", userController.getReset);
 // userAPI.post("/reset/:token", userController.postReset);
@@ -394,4 +392,11 @@ userAPI.post("/signup", asyncMiddleware(async (req: express.Request, res: expres
 userAPI.post("/account/profile", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     return postUpdateProfile(req, res);
 }));
+userAPI.get("/account", passportConfig.isAuthenticated, getAccount);
+userAPI.post("/account/password", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    return postUpdatePassword(req, res);
+}));
+// app.post("/account/delete", passportConfig.isAuthenticated, userController.postDeleteAccount);
+// app.get("/account/unlink/:provider", passportConfig.isAuthenticated, userController.getOauthUnlink);
+
 export default userAPI;

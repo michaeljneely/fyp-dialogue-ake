@@ -13,6 +13,12 @@ export const grants = {
             "read:any": ["*"],
             "update:any": ["*"],
             "delete:any": ["*"]
+        },
+        account: {
+            "create:own": ["*"],
+            "read:own": ["*"],
+            "update:own": ["*"],
+            "delete:own": ["*"]
         }
     }
 };

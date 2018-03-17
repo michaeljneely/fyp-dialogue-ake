@@ -5,17 +5,18 @@ import { WriteError } from "mongodb";
 
 export async function signup(email: string, password: string, role: Role): Promise<User> {
     const UserModel = new User().getModelForClass(User, { existingMongoose: mongoose });
+    const profile: Profile = {
+        name: "",
+        gender: "",
+        location: "",
+        website: "",
+        picture: "",
+    };
     const user = new UserModel({
-        email: email,
-        password: password,
+        email,
+        password,
         role: "user",
-        profile: {
-            name: "",
-            gender: "",
-            location: "",
-            website: "",
-            picture: "",
-        } as Profile
+        profile
     });
     const existingUser = await UserModel.findOne({email});
     if (existingUser) {
@@ -42,6 +43,17 @@ export async function updateProfile(userId: mongoose.Types.ObjectId, email: stri
         if (err.code && err.code === 11000) {
             err = "The email address you have entered is already associated with an account.";
         }
+        return Promise.reject(err);
+    }
+}
+
+export async function updatePassword(userId: mongoose.Types.ObjectId, password: string): Promise<void> {
+    try {
+        const user = await UserModel.findById(userId);
+        user.password = password;
+        await user.save();
+        return Promise.resolve();
+    } catch (err) {
         return Promise.reject(err);
     }
 }
