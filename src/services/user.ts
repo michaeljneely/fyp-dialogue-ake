@@ -57,3 +57,12 @@ export async function updatePassword(userId: mongoose.Types.ObjectId, password: 
         return Promise.reject(err);
     }
 }
+
+export async function deleteAccount(userId: mongoose.Types.ObjectId): Promise<void> {
+    try {
+        await UserModel.remove({_id: userId});
+        return Promise.resolve();
+    } catch (err) {
+        return Promise.reject(err);
+    }
+}

@@ -17,20 +17,20 @@ import * as passportConfig from "../config/passport";
  * GET /login
  * Login page.
  */
-export let getLogin = (req: Request, res: Response) => {
+function getLogin(req: Request, res: Response) {
     if (req.user) {
         return res.redirect("/");
     }
     res.render("account/login", {
         title: "Login"
     });
-};
+}
 
 /**
  * POST /login
  * Sign in using email and password.
  */
-export let postLogin = (req: Request, res: Response, next: NextFunction) => {
+function postLogin(req: Request, res: Response, next: NextFunction) {
     req.assert("email", "Email is not valid").isEmail();
     req.assert("password", "Password cannot be blank").notEmpty();
     req.sanitize("email").normalizeEmail({ gmail_remove_dots: false });
@@ -54,29 +54,29 @@ export let postLogin = (req: Request, res: Response, next: NextFunction) => {
             res.redirect(req.session.returnTo || "/");
         });
     })(req, res, next);
-};
+}
 
 /**
  * GET /logout
  * Log out.
  */
-export let logout = (req: Request, res: Response) => {
+function logout(req: Request, res: Response) {
     req.logout();
     res.redirect("/");
-};
+}
 
 /**
  * GET /signup
  * Signup page.
  */
-export let getSignup = (req: Request, res: Response) => {
+function getSignup(req: Request, res: Response) {
     if (req.user) {
         return res.redirect("/");
     }
     res.render("account/signup", {
         title: "Create Account"
     });
-};
+}
 
 /**
  * POST /signup
@@ -113,7 +113,7 @@ async function postSignup(req: Request, res: Response) {
  * GET /account
  * Profile page.
  */
-export let getAccount = (req: Request, res: Response) => {
+function getAccount(req: Request, res: Response) {
     const permission = accessControl.can(req.user.role).readOwn("account");
     if (permission.granted) {
         res.render("account/profile", {
@@ -122,13 +122,13 @@ export let getAccount = (req: Request, res: Response) => {
     } else {
         res.status(403).send("Access Denied");
     }
-};
+}
 
 /**
  * POST /account/profile
  * Update profile information.
  */
-export async function postUpdateProfile(req: Request, res: Response) {
+async function postUpdateProfile(req: Request, res: Response) {
     req.assert("email", "Please enter a valid email address.").isEmail();
     req.sanitize("email").normalizeEmail({ gmail_remove_dots: false });
 
@@ -163,7 +163,7 @@ export async function postUpdateProfile(req: Request, res: Response) {
  * POST /account/password
  * Update current password.
  */
-export async function postUpdatePassword(req: Request, res: Response) {
+async function postUpdatePassword(req: Request, res: Response) {
     req.assert("password", "Password must be at least 4 characters long").len({ min: 4 });
     req.assert("confirmPassword", "Passwords do not match").equals(req.body.password);
 
@@ -183,18 +183,20 @@ export async function postUpdatePassword(req: Request, res: Response) {
     }
 }
 
-// /**
-//  * POST /account/delete
-//  * Delete user account.
-//  */
-// export let postDeleteAccount = (req: Request, res: Response, next: NextFunction) => {
-//   User.remove({ _id: req.user.id }, (err) => {
-//     if (err) { return next(err); }
-//     req.logout();
-//     req.flash("info", { msg: "Your account has been deleted." });
-//     res.redirect("/");
-//   });
-// };
+/**
+ * POST /account/delete
+ * Delete user account.
+ */
+async function postDeleteAccount(req: Request, res: Response) {
+    try {
+        await userService.deleteAccount(req.user.id);
+        req.logout();
+        req.flash("info", { msg: "Your account has been deleted." });
+        res.redirect("/");
+    } catch (err) {
+        return Promise.reject(err);
+    }
+}
 
 // /**
 //  * GET /account/unlink/:provider
@@ -303,14 +305,14 @@ export async function postUpdatePassword(req: Request, res: Response) {
  * GET /forgot
  * Forgot Password page.
  */
-export let getForgot = (req: Request, res: Response) => {
+function getForgot(req: Request, res: Response) {
     if (req.isAuthenticated()) {
         return res.redirect("/");
     }
     res.render("account/forgot", {
         title: "Forgot Password"
     });
-};
+}
 
 // /**
 //  * POST /forgot
@@ -396,7 +398,9 @@ userAPI.get("/account", passportConfig.isAuthenticated, getAccount);
 userAPI.post("/account/password", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     return postUpdatePassword(req, res);
 }));
-// app.post("/account/delete", passportConfig.isAuthenticated, userController.postDeleteAccount);
+userAPI.post("/account/delete", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    return postDeleteAccount(req, res);
+}));
 // app.get("/account/unlink/:provider", passportConfig.isAuthenticated, userController.getOauthUnlink);
 
 export default userAPI;
