@@ -6,7 +6,7 @@
     "mongodb"
   ],
   "script": [
-    "bash clean_typegoose.sh",
+    "bash clean_duplicate_types.sh",
     "npm run build",
     "npm run test"
   ]
