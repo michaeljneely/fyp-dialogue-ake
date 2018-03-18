@@ -1,4 +1,3 @@
-import * as nodemailer from "nodemailer";
 import { User, UserModel } from "../models/User";
 import * as sg from "@sendgrid/mail";
 
@@ -30,6 +29,20 @@ export async function sendResetPasswordEmail(email: string, token: string, host:
             Please click on the following link, or paste this into your browser to complete the process:\n\n
             <a href=http://${host}/reset/${token}\n\n> Reset </a>
             If you did not request this, please ignore this email and your password will remain unchanged.\n`,
+        });
+        return Promise.resolve();
+    } catch (err) {
+        return Promise.reject(err);
+    }
+}
+
+export async function contactHost(name: string, email: string, message: string) {
+    try {
+        await sg.send({
+            to: `${process.env.HOST_EMAIL}`,
+            from: `${name} <${email}>`,
+            subject: "Contact Form",
+            text: message
         });
         return Promise.resolve();
     } catch (err) {

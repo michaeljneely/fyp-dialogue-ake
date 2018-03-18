@@ -1,6 +1,7 @@
 import { make2DNumberArray } from "../utils/functions";
 import { CorpusLemma, CorpusLemmaModel } from "../models/CorpusLemma";
 import { CorpusDocument, CorpusDocumentModel } from "../models/CorpusDocument";
+import { logger } from "../utils/logger";
 import * as _ from "lodash";
 
 interface Vocab {
@@ -18,19 +19,17 @@ async function buildVocab(documentLemmas: Array<string>): Promise<Vocab> {
     return CorpusLemmaModel.find({}).exec()
         // Extract Corpus Lemmas
         .then((lemmas: Array<CorpusLemma>) => {
-            console.log(lemmas.length);
+            logger.info(lemmas.length.toString());
             const yo = lemmas.map((lemma: CorpusLemma) => lemma.lemma);
-            console.log(_.uniq(yo).length);
+            logger.info(_.uniq(yo).length.toString());
             lemmas.forEach((corpusLemma: CorpusLemma) => {
                 index++;
                 if (b.has(corpusLemma.lemma)) {
-                    console.log("dup!: " + corpusLemma.lemma);
+                    logger.info("dup!: " + corpusLemma.lemma);
                 }
                 a.set(index, corpusLemma.lemma);
                 b.set(corpusLemma.lemma, index);
             });
-            console.log("ASIZE: " + a.size);
-            console.log("BSIZE: " + b.size);
             // Merge in unique lemmas from Document
             documentLemmas.forEach((lemma: string) => {
                 if ( ! b.has(lemma)) {
@@ -97,7 +96,7 @@ export async function topicise(documentLemmas: Array<string>, K: number): Promis
         }
     }
     topicText.forEach((topic, index) => {
-        console.log(index + ": " + topic);
+        logger.info(index + ": " + topic);
     });
 }
 
@@ -214,24 +213,16 @@ export class LdaGibbsSampler {
 
     public initialState(K: number): void {
         const M = this.documents.length;
-        console.log(this.V);
         this.nw = make2DNumberArray(this.V, K);
         this.nd = make2DNumberArray(M, K);
         this.nwsum = new Array<number>(K);
         this.ndsum = new Array<number>(M);
         this.z = make2DNumberArray(M, M);
-        console.log(this.z);
         for (let m = 0; m < M; m++) {
-            console.log("m iteration" + m);
             const N = this.documents[m].length;
-            console.log("Running " + N + " iterations..,,");
             for (let n = 0; n < N; n++) {
-                console.log("n iteration " + n);
                 const topic = parseInt("" + (Math.random() * K));
-                // console.log(this.z[m]);
                 this.z[m][n] = topic;
-                console.log("setting topic: " + topic);
-                console.log("on: " + this.nw[this.documents[m][n]]);
                 this.nw[this.documents[m][n]][topic]++;
                 this.nd[m][topic]++;
                 this.nwsum[topic]++;

@@ -119,10 +119,8 @@ export async function forgottenPassword(email: string, host: string) {
         user.passwordResetExpires = new Date(Date.now() + 3600000); // 1 hour
         await user.save();
         await mailService.sendResetPasswordEmail(email, token, host);
-        console.log("resolving!");
         return Promise.resolve();
     } catch (err) {
-        console.log(err);
         return Promise.reject(err);
     }
 }

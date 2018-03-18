@@ -62,7 +62,7 @@ export async function addDocumentToCorpus(title: string, text: string): Promise<
             return Promise.all(promises);
         })
         .then((results: Array<CorpusLemma>) => {
-            console.log(results.length);
+            logger.info(results.length.toString());
             // potentially do something with results
             return Promise.resolve(results.length.toString());
         })

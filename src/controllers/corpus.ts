@@ -10,11 +10,9 @@ import { asyncMiddleware } from "../utils/asyncMiddleware";
 
 export async function displayCorpus(req: express.Request, res: express.Response) {
     const permission = accessControl.can(req.user.role).readAny("corpus");
-    console.log(permission);
     if (permission.granted) {
       const CorpusDocumentModel = new CorpusDocument().getModelForClass(CorpusDocument);
       const documents = await CorpusDocumentModel.find({}).exec();
-      console.log(documents);
       res.render("corpus", {
         title: "Corpus",
         corpus: documents

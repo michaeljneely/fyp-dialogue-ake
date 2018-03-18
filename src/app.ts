@@ -35,13 +35,12 @@ const MongoStore = mongo(session);
 
 // Routes
 import * as homeController from "./controllers/home";
-import * as userController from "./controllers/user";
-import * as contactController from "./controllers/contact";
 import * as parseController from "./controllers/parse";
 import * as aclController from "./controllers/acl";
 // import * as summaryController from "./controllers/summarize";
 import corpusAPI from "./controllers/corpus";
 import userAPI from "./controllers/user";
+import contactAPI from "./controllers/contact";
 
 // API keys and Passport configuration
 import * as passportConfig from "./config/passport";
@@ -63,9 +62,9 @@ const mongoUrl = process.env.MONGODB_URI;
 (<any>mongoose).Promise = bluebird;
 mongoose.connect(mongoUrl).then(
   () => { /** ready to use. The `mongoose.connect()` promise resolves to undefined. */
-console.log("connected"); },
+logger.info("connected to mongodb"); },
 ).catch(err => {
-  console.log("MongoDB connection error. Please make sure MongoDB is running. " + err);
+  logger.error("MongoDB connection error. Please make sure MongoDB is running. " + err);
   process.exit();
 });
 
@@ -116,8 +115,6 @@ app.use(express.static(path.join(__dirname, "public"), { maxAge: 31557600000 }))
  * Primary app routes.
  */
 app.get("/", homeController.index);
-app.get("/contact", contactController.getContact);
-app.post("/contact", contactController.postContact);
 app.get("/parse", parseController.index);
 app.post("/parse", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const parsed = await parseController.parseDoc(connector, req.body.sentence);
@@ -125,6 +122,7 @@ app.post("/parse", asyncMiddleware(async (req: express.Request, res: express.Res
 }));
 app.use(corpusAPI);
 app.use(userAPI);
+app.use(contactAPI);
 // app.use(summaryAPI);
 // app.use(parseAPI);
 // app.post("/freeparse", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {

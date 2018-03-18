@@ -60,7 +60,6 @@ function buildTermFrequencyMapFromNLPDocument(document: CoreNLP.simple.Document)
 export async function tfidfSummary(connector: ConnectorServer, document: string, words: number = 5): Promise<JSON> {
     const doc = await parseDocument(document, false);
     const map = buildTermFrequencyMapFromNLPDocument(doc);
-    console.log(map);
     const iA = new Array() as idfArray;
     for (const [lemma, term] of map.entries()) {
         term.idf = await corpusIDF(lemma);
@@ -68,11 +67,9 @@ export async function tfidfSummary(connector: ConnectorServer, document: string,
     }
     const res = {summary: "", terms: []} as ITFIDFSummary;
     iA.sort(idfArraySort);
-    console.log(iA);
     iA.slice(0, words).forEach(([lemma, tfidf]) => {
         res.summary += `${lemma} `;
         res.terms.push([lemma, tfidf]);
     });
-    console.log(res);
     return JSON.parse(JSON.stringify(res));
 }

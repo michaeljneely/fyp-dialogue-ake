@@ -1,53 +1,48 @@
-import * as nodemailer from "nodemailer";
-import { Request, Response } from "express";
-
-const transporter = nodemailer.createTransport({
-  service: "SendGrid",
-  auth: {
-    user: process.env.SENDGRID_USER,
-    pass: process.env.SENDGRID_PASSWORD
-  }
-});
+import * as sg from "@sendgrid/mail";
+import { Request, Response, Router } from "express";
+import { asyncMiddleware } from "../utils/asyncMiddleware";
+import * as mailService from "../services/mail";
+import { logger } from "../utils/logger";
 
 /**
  * GET /contact
  * Contact form page.
  */
-export let getContact = (req: Request, res: Response) => {
-  res.render("contact", {
-    title: "Contact"
-  });
-};
+export function getContact(req: Request, res: Response) {
+    res.render("contact", {
+        title: "Contact"
+    });
+}
 
 /**
  * POST /contact
  * Send a contact form via Nodemailer.
  */
-export let postContact = (req: Request, res: Response) => {
-  req.assert("name", "Name cannot be blank").notEmpty();
-  req.assert("email", "Email is not valid").isEmail();
-  req.assert("message", "Message cannot be blank").notEmpty();
+export async function postContact(req: Request, res: Response) {
+    req.assert("name", "Name cannot be blank").notEmpty();
+    req.assert("email", "Email is not valid").isEmail();
+    req.assert("message", "Message cannot be blank").notEmpty();
 
-  const errors = req.validationErrors();
+    const errors = req.validationErrors();
 
-  if (errors) {
-    req.flash("errors", errors);
-    return res.redirect("/contact");
-  }
-
-  const mailOptions = {
-    to: "your@email.com",
-    from: `${req.body.name} <${req.body.email}>`,
-    subject: "Contact Form",
-    text: req.body.message
-  };
-
-  transporter.sendMail(mailOptions, (err) => {
-    if (err) {
-      req.flash("errors", { msg: err.message });
-      return res.redirect("/contact");
+    if (errors) {
+        req.flash("errors", errors);
+        return res.redirect("/contact");
     }
-    req.flash("success", { msg: "Email has been sent successfully!" });
-    res.redirect("/contact");
-  });
-};
+
+    try {
+        await mailService.contactHost(req.body.name, req.body.email, req.body.message);
+    } catch (err) {
+        logger.error(err);
+    } finally {
+        req.flash("success", { msg: "Email has been sent successfully!" });
+        return res.redirect("/contact");
+    }
+}
+
+const contactAPI = Router();
+
+contactAPI.get("/contact", getContact);
+contactAPI.post("/contact", postContact);
+
+export default contactAPI;

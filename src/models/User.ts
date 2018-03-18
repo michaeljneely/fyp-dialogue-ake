@@ -6,18 +6,15 @@ import { pre, prop, plugin, instanceMethod, staticMethod, Typegoose, ModelType, 
 import * as passportLocalMongoose from "passport-local-mongoose";
 
 @pre<User>("save", async function(next) {
-    console.log("executing pre");
     if (!this.isModified("password")) {
         next();
     }
     bcrypt.genSalt(10, (err, salt) => {
-        console.log("called!!");
         if (err) { return next(err); }
         bcrypt.hash(this.password, salt, undefined, (err: mongoose.Error, hash) => {
-        if (err) { return next(err); }
-        this.password = hash;
-        console.log(this.password);
-        next();
+            if (err) { return next(err); }
+            this.password = hash;
+            next();
         });
     });
 })

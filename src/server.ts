@@ -1,4 +1,5 @@
 import * as errorHandler from "errorhandler";
+import { logger } from "./utils/logger";
 
 const app = require("./app");
 
@@ -11,8 +12,8 @@ app.use(errorHandler());
  * Start Express server.
  */
 const server = app.listen(app.get("port"), () => {
-  console.log(("  App is running at http://localhost:%d in %s mode"), app.get("port"), app.get("env"));
-  console.log("  Press CTRL-C to stop\n");
+  logger.info(("  App is running at http://localhost:%d in %s mode"), app.get("port"), app.get("env"));
+  logger.info("  Press CTRL-C to stop\n");
 });
 
 export = server;
