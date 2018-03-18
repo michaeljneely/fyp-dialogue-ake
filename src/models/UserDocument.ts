@@ -1,21 +1,22 @@
-// import * as mongoose from "mongoose";
-// import { Origin } from "../types/origin";
+import { prop, Typegoose, ModelType, InstanceType } from "typegoose";
+import * as mongoose from "mongoose";
 
-// export type UserDocumentModel = mongoose.Document & {
-//     owner: mongoose.Schema.Types.ObjectId,
-//     date: Date,
-//     text: string,
-//     length: number,
-//     summaries: Array<string>
-// };
+export type Summaries = {
+    tfidf: string,
+    tfiudf: string,
+    random: string
+};
 
-// const userDocumentSchema = new mongoose.Schema({
-//     owner: mongoose.Schema.Types.ObjectId,
-//     date: mongoose.Schema.Types.Date,
-//     text: String,
-//     length: Number,
-//     summaries: [String]
-// });
-
-// const UserDocument = mongoose.model("UserDocument", userDocumentSchema);
-// export default UserDocument;
+export class UserDocument extends Typegoose {
+    @prop({ required: true, index: true })
+    owner: mongoose.Schema.Types.ObjectId;
+    @prop({ required: true })
+    date: Date;
+    @prop({ required: true })
+    text: string;
+    @prop({ required: true })
+    length: number;
+    @prop()
+    summaries: Summaries;
+}
+export const UserDocumentModel = new UserDocument().getModelForClass(UserDocument);

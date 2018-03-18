@@ -1,16 +1,14 @@
-// import { Document, Schema, model } from "mongoose";
-// import { DocumentFrequency, DocumentFrequencySchema } from "./DocumentFrequency";
+import { arrayProp, prop, Typegoose, ModelType, InstanceType } from "typegoose";
+import * as mongoose from "mongoose";
+import { DocumentFrequency } from "./DocumentFrequency";
 
-// export interface UserLemma extends Document {
-//     owner: Schema.Types.ObjectId;
-//     lemma: string;
-//     frequencies: Array<DocumentFrequency>;
-// }
+export class UserLemma extends Typegoose {
+    @prop({ required: true, index: true })
+    owner: mongoose.Schema.Types.ObjectId;
+    @prop({ required: true })
+    lemma: string;
+    @arrayProp({ items: DocumentFrequency })
+    frequencies: Array<DocumentFrequency>;
+}
 
-// const UserLemmaSchema = new Schema({
-//     owner: Schema.Types.ObjectId,
-//     lemma: String,
-//     frequencies: [DocumentFrequencySchema]
-// });
-
-// export const UserLemma = model("UserLemma", UserLemmaSchema);
+export const UserLemmaModel = new UserLemma().getModelForClass(UserLemma);
