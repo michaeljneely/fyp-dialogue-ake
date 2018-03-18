@@ -1,4 +1,4 @@
-import { Role } from "../controllers/acl";
+import { Role } from "../config/acl";
 import { AuthToken, User, UserModel, Profile } from "../models/User";
 import * as mongoose from "mongoose";
 import { WriteError } from "mongodb";

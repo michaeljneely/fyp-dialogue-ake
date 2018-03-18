@@ -10,6 +10,8 @@ import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
 import { posFilter } from "../constants/posFilter";
 import { wrapSync } from "async";
 import { stripSpeakers } from "../utils/functions";
+import * as corpusService from "./corpus";
+import { TFIDFSummary } from "./tfidf";
 
 const nounFilter = ["NN", "NNS", "NNP", "NNPS"];
 
@@ -20,6 +22,7 @@ export async function userIDF(lemma: string): Promise<number> {
         const collectionSize = await UserDocumentModel.find().count();
         if (collectionSize) {
             const docsContainingLemma = (userLemma) ? userLemma.frequencies.length : 1;
+            logger.info(`${docsContainingLemma} documents contain ${lemma} `);
             return Promise.resolve(Math.log(collectionSize / docsContainingLemma));
         }
         return Promise.resolve(1);
@@ -49,12 +52,13 @@ export async function addUserDocumentToCorpus(userId: mongoose.Types.ObjectId, d
     try {
         const [speakers, text] = stripSpeakers(document);
         const parsed = await parseDocument(text, true);
-        const mappedDocument = mapDocument(parsed);
+        const mappedDocument = await mapDocument(parsed);
+        const [tfidf, tfiudf] = TFIDFSummary(mappedDocument.termMap, wordLength);
         const summaries: Summaries = {
             length: wordLength,
             random: summaryRandom(mappedDocument.termMap, wordLength).toString(),
-            tfidf: "",
-            tfiudf: ""
+            tfidf,
+            tfiudf,
         };
         const userDocument = await new UserDocumentModel({
             owner: userId,
@@ -98,13 +102,13 @@ interface MappedDocument {
 //     return summaries;
 // }
 
-function mapDocument(document: CoreNLP.simple.Document): MappedDocument {
+async function mapDocument(document: CoreNLP.simple.Document): Promise<MappedDocument> {
     const termMap = new Map() as TermMap;
     const lemmaMap = new Map() as LemmaMap;
     let documentLength = 0;
     let documentText = "";
-    document.sentences().forEach((sentence: CoreNLP.simple.Sentence) => {
-        sentence.tokens().forEach((token: CoreNLP.simple.Token) => {
+    for (const sentence of document.sentences()) {
+        for (const token of sentence.tokens()) {
             if (posFilter.indexOf(token.pos()) === -1) {
                 const lemma: string = token.lemma();
                 if (!termMap.has(lemma)) {
@@ -119,17 +123,19 @@ function mapDocument(document: CoreNLP.simple.Document): MappedDocument {
                 else {
                     lemmaMap.set(lemma, lemmaMap.get(lemma) + 1);
                 }
+                termMap.get(lemma).corpusIDF = await corpusService.corpusIDF(lemma);
+                termMap.get(lemma).userIDF = await userIDF(lemma);
                 documentLength++;
                 documentText += `${lemma} `;
             }
-        });
-    });
-    return {
+        }
+    }
+    return Promise.resolve({
         termMap,
         lemmaMap,
         documentLength,
         documentText
-    };
+    });
 }
 
 // Return N random Nouns from Document as summary
@@ -139,14 +145,6 @@ function summaryRandom(termMap: TermMap, wordLength: number): Array<string> {
     });
     return shuffle(nouns).slice(0, wordLength).map((term: Term) => term.token.lemma());
 }
-
-// export function summaryTFIDF() {
-
-// }
-
-// export function summaryTFUIDF() {
-
-// }
 
 // export function summaryLDA() {
 

@@ -9,5 +9,6 @@ export async function parseDocument(text: string, corpus: boolean = false): Prom
     const pipeline = new Pipeline(properties, "English", connector);
     const sent = new CoreNLP.simple.Document(document);
     const result = await pipeline.annotate(sent) as CoreNLP.simple.Document;
+    logger.info(result.sentences().toString());
     return result;
 }

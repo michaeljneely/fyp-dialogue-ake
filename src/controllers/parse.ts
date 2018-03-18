@@ -1,29 +1,31 @@
 import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
+import * as express from "express";
 import { Request, Response } from "express";
 import { logger } from "../utils/logger";
-import { tfidfSummary } from "../services/tfidf";
 import { annotators } from "../constants/annotators";
-// import { speakerSummary } from "./summarize";
+import { asyncMiddleware } from "../utils/asyncMiddleware";
+import { parseDocument } from "../services/corenlp";
 
-export let index = (req: Request, res: Response) => {
-  res.render("parse", {
-    title: "Parse"
-  });
-};
-// export async function freeParse(connector: ConnectorServer, text: string): Promise<JSON> {
-//     try {
-//       return speakerSummary(text);
-//     } catch (error) {
-//       return Promise.reject(error);
-//     }
-// }
-
-export async function parseDoc(connector: ConnectorServer, document: string): Promise<JSON> {
-  return tfidfSummary(connector, document);
+function index(req: Request, res: Response) {
+    res.render("parse", {
+        title: "Parse"
+    });
 }
 
-export let freeIndex = (req: Request, res: Response) => {
-  res.render("freeparse", {
-    title: "Free Parse"
-  });
-};
+async function parse(req: Request, res: Response) {
+    try {
+        const parsed = await parseDocument(req.body.text, false);
+        res.json(parsed.toJSON());
+    } catch (err) {
+        return Promise.reject(err);
+    }
+}
+
+const parseAPI = express.Router();
+
+parseAPI.get("/parse", index);
+parseAPI.post("/parse", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    return parse(req, res);
+}));
+
+export default parseAPI;

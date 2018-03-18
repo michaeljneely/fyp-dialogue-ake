@@ -1,7 +1,7 @@
 import * as bcrypt from "bcrypt-nodejs";
 import * as crypto from "crypto";
 import * as mongoose from "mongoose";
-import { Role } from "../controllers/acl";
+import { Role } from "../config/acl";
 import { pre, prop, plugin, instanceMethod, staticMethod, Typegoose, ModelType, InstanceType } from "typegoose";
 import * as passportLocalMongoose from "passport-local-mongoose";
 

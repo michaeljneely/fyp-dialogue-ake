@@ -38,8 +38,7 @@ const MongoStore = mongo(session);
 
 // Routes
 import * as homeController from "./controllers/home";
-import * as parseController from "./controllers/parse";
-
+import parseAPI from "./controllers/parse";
 import summaryAPI from "./controllers/summarize";
 import corpusAPI from "./controllers/corpus";
 import userAPI from "./controllers/user";
@@ -118,25 +117,10 @@ app.use(express.static(path.join(__dirname, "public"), { maxAge: 31557600000 }))
  * Primary app routes.
  */
 app.get("/", homeController.index);
-app.get("/parse", parseController.index);
-app.post("/parse", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const parsed = await parseController.parseDoc(connector, req.body.sentence);
-    res.json(parsed);
-}));
 app.use(corpusAPI);
 app.use(userAPI);
 app.use(contactAPI);
 app.use(summaryAPI);
-// app.use(parseAPI);
-// app.post("/freeparse", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-//   const parsed = await parseController.freeParse(connector, req.body.text);
-//   res.json(parsed);
-// }));
-// app.get("/freeparse", parseController.freeIndex);
-// app.get("/randomsummary", summaryController.index);
-// app.post("/randomsummary", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-//   const parsed = await summaryController.randomSummary(req.body.text, req.body.wordlength, req.user.id);
-//   res.json(parsed);
-// }));
+app.use(parseAPI);
 
 module.exports = app;
