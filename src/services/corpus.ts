@@ -19,7 +19,6 @@ export async function corpusIDF(lemma: string): Promise<number> {
     return Promise.reject("issue");
 }
 
-// REWRITE
 export async function addLemma(lemma: string, documentID: mongoose.Schema.Types.ObjectId, frequency: number): Promise<CorpusLemma> {
     let corpusLemma = await CorpusLemmaModel.findOne({lemma});
     const documentFrequency = new DocumentFrequencyModel({ documentID, frequency });
@@ -29,77 +28,68 @@ export async function addLemma(lemma: string, documentID: mongoose.Schema.Types.
     else {
         corpusLemma = new CorpusLemmaModel({lemma, frequencies: [documentFrequency]});
     }
-    await corpusLemma.save();
-    const result = await CorpusLemmaModel.findOne({lemma});
-    return result;
+    const saved = await corpusLemma.save();
+    return Promise.resolve(saved);
 }
 export async function addDocumentToCorpus(title: string, text: string): Promise<string> {
     const frequencyMap = new Map<string, number>();
-    return parseDocument(text, true)
-        .then((result: CoreNLP.simple.Document) => {
-            let documentText = "";
-            result.sentences().forEach((sentence: CoreNLP.simple.Sentence) => {
-                sentence.tokens().forEach((token: CoreNLP.simple.Token) => {
-                    if (posFilter.indexOf(token.pos()) === -1) {
-                        const lemma = token.lemma();
-                        if (frequencyMap.has(lemma)) {
-                            frequencyMap.set(lemma, frequencyMap.get(lemma) + 1);
-                        }
-                        else {
-                            frequencyMap.set(lemma, 1);
-                        }
-                        documentText += ` ${lemma}`;
+    try {
+        const parsed = await parseDocument(text, true);
+        let documentText = "";
+        parsed.sentences().forEach((sentence: CoreNLP.simple.Sentence) => {
+            sentence.tokens().forEach((token: CoreNLP.simple.Token) => {
+                if (posFilter.indexOf(token.pos()) === -1) {
+                    const lemma = token.lemma();
+                    if (frequencyMap.has(lemma)) {
+                        frequencyMap.set(lemma, frequencyMap.get(lemma) + 1);
                     }
-                });
+                    else {
+                        frequencyMap.set(lemma, 1);
+                    }
+                    documentText += ` ${lemma}`;
+                }
             });
-            return new CorpusDocumentModel({title, text: documentText}).save();
-        })
-        .then((document: CorpusDocument & mongoose.Document) => {
-            const promises = [];
-            for (const [lemma, frequency] of frequencyMap.entries()) {
-                promises.push(addLemma(lemma, document._id, frequency));
-            }
-            return Promise.all(promises);
-        })
-        .then((results: Array<CorpusLemma>) => {
-            logger.info(results.length.toString());
-            // potentially do something with results
-            return Promise.resolve(results.length.toString());
-        })
-        .catch((err: Error) => {
-            return Promise.reject(err);
-        });
+         });
+         const document = await new CorpusDocumentModel({title, text: documentText}).save();
+         for (const [lemma, frequency] of frequencyMap.entries()) {
+            await addLemma(lemma, document._id, frequency);
+         }
+         return Promise.resolve(document.title);
+    } catch (err) {
+        return Promise.reject(err);
+    }
 }
 
 export async function buildCorpus(): Promise<Array<string>> {
-    return CorpusDocumentModel.remove({})
-        .then(() => {
-            return CorpusLemmaModel.remove({});
-        })
-        .then(() => {
-            return fs.readdir(path.join(__dirname, "../../corpus"));
-        })
-        .then((files: Array<string>) => {
-            const promises: Array<Promise<string>> = [];
-            files.forEach((filename: string) => {
-                promises.push(fs.readFile(path.join(__dirname, "../../corpus", filename), "utf8"));
-            });
-            return Promise.all(promises);
-        })
-        .then((files: Array<string>) => {
-            const promises: Array<Promise<string>> = [];
-            files.forEach((file: string, index: number) => {
-                promises.push(addDocumentToCorpus(`file ${index}`, file));
-            });
-            return Promise.all(promises);
-        })
-        .then((titles: Array<string>) => {
-            titles.forEach((title: string) => {
-                logger.info(`document '${title}' added to corpus.`);
-            });
-            return Promise.resolve(titles);
-        })
-        .catch((err: Error) => {
-            return Promise.reject(err.message);
-        });
+    async function _readFiles(filenames: Array<string>) {
+        const files = new Array<string>();
+        for (const filename of filenames) {
+            const file = await fs.readFile(path.join(__dirname, "../../corpus", filename), "utf8");
+            files.push(file);
+        }
+        return files;
+    }
+
+    async function _addDocuments(documents: Array<string>) {
+        const titles = new Array<string>();
+        let index = 0;
+        for (const document of documents) {
+            const title = await addDocumentToCorpus(`file ${index}`, document);
+            titles.push(title);
+            index++;
+        }
+        return titles;
+    }
+
+    try {
+        await CorpusDocumentModel.remove({});
+        await CorpusLemmaModel.remove({});
+        const filenames = await fs.readdir(path.join(__dirname, "../../corpus"));
+        const files = await _readFiles(filenames);
+        const titles = await _addDocuments(files);
+        return Promise.resolve(titles);
+    } catch (err) {
+        logger.error(err);
+        return Promise.reject(err);
+    }
 }

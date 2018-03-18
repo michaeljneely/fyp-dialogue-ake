@@ -17,6 +17,8 @@ import { AccessControl } from "accesscontrol";
 import { ConnectorServer } from "corenlp";
 import { shim } from "promise.prototype.finally";
 
+/* tslint:disable: no-console */
+
 // Add 'finally' to promise chain
 shim();
 
@@ -62,9 +64,9 @@ const mongoUrl = process.env.MONGODB_URI;
 (<any>mongoose).Promise = bluebird;
 mongoose.connect(mongoUrl).then(
   () => { /** ready to use. The `mongoose.connect()` promise resolves to undefined. */
-logger.info("connected to mongodb"); },
+console.log("connected to mongodb"); },
 ).catch(err => {
-  logger.error("MongoDB connection error. Please make sure MongoDB is running. " + err);
+  console.log("MongoDB connection error. Please make sure MongoDB is running. " + err);
   process.exit();
 });
 
