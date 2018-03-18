@@ -10,7 +10,7 @@ import * as fs from "fs-extra";
 import { logger } from "../utils/logger";
 
 export async function corpusIDF(lemma: string): Promise<number> {
-    const corpusLemma = await CorpusLemmaModel.findOne({lemma}).exec() as CorpusLemma;
+    const corpusLemma = await CorpusLemmaModel.findOne({lemma});
     const collectionSize = await CorpusDocumentModel.find().count();
     if (collectionSize) {
         const docsContainingLemma = (corpusLemma) ? corpusLemma.frequencies.length : 1;
@@ -19,17 +19,21 @@ export async function corpusIDF(lemma: string): Promise<number> {
     return Promise.reject("issue");
 }
 
-export async function addLemma(lemma: string, documentID: mongoose.Schema.Types.ObjectId, frequency: number): Promise<CorpusLemma> {
-    let corpusLemma = await CorpusLemmaModel.findOne({lemma});
-    const documentFrequency = new DocumentFrequencyModel({ documentID, frequency });
-    if (corpusLemma) {
-        corpusLemma.frequencies.push(documentFrequency);
+export async function addLemma(lemma: string, documentID: mongoose.Types.ObjectId, frequency: number): Promise<CorpusLemma> {
+    try {
+        const documentFrequency = new DocumentFrequencyModel({ documentID, frequency });
+        let corpusLemma = await CorpusLemmaModel.findOne({lemma});
+        if (corpusLemma) {
+            corpusLemma.frequencies.push(documentFrequency);
+        }
+        else {
+            corpusLemma = new CorpusLemmaModel({lemma, frequencies: [documentFrequency]});
+        }
+        const saved = await corpusLemma.save();
+        return Promise.resolve(saved);
+    } catch (err) {
+        return Promise.reject(err);
     }
-    else {
-        corpusLemma = new CorpusLemmaModel({lemma, frequencies: [documentFrequency]});
-    }
-    const saved = await corpusLemma.save();
-    return Promise.resolve(saved);
 }
 export async function addDocumentToCorpus(title: string, text: string): Promise<string> {
     const frequencyMap = new Map<string, number>();

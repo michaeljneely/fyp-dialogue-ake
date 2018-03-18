@@ -14,6 +14,7 @@
         "TFUIDF",
         "Typegoose",
         "accesscontrol",
+        "csrf",
         "definitelytyped",
         "depparse",
         "deserialize",
@@ -28,6 +29,7 @@
         "ssplit",
         "stopwords",
         "tfidf",
+        "tfiudf",
         "timestamps",
         "xframe"
     ]

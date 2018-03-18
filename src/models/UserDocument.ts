@@ -2,6 +2,7 @@ import { prop, Typegoose, ModelType, InstanceType } from "typegoose";
 import * as mongoose from "mongoose";
 
 export type Summaries = {
+    length: number,
     tfidf: string,
     tfiudf: string,
     random: string
@@ -16,6 +17,8 @@ export class UserDocument extends Typegoose {
     text: string;
     @prop({ required: true })
     length: number;
+    @prop()
+    speakers: Array<string>;
     @prop()
     summaries: Summaries;
 }

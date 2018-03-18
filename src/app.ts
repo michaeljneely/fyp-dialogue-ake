@@ -13,6 +13,7 @@ import * as passport from "passport";
 import * as expressValidator from "express-validator";
 import * as bluebird from "bluebird";
 import * as sgMail from "@sendgrid/mail";
+import * as acl from "./config/acl";
 import { AccessControl } from "accesscontrol";
 import { ConnectorServer } from "corenlp";
 import { shim } from "promise.prototype.finally";
@@ -38,8 +39,8 @@ const MongoStore = mongo(session);
 // Routes
 import * as homeController from "./controllers/home";
 import * as parseController from "./controllers/parse";
-import * as aclController from "./controllers/acl";
-// import * as summaryController from "./controllers/summarize";
+
+import summaryAPI from "./controllers/summarize";
 import corpusAPI from "./controllers/corpus";
 import userAPI from "./controllers/user";
 import contactAPI from "./controllers/contact";
@@ -54,7 +55,7 @@ const app = express();
 export const connector = new ConnectorServer({ dsn: process.env.CoreNLPAddress});
 
 // Enforce Access Control
-export const accessControl = new AccessControl(aclController.grants);
+export const accessControl = new AccessControl(acl.grants);
 
 // Mail Service
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -125,7 +126,7 @@ app.post("/parse", asyncMiddleware(async (req: express.Request, res: express.Res
 app.use(corpusAPI);
 app.use(userAPI);
 app.use(contactAPI);
-// app.use(summaryAPI);
+app.use(summaryAPI);
 // app.use(parseAPI);
 // app.post("/freeparse", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
 //   const parsed = await parseController.freeParse(connector, req.body.text);

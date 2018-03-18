@@ -1,8 +1,9 @@
 import * as sg from "@sendgrid/mail";
-import { Request, Response, Router } from "express";
+import { Request, Response, Router, NextFunction } from "express";
 import { asyncMiddleware } from "../utils/asyncMiddleware";
 import * as mailService from "../services/mail";
 import { logger } from "../utils/logger";
+import * as passportConfig from "../config/passport";
 
 /**
  * GET /contact
@@ -16,7 +17,7 @@ export function getContact(req: Request, res: Response) {
 
 /**
  * POST /contact
- * Send a contact form via Nodemailer.
+ * Send a contact form.
  */
 export async function postContact(req: Request, res: Response) {
     req.assert("name", "Name cannot be blank").notEmpty();
@@ -42,7 +43,9 @@ export async function postContact(req: Request, res: Response) {
 
 const contactAPI = Router();
 
-contactAPI.get("/contact", getContact);
-contactAPI.post("/contact", postContact);
+contactAPI.get("/contact", passportConfig.isAuthenticated, getContact);
+contactAPI.post("/contact", passportConfig.isAuthenticated, asyncMiddleware(async (req: Request, res: Response, next: NextFunction) => {
+    return postContact(req, res);
+}));
 
 export default contactAPI;

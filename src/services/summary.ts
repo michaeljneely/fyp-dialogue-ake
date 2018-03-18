@@ -1,95 +1,91 @@
-// import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
-// import { logger } from "../utils/logger";
-// import { rougeN } from "../services/rouge";
-// import { corpusIDF } from "./corpus";
-// import { parseDocument } from "./corenlp";
-// import { posFilter } from "../constants/posFilter";
-// import { annotators } from "../constants/annotators";
-// import { Term, TermMap } from "../models/Term";
-// import { shuffle } from "../utils/functions";
-// import UserDocument, { UserDocumentModel } from "../models/UserDocument";
-// import { Schema } from "mongoose";
-// import { UserLemma } from "../models/UserLemma";
-// import { DocumentFrequency } from "../models/DocumentFrequency";
-// import User from "../models/User";
-// import { topicise } from "./lda";
+import { logger } from "../utils/logger";
+import { Term, TermMap } from "../models/Term";
+import { shuffle } from "../utils/functions";
+import * as mongoose from "mongoose";
+import { UserLemma, UserLemmaModel } from "../models/UserLemma";
+import { Summaries, UserDocument, UserDocumentModel } from "../models/UserDocument";
+import { DocumentFrequencyModel } from "../models/DocumentFrequency";
+import { parseDocument } from "./corenlp";
+import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
+import { posFilter } from "../constants/posFilter";
+import { wrapSync } from "async";
+import { stripSpeakers } from "../utils/functions";
 
-// const nounFilter = ["NN", "NNS", "NNP", "NNPS"];
+const nounFilter = ["NN", "NNS", "NNP", "NNPS"];
 
-// type LemmaMap = Map<string, number>;
 
-// interface SavedDoc {
-//     document: UserDocumentModel;
-//     lemmaMap: LemmaMap;
-// }
+export async function userIDF(lemma: string): Promise<number> {
+    try {
+        const userLemma = await UserLemmaModel.findOne({lemma});
+        const collectionSize = await UserDocumentModel.find().count();
+        if (collectionSize) {
+            const docsContainingLemma = (userLemma) ? userLemma.frequencies.length : 1;
+            return Promise.resolve(Math.log(collectionSize / docsContainingLemma));
+        }
+        return Promise.resolve(1);
+    } catch (err) {
+        return Promise.reject(err);
+    }
+}
 
-// interface MappedDocument {
-//     termMap: TermMap;
-//     lemmaMap: LemmaMap;
-//     documentLength: number;
-//     documentText: string;
-// }
+export async function addUserLemma(lemma: string, userId: mongoose.Types.ObjectId, documentID: mongoose.Types.ObjectId, frequency: number): Promise<UserLemma> {
+    try {
+        const documentFrequency = new DocumentFrequencyModel({ documentID, frequency });
+        let userLemma = await UserLemmaModel.findOne({owner: userId, lemma});
+        if (userLemma) {
+            userLemma.frequencies.push(documentFrequency);
+        }
+        else {
+            userLemma = new UserLemmaModel({owner: userId, lemma, frequencies: [documentFrequency]});
+        }
+        const saved = await userLemma.save();
+        return Promise.resolve(saved);
+    } catch (err) {
+        return Promise.reject(err);
+    }
+}
 
-// // export async function addUserDocument(text: string, userID: Schema.Types.ObjectId): Promise<Array<string>> {
-// //     let lemmaMap = new Map() as LemmaMap;
-// //     let summaries = new Array<string>();
-// //     return parseDocument(text, true)
-// //         .then((result: CoreNLP.simple.Document) => {
-// //             return mapDocument(result);
-// //         })
-// //         .then((mappedDocument: MappedDocument) => {
-// //             const text = mappedDocument.documentText;
-// //             const length = mappedDocument.documentLength;
-// //             const termMap = mappedDocument.termMap;
-// //             lemmaMap = mappedDocument.lemmaMap;
-// //             summaries = buildSummaries(termMap);
-// //             return new UserDocument({
-// //                 owner: userID,
-// //                 date: new Date(),
-// //                 text,
-// //                 length,
-// //                 summaries
-// //             }).save();
-// //         })
-// //         .then((document: UserDocumentModel) => {
-// //             const promises = [];
-// //             for (const [lemma, term] of lemmaMap.entries()) {
-// //                 promises.push(addUserLemma(lemma, document._id, lemmaMap.get(lemma)));
-// //             }
-// //             return Promise.all(promises);
-// //         })
-// //         .then(() => {
-// //             return topicise([...lemmaMap.keys()], 3);
-// //         })
-// //         .then(() => {
-// //             return Promise.resolve(summaries);
-// //         })
-// //         .catch((err: Error) => {
-// //             return Promise.reject(err);
-// //         });
-// // }
+export async function addUserDocumentToCorpus(userId: mongoose.Types.ObjectId, document: string, wordLength: number): Promise<string> {
+    try {
+        const [speakers, text] = stripSpeakers(document);
+        const parsed = await parseDocument(text, true);
+        const mappedDocument = mapDocument(parsed);
+        const summaries: Summaries = {
+            length: wordLength,
+            random: summaryRandom(mappedDocument.termMap, wordLength).toString(),
+            tfidf: "",
+            tfiudf: ""
+        };
+        const userDocument = await new UserDocumentModel({
+            owner: userId,
+            text: mappedDocument.documentText,
+            length: mappedDocument.documentLength,
+            date: Date.now(),
+            speakers,
+            summaries
+        }).save();
+        for (const [lemma, frequency] of mappedDocument.lemmaMap.entries()) {
+            await addUserLemma(lemma, userId, userDocument._id, frequency);
+        }
+        return Promise.resolve(userDocument.length.toString());
+    } catch (err) {
+        return Promise.reject(err);
+    }
+}
 
-// // async function addUserLemma(lemma: string, documentID: Schema.Types.ObjectId, frequency: number): Promise<UserLemma> {
-// //     const userLemma = await UserLemma.findOne({lemma}).exec() as UserLemma;
-// //     if (userLemma) {
-// //         const df: DocumentFrequency = {
-// //             documentID,
-// //             frequency
-// //         };
-// //         userLemma.frequencies.push(df);
-// //         return userLemma.save();
-// //     }
-// //     else {
-// //         const newUserLemma = new UserLemma({
-// //             lemma,
-// //             frequencies: [({
-// //                 documentID,
-// //                 frequency
-// //             })]
-// //         }) as UserLemma;
-// //         return newUserLemma.save();
-// //     }
-// // }
+type LemmaMap = Map<string, number>;
+
+interface SavedDoc {
+    document: UserDocument;
+    lemmaMap: LemmaMap;
+}
+
+interface MappedDocument {
+    termMap: TermMap;
+    lemmaMap: LemmaMap;
+    documentLength: number;
+    documentText: string;
+}
 
 // function buildSummaries(termMap: TermMap): Array<string> {
 //     // N random Words
@@ -102,47 +98,47 @@
 //     return summaries;
 // }
 
-// function mapDocument(document: CoreNLP.simple.Document): MappedDocument {
-//     const termMap = new Map() as TermMap;
-//     const lemmaMap = new Map() as LemmaMap;
-//     let documentLength = 0;
-//     let documentText = "";
-//     document.sentences().forEach((sentence: CoreNLP.simple.Sentence) => {
-//         sentence.tokens().forEach((token: CoreNLP.simple.Token) => {
-//             if (posFilter.indexOf(token.pos()) === -1) {
-//                 const lemma: string = token.lemma();
-//                 if (!termMap.has(lemma)) {
-//                     termMap.set(lemma, new Term(token));
-//                 }
-//                 else {
-//                     termMap.get(lemma).tf++;
-//                 }
-//                 if (!lemmaMap.has(lemma)) {
-//                     lemmaMap.set(lemma, 1);
-//                 }
-//                 else {
-//                     lemmaMap.set(lemma, lemmaMap.get(lemma) + 1);
-//                 }
-//                 documentLength++;
-//                 documentText += `${lemma} `;
-//             }
-//         });
-//     });
-//     return {
-//         termMap,
-//         lemmaMap,
-//         documentLength,
-//         documentText
-//     };
-// }
+function mapDocument(document: CoreNLP.simple.Document): MappedDocument {
+    const termMap = new Map() as TermMap;
+    const lemmaMap = new Map() as LemmaMap;
+    let documentLength = 0;
+    let documentText = "";
+    document.sentences().forEach((sentence: CoreNLP.simple.Sentence) => {
+        sentence.tokens().forEach((token: CoreNLP.simple.Token) => {
+            if (posFilter.indexOf(token.pos()) === -1) {
+                const lemma: string = token.lemma();
+                if (!termMap.has(lemma)) {
+                    termMap.set(lemma, new Term(token));
+                }
+                else {
+                    termMap.get(lemma).tf++;
+                }
+                if (!lemmaMap.has(lemma)) {
+                    lemmaMap.set(lemma, 1);
+                }
+                else {
+                    lemmaMap.set(lemma, lemmaMap.get(lemma) + 1);
+                }
+                documentLength++;
+                documentText += `${lemma} `;
+            }
+        });
+    });
+    return {
+        termMap,
+        lemmaMap,
+        documentLength,
+        documentText
+    };
+}
 
-// // Return N random Nouns from Document as summary
-// export function summaryRandom(termMap: TermMap, wordLength: number): Array<string> {
-//     const nouns = [...termMap.values()].filter((term: Term) => {
-//         return nounFilter.indexOf(term.token.pos()) !== -1;
-//     });
-//     return shuffle(nouns).slice(0, wordLength).map((term: Term) => term.token.lemma());
-// }
+// Return N random Nouns from Document as summary
+function summaryRandom(termMap: TermMap, wordLength: number): Array<string> {
+    const nouns = [...termMap.values()].filter((term: Term) => {
+        return nounFilter.indexOf(term.token.pos()) !== -1;
+    });
+    return shuffle(nouns).slice(0, wordLength).map((term: Term) => term.token.lemma());
+}
 
 // export function summaryTFIDF() {
 
@@ -168,3 +164,7 @@
 // }
 
 
+export async function summarize(text: string, userId: mongoose.Types.ObjectId, wordLength: number) {
+    const moop = await addUserDocumentToCorpus(userId, text, wordLength);
+    return Promise.resolve(moop);
+}
