@@ -12,6 +12,7 @@ import * as mongoose from "mongoose";
 import * as passport from "passport";
 import * as expressValidator from "express-validator";
 import * as bluebird from "bluebird";
+import * as sgMail from "@sendgrid/mail";
 import { AccessControl } from "accesscontrol";
 import { ConnectorServer } from "corenlp";
 import { shim } from "promise.prototype.finally";
@@ -53,6 +54,9 @@ export const connector = new ConnectorServer({ dsn: process.env.CoreNLPAddress})
 
 // Enforce Access Control
 export const accessControl = new AccessControl(aclController.grants);
+
+// Mail Service
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // Connect to MongoDB
 const mongoUrl = process.env.MONGODB_URI;

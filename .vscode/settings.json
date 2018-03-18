@@ -24,6 +24,7 @@
         "lusca",
         "resave",
         "sameorigin",
+        "sendgrid",
         "ssplit",
         "stopwords",
         "tfidf",

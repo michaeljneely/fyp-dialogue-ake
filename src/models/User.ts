@@ -79,4 +79,3 @@ export const UserModel = new User().getModelForClass(User, {
         timestamps: true
     }
 });
-
