@@ -10,6 +10,27 @@
     "tslint.autoFixOnSave": true,
     "tslint.exclude": "**/node_modules/**/*",
     "cSpell.words": [
-        "definitelytyped"
+        "NNPS",
+        "TFUIDF",
+        "Typegoose",
+        "accesscontrol",
+        "csrf",
+        "definitelytyped",
+        "depparse",
+        "deserialize",
+        "gmail",
+        "gravatar",
+        "labelledby",
+        "lcov",
+        "lusca",
+        "resave",
+        "sameorigin",
+        "sendgrid",
+        "ssplit",
+        "stopwords",
+        "tfidf",
+        "tfiudf",
+        "timestamps",
+        "xframe"
     ]
 }
