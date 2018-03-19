@@ -12,26 +12,37 @@ import * as mongoose from "mongoose";
 import * as passport from "passport";
 import * as expressValidator from "express-validator";
 import * as bluebird from "bluebird";
+import * as sgMail from "@sendgrid/mail";
+import * as acl from "./config/acl";
+import { AccessControl } from "accesscontrol";
+import { ConnectorServer } from "corenlp";
+import { shim } from "promise.prototype.finally";
+
+/* tslint:disable: no-console */
+
+// Add 'finally' to promise chain
+shim();
 
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv.config({ path: ".env" });
 
-// Import Utils
+// Load Logging
 import { logger, Stream } from "./utils/logger";
 import { asyncMiddleware } from "./utils/asyncMiddleware";
 
 // Morgan Stream
 const stream = new Stream();
 
-
+// Initialize Mongo Session Store
 const MongoStore = mongo(session);
 
-// Controllers (route handlers)
+// Routes
 import * as homeController from "./controllers/home";
-import * as userController from "./controllers/user";
-import * as contactController from "./controllers/contact";
-import * as parseController from "./controllers/parse";
-
+import parseAPI from "./controllers/parse";
+import summaryAPI from "./controllers/summarize";
+import corpusAPI from "./controllers/corpus";
+import userAPI from "./controllers/user";
+import contactAPI from "./controllers/contact";
 
 // API keys and Passport configuration
 import * as passportConfig from "./config/passport";
@@ -39,14 +50,24 @@ import * as passportConfig from "./config/passport";
 // Create Express server
 const app = express();
 
+// Connect to CoreNLP Server
+export const connector = new ConnectorServer({ dsn: process.env.CoreNLPAddress});
+
+// Enforce Access Control
+export const accessControl = new AccessControl(acl.grants);
+
+// Mail Service
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
 // Connect to MongoDB
 const mongoUrl = process.env.MONGODB_URI;
 (<any>mongoose).Promise = bluebird;
-mongoose.connect(mongoUrl, {useMongoClient: true}).then(
-  () => { /** ready to use. The `mongoose.connect()` promise resolves to undefined. */ },
+mongoose.connect(mongoUrl).then(
+  () => { /** ready to use. The `mongoose.connect()` promise resolves to undefined. */
+console.log("connected to mongodb"); },
 ).catch(err => {
   console.log("MongoDB connection error. Please make sure MongoDB is running. " + err);
-  // process.exit();
+  process.exit();
 });
 
 // Express configuration
@@ -96,26 +117,10 @@ app.use(express.static(path.join(__dirname, "public"), { maxAge: 31557600000 }))
  * Primary app routes.
  */
 app.get("/", homeController.index);
-app.get("/login", userController.getLogin);
-app.post("/login", userController.postLogin);
-app.get("/logout", userController.logout);
-app.get("/forgot", userController.getForgot);
-app.post("/forgot", userController.postForgot);
-app.get("/reset/:token", userController.getReset);
-app.post("/reset/:token", userController.postReset);
-app.get("/signup", userController.getSignup);
-app.post("/signup", userController.postSignup);
-app.get("/contact", contactController.getContact);
-app.post("/contact", contactController.postContact);
-app.get("/account", passportConfig.isAuthenticated, userController.getAccount);
-app.post("/account/profile", passportConfig.isAuthenticated, userController.postUpdateProfile);
-app.post("/account/password", passportConfig.isAuthenticated, userController.postUpdatePassword);
-app.post("/account/delete", passportConfig.isAuthenticated, userController.postDeleteAccount);
-app.get("/account/unlink/:provider", passportConfig.isAuthenticated, userController.getOauthUnlink);
-app.get("/parse", parseController.index);
-app.post("/parse", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const parsed = await parseController.parse(req.body.sentence);
-    res.json(parsed);
-}));
+app.use(corpusAPI);
+app.use(userAPI);
+app.use(contactAPI);
+app.use(summaryAPI);
+app.use(parseAPI);
 
 module.exports = app;

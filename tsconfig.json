@@ -3,6 +3,8 @@
         "module": "commonjs",
         "target": "es6",
         "noImplicitAny": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
         "moduleResolution": "node",
         "sourceMap": true,
         "outDir": "dist",
@@ -16,5 +18,8 @@
     },
     "include": [
         "src/**/*"
+    ],
+    "exclude": [
+        "node_modules"
     ]
 }

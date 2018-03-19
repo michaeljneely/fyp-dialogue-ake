@@ -7,9 +7,9 @@ block content
   form.form-horizontal(method='POST')
     input(type='hidden', name='_csrf', value=_csrf)
     .form-group
-      label(class='col-sm-2 control-label', for='sentence') Sentence
+      label(class='col-sm-2 control-label', for='text') Sentence
       .col-sm-8
-        input.form-control(type='text', name='sentence', id='sentence', autofocus=true)
+        textarea.form-control(name='text', id='text', autofocus=true)
     .form-group
       .col-sm-offset-2.col-sm-8
         button.btn.btn-primary(type='submit')

@@ -2,6 +2,9 @@ import * as errorHandler from "errorhandler";
 
 const app = require("./app");
 
+/* tslint:disable: no-console */
+
+
 /**
  * Error Handler. Provides full stack - remove for production
  */

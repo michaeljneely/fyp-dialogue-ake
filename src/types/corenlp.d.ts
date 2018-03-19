@@ -1,8 +1,9 @@
 declare module "corenlp" {
 
-    import * as _ from "lodash";
-
     namespace CoreNLP.simple {
+        type AnnotatorOption = "tokenize" | "cleanxml" | "ssplit" |  "pos" | "lemma" | "ner" | "regexner"
+        | "sentiment" | "truecase" | "parse" | "depparse" | "dcoref" | "relation" | "natlog" | "quote";
+        type Annotators = Array<AnnotatorOption>;
         class Annotator {
             constructor(name: string, options: any, dependencies: Array<Annotator>);
             public toString(): string;
@@ -36,6 +37,37 @@ declare module "corenlp" {
             public lemmas(): Array<string>;
             public lemma(index: number): string;
             public nerTags(): Array<string>;
+            public tokens(): Array<Token>;
+        }
+
+        class Document extends Annotable {
+            constructor(text: string);
+            public toString(): string;
+            public sentences(): Array<Sentence>;
+            public sentence(index: number): Sentence;
+            public setLanguage(iso: string): string;
+            public fromJSON(data: JSON): Document;
+            public toJSON(): JSON;
+            public static fromJSON(data: JSON): Document;
+        }
+
+        class Token extends Annotable {
+            constructor(word: string);
+            public toString(): string;
+            public index(): number;
+            public word(): string;
+            public originalText(): string;
+            public characterOffsetBegin(): number;
+            public characterOffsetEnd(): number;
+            public before(): string;
+            public after(): string;
+            public lemma(): string;
+            public pos(): string;
+            public posInfo(): any;
+            public ner(): string;
+            public speaker(): string;
+            public toJSON(): JSON;
+            public static fromJSON(data: JSON): Token;
         }
     }
 
