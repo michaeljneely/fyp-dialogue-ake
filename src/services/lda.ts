@@ -7,7 +7,6 @@ import * as _ from "lodash";
 interface Vocab {
     lemmaToIndex: Map<string, number>;
     indexToLemma: Map<number, string>;
-
     documents: Array<Array<number>>;
 }
 
@@ -16,17 +15,13 @@ async function buildVocab(documentLemmas: Array<string>): Promise<Vocab> {
     const a = new Map<number, string>();
     const b = new Map<string, number>();
     let index = -1;
-    return CorpusLemmaModel.find({}).exec()
-        // Extract Corpus Lemmas
-        .then((lemmas: Array<CorpusLemma>) => {
-            logger.info(lemmas.length.toString());
+    try {
+        const lemmas = await CorpusLemmaModel.find({});
+        if (lemmas) {
             const yo = lemmas.map((lemma: CorpusLemma) => lemma.lemma);
-            logger.info(_.uniq(yo).length.toString());
+            // Extract Corpus Lemmas
             lemmas.forEach((corpusLemma: CorpusLemma) => {
                 index++;
-                if (b.has(corpusLemma.lemma)) {
-                    logger.info("dup!: " + corpusLemma.lemma);
-                }
                 a.set(index, corpusLemma.lemma);
                 b.set(corpusLemma.lemma, index);
             });
@@ -38,10 +33,7 @@ async function buildVocab(documentLemmas: Array<string>): Promise<Vocab> {
                     a.set(index, lemma);
                 }
             });
-
-            return CorpusDocumentModel.find({}).exec();
-        })
-        .then((documents: Array<CorpusDocument>) => {
+            const documents = await CorpusDocumentModel.find({});
             const docs = new Array<Array<number>>();
             documents.forEach((document: CorpusDocument) => {
                 const docVector = new Array<number>();
@@ -52,21 +44,19 @@ async function buildVocab(documentLemmas: Array<string>): Promise<Vocab> {
                 });
                 docs.push(docVector);
             });
-            return docs;
-        })
-        .then((documents: Array<Array<number>>) => {
+
             return Promise.resolve({
                 lemmaToIndex: b,
                 indexToLemma: a,
-                documents
+                documents: docs
             });
-        })
-        .catch((err) => {
-            return Promise.reject(err);
-        });
+        }
+    } catch (err) {
+        return Promise.reject(err);
+    }
 }
 
-export async function topicise(documentLemmas: Array<string>, K: number): Promise<void> {
+export async function topicise(documentLemmas: Array<string>, K: number): Promise<Array<string>> {
     const V = await buildVocab(documentLemmas);
     const documents = V.documents;
     const lda = new LdaGibbsSampler(documents, V.lemmaToIndex.size);
@@ -74,30 +64,30 @@ export async function topicise(documentLemmas: Array<string>, K: number): Promis
     const alpha = 2;
     const beta = .5;
     lda.gibbs(K, alpha, beta);
+    // Theta appears okay
     const theta = lda.getTheta();
     const phi = lda.getPhi();
     const text = "";
     // topics
-    let topTerms = 20;
-    const topicText = new Array();
+    let topTerms = 10;
+    const topicText = new Array<string>(phi.length).fill("");
     for (let k = 0; k < phi.length; k++) {
-        const tuples = new Array<string>();
+        const tuples = new Array<string>().fill("");
         for (let w = 0; w < phi[k].length; w++) {
              tuples.push("" + phi[k][w].toPrecision(2) + "_" + V.indexToLemma.get(w));
         }
         tuples.sort().reverse();
         if (topTerms > V.indexToLemma.size) topTerms = V.indexToLemma.size;
-        topicText[k] = "";
         for (let t = 0; t < topTerms; t++) {
             const topicTerm = tuples[t].split("_")[1];
-            const prob = parseInt(tuples[t].split("_")[0]) * 100;
-            if (prob < 0.0001) continue;
+            const prob = parseFloat(tuples[t].split("_")[0]) * 100;
+            if (prob < 0.0001) {
+                continue;
+            }
             topicText[k] += ( topicTerm + " ");
         }
     }
-    topicText.forEach((topic, index) => {
-        logger.info(index + ": " + topic);
-    });
+    return Promise.resolve(topicText);
 }
 
 export class LdaGibbsSampler {
@@ -215,8 +205,8 @@ export class LdaGibbsSampler {
         const M = this.documents.length;
         this.nw = make2DNumberArray(this.V, K);
         this.nd = make2DNumberArray(M, K);
-        this.nwsum = new Array<number>(K);
-        this.ndsum = new Array<number>(M);
+        this.nwsum = new Array<number>(K).fill(0);
+        this.ndsum = new Array<number>(M).fill(0);
         this.z = make2DNumberArray(M, M);
         for (let m = 0; m < M; m++) {
             const N = this.documents[m].length;
@@ -295,7 +285,7 @@ export class LdaGibbsSampler {
     }
 
     public getTheta(): Array<Array<number>> {
-        const theta = make2DNumberArray(this.documents.length, this.documents.length);
+        const theta = make2DNumberArray(this.documents.length, this.K);
         if (this.SAMPLE_LAG > 0) {
             for (let m = 0; m < this.documents.length; m++) {
                 for (let k = 0; k < this.K; k++) {
@@ -313,8 +303,7 @@ export class LdaGibbsSampler {
     }
 
     public getPhi(): Array<Array<number>> {
-        const phi = make2DNumberArray(this.K, this.K);
-        for (let i = 0; i < this.K; i++) phi[i] = new Array();
+        const phi = make2DNumberArray(this.K, this.V);
         if (this.SAMPLE_LAG > 0) {
             for (let k = 0; k < this.K; k++) {
                 for (let w = 0; w < this.V; w++) {

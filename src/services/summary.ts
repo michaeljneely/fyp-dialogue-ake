@@ -12,6 +12,7 @@ import { wrapSync } from "async";
 import { stripSpeakers } from "../utils/functions";
 import * as corpusService from "./corpus";
 import { TFIDFSummary } from "./tfidf";
+import * as ldaService from "./lda";
 
 const nounFilter = ["NN", "NNS", "NNP", "NNPS"];
 
@@ -22,7 +23,6 @@ export async function userIDF(lemma: string): Promise<number> {
         const collectionSize = await UserDocumentModel.find().count();
         if (collectionSize) {
             const docsContainingLemma = (userLemma) ? userLemma.frequencies.length : 1;
-            logger.info(`${docsContainingLemma} documents contain ${lemma} `);
             return Promise.resolve(Math.log(collectionSize / docsContainingLemma));
         }
         return Promise.resolve(1);
@@ -48,18 +48,22 @@ export async function addUserLemma(lemma: string, userId: mongoose.Types.ObjectI
     }
 }
 
-export async function addUserDocumentToCorpus(userId: mongoose.Types.ObjectId, document: string, wordLength: number): Promise<string> {
+export async function addUserDocumentToCorpus(userId: mongoose.Types.ObjectId, document: string, wordLength: number): Promise<JSON> {
     try {
         const [speakers, text] = stripSpeakers(document);
         const parsed = await parseDocument(text, true);
         const mappedDocument = await mapDocument(parsed);
+        const ldaTopics = await ldaService.topicise([...mappedDocument.lemmaMap.keys()], wordLength);
+        const lda = ldaTopics.map((topic: string, index) => { return `topic ${index}: ${topic}`; }).toString();
         const [tfidf, tfiudf] = TFIDFSummary(mappedDocument.termMap, wordLength);
         const summaries: Summaries = {
             length: wordLength,
             random: summaryRandom(mappedDocument.termMap, wordLength).toString(),
             tfidf,
             tfiudf,
+            lda
         };
+        logger.info("LDA SUMMARY: " + summaries.lda);
         const userDocument = await new UserDocumentModel({
             owner: userId,
             text: mappedDocument.documentText,
@@ -71,7 +75,7 @@ export async function addUserDocumentToCorpus(userId: mongoose.Types.ObjectId, d
         for (const [lemma, frequency] of mappedDocument.lemmaMap.entries()) {
             await addUserLemma(lemma, userId, userDocument._id, frequency);
         }
-        return Promise.resolve(userDocument.length.toString());
+        return Promise.resolve(JSON.parse(JSON.stringify(userDocument.summaries)));
     } catch (err) {
         return Promise.reject(err);
     }

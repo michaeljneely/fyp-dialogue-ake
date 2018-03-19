@@ -27,7 +27,7 @@ export async function summarize(req: Request, res: Response) {
     }
 
     try {
-        const summaries = await summaryService.summarize(req.body.text, req.user.id, req.body.wordLength);
+        const summaries = await summaryService.summarize(req.body.text, req.user.id, parseInt(req.body.wordLength));
         res.json(summaries);
     } catch (err) {
         return Promise.reject(err);

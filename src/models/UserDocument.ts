@@ -5,7 +5,8 @@ export type Summaries = {
     length: number,
     tfidf: string,
     tfiudf: string,
-    random: string
+    random: string,
+    lda: string
 };
 
 export class UserDocument extends Typegoose {
