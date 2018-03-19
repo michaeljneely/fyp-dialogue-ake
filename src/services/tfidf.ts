@@ -29,23 +29,6 @@ export function TFIDFSummary(termMap: TermMap, wordLength: number): [string, str
         const userTFIDF = 1 + (Math.log(term.tf) * term.userIDF);
         corpusTFIDFArray.push([lemma, corpusTFIDF]);
         userTFIDFArray.push([lemma, userTFIDF]);
-        if (lemma === "be") {
-            logger.info(`
-                Lemma: ${lemma}\n
-                Term Frequency: ${term.tf}\n
-                Corpus IDF: ${term.corpusIDF}\n
-                User IDF: ${term.userIDF}\n
-                Corpus TFIDF: ${corpusTFIDF}\n
-                User TFIDF: ${userTFIDF}\n`
-            );
-        }
-        // logger.info(`
-        //     Lemma: ${lemma}\n
-        //     Term Frequency: ${term.tf}\n
-        //     Corpus IDF: ${term.corpusIDF}\n
-        //     User IDF: ${term.userIDF}\n
-        //     Corpus TFIDF: ${corpusTFIDF}\n
-        //     User TFIDF: ${userTFIDF}\n`);
     }
     corpusTFIDFArray.sort(idfArraySort);
     userTFIDFArray.sort(idfArraySort);
@@ -58,8 +41,4 @@ export function TFIDFSummary(termMap: TermMap, wordLength: number): [string, str
         userTFIDFSummary += `${lemma} `;
     });
     return [corpusTFIDFSummary, userTFIDFSummary];
-}
-
-export function userTFIDFSummary(termMap: TermMap, wordLength: number): string {
-    return "";
 }

@@ -63,7 +63,6 @@ export async function addUserDocumentToCorpus(userId: mongoose.Types.ObjectId, d
             tfiudf,
             lda
         };
-        logger.info("LDA SUMMARY: " + summaries.lda);
         const userDocument = await new UserDocumentModel({
             owner: userId,
             text: mappedDocument.documentText,
