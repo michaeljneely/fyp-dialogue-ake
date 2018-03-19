@@ -3,7 +3,6 @@ import * as crypto from "crypto";
 import * as mongoose from "mongoose";
 import { Role } from "../config/acl";
 import { pre, prop, plugin, instanceMethod, staticMethod, Typegoose, ModelType, InstanceType } from "typegoose";
-import * as passportLocalMongoose from "passport-local-mongoose";
 
 @pre<User>("save", async function(next) {
     if (!this.isModified("password")) {
