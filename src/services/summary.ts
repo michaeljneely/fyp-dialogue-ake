@@ -140,7 +140,7 @@ async function mapDocument(document: CoreNLP.simple.Document): Promise<MappedDoc
     });
 }
 
-// Return N random Nouns from Document as summary
+// Return N random Nouns or Noun-Phrases from Document as summary
 function summaryRandom(termMap: TermMap, wordLength: number): Array<string> {
     const nouns = [...termMap.values()].filter((term: Term) => {
         return nounFilter.indexOf(term.token.pos()) !== -1;

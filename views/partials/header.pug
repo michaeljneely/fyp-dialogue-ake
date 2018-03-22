@@ -10,6 +10,11 @@ nav.navbar.fixed-top.navbar-expand-lg.navbar-light.bg-light
         a.nav-link(href='/') Home
       li.nav-item(class=(title == 'Contact') ? 'active' : undefined)
         a.nav-link(href='/contact') Contact
+      if user
+        li.nav-item(class=(title == 'Parse') ? 'active' : undefined)
+          a.nav-link(href='/parse') Parse
+        li.nav-item(class=(title == 'Summarize') ? 'active' : undefined)
+          a.nav-link(href='/summarize') Summarize
     ul.navbar-nav.navbar-right
       if !user
         li.nav-item(class=(title == 'Login') ? 'active' : undefined)
