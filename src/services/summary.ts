@@ -7,15 +7,14 @@ import { Summaries, UserDocument, UserDocumentModel } from "../models/UserDocume
 import { DocumentFrequencyModel } from "../models/DocumentFrequency";
 import { parseDocument } from "./corenlp";
 import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
-import { posFilter } from "../constants/posFilter";
 import { wrapSync } from "async";
 import { stripSpeakers } from "../utils/functions";
 import * as corpusService from "./corpus";
 import { TFIDFSummary } from "./tfidf";
 import * as ldaService from "./lda";
+import { alphaNumericFilter } from "../constants/filters";
 
 const nounFilter = ["NN", "NNS", "NNP", "NNPS"];
-
 
 export async function userIDF(lemma: string): Promise<number> {
     try {
@@ -112,7 +111,7 @@ async function mapDocument(document: CoreNLP.simple.Document): Promise<MappedDoc
     let documentText = "";
     for (const sentence of document.sentences()) {
         for (const token of sentence.tokens()) {
-            if (posFilter.indexOf(token.pos()) === -1) {
+            if (alphaNumericFilter.test(token.lemma())) {
                 const lemma: string = token.lemma();
                 if (!termMap.has(lemma)) {
                     termMap.set(lemma, new Term(token));

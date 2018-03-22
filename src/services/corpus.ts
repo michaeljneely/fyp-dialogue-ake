@@ -4,7 +4,6 @@ import { DocumentFrequency, DocumentFrequencyModel } from "../models/DocumentFre
 import { parseDocument } from "./corenlp";
 import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
 import * as mongoose from "mongoose";
-import { posFilter } from "../constants/posFilter";
 import * as path from "path";
 import * as fs from "fs-extra";
 import { logger } from "../utils/logger";
@@ -32,7 +31,7 @@ export async function addLemma(lemma: string, documentID: mongoose.Types.ObjectI
         const saved = await corpusLemma.save();
         return Promise.resolve(saved);
     } catch (err) {
-        return Promise.reject(err);
+        return Promise.reject(err.message);
     }
 }
 export async function addDocumentToCorpus(title: string, text: string): Promise<string> {
@@ -42,16 +41,14 @@ export async function addDocumentToCorpus(title: string, text: string): Promise<
         let documentText = "";
         parsed.sentences().forEach((sentence: CoreNLP.simple.Sentence) => {
             sentence.tokens().forEach((token: CoreNLP.simple.Token) => {
-                if (posFilter.indexOf(token.pos()) === -1) {
-                    const lemma = token.lemma();
-                    if (frequencyMap.has(lemma)) {
-                        frequencyMap.set(lemma, frequencyMap.get(lemma) + 1);
-                    }
-                    else {
-                        frequencyMap.set(lemma, 1);
-                    }
-                    documentText += ` ${lemma}`;
+                const lemma = token.lemma();
+                if (frequencyMap.has(lemma)) {
+                    frequencyMap.set(lemma, frequencyMap.get(lemma) + 1);
                 }
+                else {
+                    frequencyMap.set(lemma, 1);
+                }
+                documentText += ` ${lemma}`;
             });
          });
          const document = await new CorpusDocumentModel({title, text: documentText}).save();
@@ -60,11 +57,12 @@ export async function addDocumentToCorpus(title: string, text: string): Promise<
          }
          return Promise.resolve(document.title);
     } catch (err) {
-        return Promise.reject(err);
+        return Promise.reject(err.message);
     }
 }
 
 export async function buildCorpus(): Promise<Array<string>> {
+
     async function _readFiles(filenames: Array<string>) {
         const files = new Array<string>();
         for (const filename of filenames) {

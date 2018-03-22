@@ -1,3 +1,7 @@
+export const alphaNumericFilter = new RegExp(/^[a-z0-9]+$/, "i");
+
+export const speakerRegex = new RegExp(/^((\w+)(?:[\s]?)){2}(?::)/, "gim");
+
 /*
 https://www.ranks.nl/stopwords
 */

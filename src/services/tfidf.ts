@@ -3,7 +3,6 @@ import { logger } from "../utils/logger";
 import { rougeN } from "../services/rouge";
 import { corpusIDF } from "./corpus";
 import { parseDocument } from "./corenlp";
-import { posFilter } from "../constants/posFilter";
 import { annotators } from "../constants/annotators";
 import { TermMap } from "../models/Term";
 
