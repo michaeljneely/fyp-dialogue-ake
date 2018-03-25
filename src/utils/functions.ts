@@ -1,4 +1,5 @@
 import *  as filters from "../constants/filters";
+import { uniq } from "lodash";
 
 export function shuffle(array: Array<any>) {
     let currentIndex = array.length;
@@ -30,7 +31,7 @@ export function stripSpeakers(document: string): [Array<string>, string] {
         speakers.push(speaker.trim().replace(":", ""));
         return "";
     }));
-    return [speakers, text];
+    return [uniq(speakers), text];
 }
 
 export function replaceSmartQuotes(text: string): string {

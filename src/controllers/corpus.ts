@@ -21,32 +21,6 @@ export async function displayCorpus(req: express.Request, res: express.Response)
     }
 }
 
-async function addDocumentToCorpus(req: express.Request, res: express.Response) {
-    const permission = accessControl.can(req.user.role).readAny("corpus");
-    if (permission.granted) {
-        req.assert("title", "Document must have a title").notEmpty();
-        req.assert("text", "Document must contain text").notEmpty();
-        const errors = req.validationErrors();
-        if (errors) {
-            req.flash("errors", errors);
-            res.redirect("back");
-        }
-        else {
-            try {
-                const title = await corpusService.addDocumentToCorpus(req.body.title, req.body.text);
-                req.flash("success", {msg: `'${title}' added to corpus.`});
-            } catch (error) {
-                req.flash("errors", {msg: error});
-            } finally {
-                res.redirect("/corpus");
-            }
-        }
-    }
-    else {
-        res.status(403).send("Access Denied");
-    }
-}
-
 async function buildCorpus(req: express.Request, res: express.Response) {
     const permission = accessControl.can(req.user.role).deleteAny("corpus");
     if (permission.granted) {
@@ -69,10 +43,6 @@ corpusAPI.get("/corpus", passportConfig.isAuthenticated, asyncMiddleware(async (
 }));
 
 corpusAPI.post("/corpus", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    return addDocumentToCorpus(req, res);
-}));
-
-corpusAPI.post("/rebuildcorpus", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   return buildCorpus(req, res);
 }));
 

@@ -15,6 +15,9 @@ nav.navbar.fixed-top.navbar-expand-lg.navbar-light.bg-light
           a.nav-link(href='/parse') Parse
         li.nav-item(class=(title == 'Summarize') ? 'active' : undefined)
           a.nav-link(href='/summarize') Summarize
+      if (user && user.role == 'admin')
+        li.nav-item(class=(title == 'Corpus') ? 'active' : undefined)
+            a.nav-link(href='/corpus') Corpus
     ul.navbar-nav.navbar-right
       if !user
         li.nav-item(class=(title == 'Login') ? 'active' : undefined)

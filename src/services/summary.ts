@@ -8,7 +8,6 @@ import { DocumentFrequencyModel } from "../models/DocumentFrequency";
 import { parseDocument } from "./corenlp";
 import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
 import { wrapSync } from "async";
-import { stripSpeakers } from "../utils/functions";
 import * as corpusService from "./corpus";
 import { TFIDFSummary } from "./tfidf";
 import * as ldaService from "./lda";
@@ -49,8 +48,9 @@ export async function addUserLemma(lemma: string, userId: mongoose.Types.ObjectI
 
 export async function addUserDocumentToCorpus(userId: mongoose.Types.ObjectId, document: string, wordLength: number): Promise<JSON> {
     try {
-        const [speakers, text] = stripSpeakers(document);
-        const parsed = await parseDocument(text, true);
+        const result = await parseDocument(document, true);
+        const parsed = result.document;
+        const speakers = result.speakers;
         const mappedDocument = await mapDocument(parsed);
         const ldaTopics = await ldaService.topicise([...mappedDocument.lemmaMap.keys()], wordLength);
         const lda = ldaTopics.map((topic: string, index) => { return `topic ${index}: ${topic}`; }).toString();

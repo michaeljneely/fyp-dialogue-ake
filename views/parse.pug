@@ -1,17 +1,18 @@
 extends layout
 
 block content
-  .page-header
-    h3 Parse Form
-
-  form.form-horizontal(method='POST')
-    input(type='hidden', name='_csrf', value=_csrf)
-    .form-group
-      label(class='col-sm-2 control-label', for='text') Sentence
-      .col-sm-8
-        textarea.form-control(name='text', id='text', autofocus=true)
-    .form-group
-      .col-sm-offset-2.col-sm-8
-        button.btn.btn-primary(type='submit')
-          i.fa.fa-envelope
-          | Send
+    .main-block
+        h3.main-title Parse
+        hr
+        p View JSON output of Stanford CoreNLP Parsing.
+        form.form-horizontal(method='POST')
+            input(type='hidden', name='_csrf', value=_csrf)
+            .form-group
+                label(class='col-sm-2 control-label', for='text') Conversation
+                .col-sm-8
+                    textarea.main-textarea.form-control(name='text', id='text', autofocus=true, placeholder='Enter conversation text to parse...', rows=10)
+            hr
+            .form-group
+                button.btn.btn-primary(type='submit')
+                    i.fa.fa-envelope
+                    | Send

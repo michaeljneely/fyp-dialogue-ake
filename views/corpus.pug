@@ -1,35 +1,16 @@
 extends layout
 
 block content
-
-    .page-header
-        h3 Corpus
-
-    form.form-horizontal(action='/rebuildcorpus', method='POST')
-        input(type='hidden', name='_csrf', value=_csrf)
-        .form-group
-                .col-sm-offset-2.col-sm-8
-                    button.btn.btn-primary(type='submit')
-                        i.fa.fa-envelope
-                        | Rebuild Corpus
-
-    h4 Corpus
-    each document, index in corpus
-        p #{document.title}
-
-    h4 Add Document
-    form.form-horizontal(method='POST')
-        input(type='hidden', name='_csrf', value=_csrf)
-        .form-group
-            label(class='col-sm-2 control-label', for='title') Title
-            .col-sm-8
-                input.form-control(type='text', name='title', id='title', autofocus=true)
-        .form-group
-            label(class='col-sm-2 control-label', for='text') Text
-            .col-sm-8
-                input.form-control(type='text', name='text', id='text', autofocus=false)
-        .form-group
-            .col-sm-offset-2.col-sm-8
+    .main-block
+        h3.main-title Corpus
+        hr
+        p The corpus contains #{corpus.length} document(s)
+        br
+        .p More information to be displayed here soon...
+        hr
+        form.form-horizontal( method='POST')
+            input(type='hidden', name='_csrf', value=_csrf)
+            .form-group
                 button.btn.btn-primary(type='submit')
-                    i.fa.fa-envelope
-                    | Send
+                    i.fa.fa-wrench
+                    | Rebuild Corpus

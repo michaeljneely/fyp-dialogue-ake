@@ -15,7 +15,7 @@ function index(req: Request, res: Response) {
 async function parse(req: Request, res: Response) {
     try {
         const parsed = await parseDocument(req.body.text, false);
-        res.json(parsed.toJSON());
+        res.json(parsed.document.toJSON());
     } catch (err) {
         return Promise.reject(err);
     }
