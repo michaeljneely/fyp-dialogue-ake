@@ -8,7 +8,7 @@ import { Conversation } from "../models/Conversation";
 export async function parseDocument(text: string, corpus: boolean = false): Promise<Conversation> {
     try {
         const [speakers, doc] = stripSpeakers(text);
-        const document = replaceStopWords(replaceSmartQuotes(doc));
+        const document = replaceSmartQuotes(doc);
         const properties = (corpus) ? corpusAnnotators : annotators;
         const pipeline = new Pipeline(properties, process.env.LANGUAGE, connector);
         const sent = new CoreNLP.simple.Document(document);

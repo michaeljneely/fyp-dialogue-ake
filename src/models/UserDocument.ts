@@ -6,6 +6,7 @@ export type Summaries = {
     tfidf: string,
     tfiudf: string,
     random: string,
+    basicSemCluster: string,
     lda: string
 };
 

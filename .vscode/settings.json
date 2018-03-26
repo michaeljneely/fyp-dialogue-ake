@@ -11,6 +11,7 @@
     "tslint.exclude": "**/node_modules/**/*",
     "cSpell.words": [
         "NNPS",
+        "Stopword",
         "TFUIDF",
         "Typegoose",
         "accesscontrol",
