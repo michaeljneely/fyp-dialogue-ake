@@ -18,6 +18,7 @@
         "Typegoose",
         "accesscontrol",
         "csrf",
+        "dbpedia",
         "definitelytyped",
         "depparse",
         "deserialize",

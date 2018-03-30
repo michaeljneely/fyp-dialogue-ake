@@ -1,6 +1,6 @@
 import { logger } from "../utils/logger";
 import { Term, TermMap } from "../models/Term";
-import { shuffle } from "../utils/functions";
+import { shuffle, replaceStopWords } from "../utils/functions";
 import * as mongoose from "mongoose";
 import { UserLemma, UserLemmaModel } from "../models/UserLemma";
 import { Summaries, UserDocument, UserDocumentModel } from "../models/UserDocument";
@@ -15,6 +15,7 @@ import { alphaNumericFilter } from "../constants/filters";
 import * as _ from "lodash";
 import { Stack } from "../utils/stack";
 import { stopwords } from "../constants/filters";
+import { queryDBpedia } from "./dbpedia";
 
 const nounFilter = ["NN", "NNS", "NNP", "NNPS"];
 
@@ -49,7 +50,7 @@ export async function addUserLemma(lemma: string, userId: mongoose.Types.ObjectI
     }
 }
 
-export async function addUserDocumentToCorpus(userId: mongoose.Types.ObjectId, document: string, wordLength: number): Promise<JSON> {
+export async function addUserDocumentToCorpus(userId: mongoose.Types.ObjectId, document: string, wordLength: number = 5): Promise<JSON> {
     try {
         const result = await parseDocument(document, true);
         const parsed = result.document;
@@ -58,10 +59,31 @@ export async function addUserDocumentToCorpus(userId: mongoose.Types.ObjectId, d
         const ldaTopics = await ldaService.topicise([...mappedDocument.lemmaMap.keys()], wordLength);
         const lda = ldaTopics.map((topic: string, index) => { return `topic ${index}: ${topic}`; }).toString();
         const [tfidf, tfiudf] = TFIDFSummary(mappedDocument.termMap, wordLength);
+        const candidateTerms = extractCandidateTerms(parsed, wordLength);
+        const semanticTerms = await Promise.all(candidateTerms.map(async (term: string) => {
+            const hits = await queryDBpedia(term);
+            return {
+                term,
+                hits
+            };
+        }));
+        semanticTerms.forEach((term) => logger.info(term.term, term.hits));
+        semanticTerms.sort((a, b) => {
+            if (a.hits > b.hits) {
+                return -1;
+            }
+            else if (a.hits < b.hits) {
+                return 1;
+            }
+            else {
+                return 0;
+            }
+        });
+        const woo = semanticTerms.map((t) => t.term).slice(0, wordLength - 1);
         const summaries: Summaries = {
             length: wordLength,
             random: summaryRandom(mappedDocument.termMap, wordLength).toString(),
-            basicSemCluster: extractCandidateTerms(parsed, wordLength).toString(),
+            basicSemCluster: woo.toString(),
             tfidf,
             tfiudf,
             lda
@@ -256,7 +278,7 @@ function extractCandidateTerms(document: CoreNLP.simple.Document, wordLength: nu
                 }
             }
             // Termination?
-            if (done) {
+            if (done || index === (sentence.tokens().length - 1) ) {
                 logger.info("Done! Adding Term Candidate...");
                 candidateTerms.push(_buildStringFromStack(termStack));
                 termStack.clear();
@@ -266,7 +288,7 @@ function extractCandidateTerms(document: CoreNLP.simple.Document, wordLength: nu
         // Clear the stack after processing a sentence
         termStack.clear();
     }
-    return candidateTerms;
+    return _.uniq(candidateTerms);
 }
 
 function basicSemCluster(termMap: TermMap, wordLength: number): Array<string> {

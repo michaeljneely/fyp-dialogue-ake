@@ -8,6 +8,7 @@ import * as path from "path";
 import * as fs from "fs-extra";
 import { logger } from "../utils/logger";
 import { IReference } from "../models/Reference";
+import { alphaNumericFilter } from "../constants/filters";
 
 export async function corpusIDF(lemma: string): Promise<number> {
     try {
@@ -48,14 +49,16 @@ export async function addDocumentToCorpus(title: string, text: string, reference
         let documentText = "";
         parsed.sentences().forEach((sentence: CoreNLP.simple.Sentence) => {
             sentence.tokens().forEach((token: CoreNLP.simple.Token) => {
-                const lemma = token.lemma();
-                if (frequencyMap.has(lemma)) {
-                    frequencyMap.set(lemma, frequencyMap.get(lemma) + 1);
+                if (alphaNumericFilter.test(token.lemma())) {
+                    const lemma = token.lemma();
+                    if (frequencyMap.has(lemma)) {
+                        frequencyMap.set(lemma, frequencyMap.get(lemma) + 1);
+                    }
+                    else {
+                        frequencyMap.set(lemma, 1);
+                    }
+                    documentText += ` ${lemma}`;
                 }
-                else {
-                    frequencyMap.set(lemma, 1);
-                }
-                documentText += ` ${lemma}`;
             });
          });
          const document = await new CorpusDocumentModel({title, text: documentText, speakers, keywords: reference.keywords, referenceSummaries: reference.summaries}).save();
