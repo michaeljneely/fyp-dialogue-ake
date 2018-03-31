@@ -7,14 +7,16 @@
         "mongodb",
         "redis"
     ],
+    "before_install": [
+        "cd stanford",
+        "docker build -t nlp .",
+        "docker run -dit -p 9000:9000 --restart always --name corenlp nlp",
+        "docker ps -a",
+        "cd .."
+    ],
     "script": [
         "bash clean_duplicate_types.sh",
         "npm run build",
         "npm run test"
-    ],
-    "before_install": [
-        "docker build -t nlp .",
-        "docker run -dit -p 9000:9000 --restart always --name corenlp nlp",
-        "docker ps -a"
     ]
 }
