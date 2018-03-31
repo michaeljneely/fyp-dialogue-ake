@@ -5,7 +5,7 @@ import * as corenlpService from "../src/services/corenlp";
 import * as semClusterService from "../src/services/semcluster";
 import { Stack } from "../src/utils/stack";
 
-const cteText = "Cat. Cats. Americas. Usain Bolt. John in the hat. This is minty gum. John of Smith. John Smith of. John Smith West. John of Smith West. Dog bird dog. This is minty not gum. James of minty. gold medal the. the. running. spicy gum. fresh gum stick. Michael. Michael running.";
+const cteText = "Cat. Cats. Americas. George Washington. John in the hat. This is minty gum. John of Smith. John Smith of. John Smith West. John of Smith West. Dog bird dog. This is minty not gum. James of minty. gold medal the. the. running. spicy gum. fresh gum stick. Michael. Michael running.";
 const testString = "This is a sentence";
 describe("TEST SemCluster Service", () => {
 
@@ -36,7 +36,7 @@ describe("TEST SemCluster Service", () => {
                 expect(candidateTerms).toContain("Cat");
                 expect(candidateTerms).toContain("Cats");
                 expect(candidateTerms).toContain("Americas");
-                expect(candidateTerms).toContain("Usain Bolt");
+                expect(candidateTerms).toContain("George Washington");
                 expect(candidateTerms).toContain("John");
                 expect(candidateTerms).toContain("hat");
                 expect(candidateTerms).toContain("minty gum");

@@ -3,10 +3,12 @@
   "language": "node_js",
   "node_js": "8",
   "services": [
+    "docker",
     "mongodb",
     "redis"
   ],
   "script": [
+    "bash run.sh",
     "bash clean_duplicate_types.sh",
     "npm run build",
     "npm run test"

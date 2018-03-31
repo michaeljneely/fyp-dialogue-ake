@@ -31,6 +31,7 @@
         "lusca",
         "resave",
         "sameorigin",
+        "semcluster",
         "sendgrid",
         "ssplit",
         "stopwords",
