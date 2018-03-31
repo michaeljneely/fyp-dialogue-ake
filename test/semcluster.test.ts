@@ -15,7 +15,7 @@ describe("TEST SemCluster Service", () => {
 
     beforeEach(function() {
         // Long for CI builds
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 40000;
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000;
     });
 
     it("Should correctly build a string from a Token Stack", async (done) => {
