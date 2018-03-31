@@ -8,7 +8,7 @@ import { asyncMiddleware } from "../utils/asyncMiddleware";
 import { logger } from "../utils/logger";
 
 /**
- * Render contact form
+ * GET /contact - Render contact form
  * @param req - Express Request
  * @param res - Express Response
  */
@@ -19,7 +19,7 @@ export function getContact(req: Request, res: Response) {
 }
 
 /**
- * Contact site host
+ * POST /contact - Contact site host
  * @param req - Express Request
  * @param res - Express Response
  */
@@ -44,7 +44,7 @@ export async function postContact(req: Request, res: Response) {
     }
     finally {
         req.flash("success", { msg: "Email has been sent successfully!" });
-        logger.info("Mail sent to host.");
+        logger.info(`Mail from ${req.body.email} sent to host.`);
         return res.redirect("/contact");
     }
 }
@@ -53,12 +53,16 @@ const contactAPI = Router();
 
 /**
  * GET /contact
- * Contact form page.
+ * Render Contact form page.
+ * Authentication Required - True
  */
 contactAPI.get("/contact", passportConfig.isAuthenticated, getContact);
+
 /**
  * POST /contact
  * Send message to maintainer
+ * Authentication Required - True
+ * Rate Limit - True
  */
 contactAPI.post("/contact", passportConfig.isAuthenticated, asyncMiddleware(async (req: Request, res: Response, next: NextFunction) => {
     return postContact(req, res);

@@ -132,6 +132,28 @@ app.use(express.static(path.join(__dirname, "public"), { maxAge: 31557600000 }))
  * Define Limiters
  */
 
+// Limit Contact Form (prevent email spam)
+limiter({
+    path: "/contact",
+    method: "post",
+    // Limit on IP
+    lookup: ["connection.remoteAddress"],
+    total: process.env.CONTACT_RATE_LIMIT_PER_HOUR,
+    expire: 1000 * 60 * 60,
+    // Whitelist admin
+    whitelist: function (req: express.Request) {
+        if (req.user && req.user.role && req.user.role === "admin") {
+            logger.info(`admin bypass of /contact rate limit performed by ${req.user.id}.`);
+            return true;
+        }
+        return false;
+    },
+    onRateLimited: function (req: express.Request, res: express.Response, next: express.NextFunction) {
+        logger.info(`Contact Rate Limit Exceeded for user ${req.user.id}`);
+        res.sendStatus(429);
+    }
+});
+
 // Limit Parsing (large load on CoreNLP server)
 limiter({
     path: "/parse",
