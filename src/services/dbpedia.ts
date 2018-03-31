@@ -1,7 +1,7 @@
 import * as got from "got";
 import * as convert from "xml-js";
 import { logger } from "../utils/logger";
-import { KeywordSearch, DBpediaResult } from "../models/DBPedia";
+import { KeywordSearch, DBpediaResult } from "../models/DBpedia";
 
 
 export async function queryDBpedia(input: string, queryClass: string = "", maxHits: number = 100): Promise<number> {
