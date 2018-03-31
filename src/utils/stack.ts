@@ -12,7 +12,7 @@ export class Stack<T> {
     }
 
     peek(): T | undefined {
-        return this._store[0];
+        return this._store[this._store.length - 1];
     }
 
     clear(): void {

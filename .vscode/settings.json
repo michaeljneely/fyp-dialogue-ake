@@ -11,6 +11,7 @@
     "tslint.exclude": "**/node_modules/**/*",
     "cSpell.words": [
         "Bpedia",
+        "Keyphrase",
         "NNPS",
         "Refcount",
         "Stopword",
