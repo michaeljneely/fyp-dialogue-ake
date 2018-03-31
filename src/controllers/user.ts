@@ -3,12 +3,12 @@ import * as passport from "passport";
 import * as passportConfig from "../config/passport";
 import * as userService from "../services/user";
 
-import { accessControl } from "../app";
-import { asyncMiddleware } from "../utils/asyncMiddleware";
+import { NextFunction, Request, Response } from "express";
 import { IVerifyOptions } from "passport-local";
+import { accessControl } from "../app";
+import { AuthToken, Profile, User, UserModel } from "../models/User";
+import { asyncMiddleware } from "../utils/asyncMiddleware";
 import { logger } from "../utils/logger";
-import { Request, Response, NextFunction } from "express";
-import { User, UserModel, AuthToken, Profile } from "../models/User";
 
 /**
  * GET /login - Render login page

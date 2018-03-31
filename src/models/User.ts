@@ -1,8 +1,8 @@
 import * as bcrypt from "bcrypt-nodejs";
 import * as crypto from "crypto";
 import * as mongoose from "mongoose";
+import { instanceMethod, InstanceType, ModelType, plugin, pre, prop, staticMethod, Typegoose } from "typegoose";
 import { Role } from "../config/acl";
-import { pre, prop, plugin, instanceMethod, staticMethod, Typegoose, ModelType, InstanceType } from "typegoose";
 
 @pre<User>("save", async function(next) {
     if (!this.isModified("password")) {

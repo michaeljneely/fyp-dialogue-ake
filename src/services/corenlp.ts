@@ -1,9 +1,9 @@
-import { connector } from "../app";
-import { Conversation } from "../models/Conversation";
-import { corpusAnnotators, annotators } from "../constants/annotators";
 import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
+import { connector } from "../app";
+import { annotators, corpusAnnotators } from "../constants/annotators";
+import { Conversation } from "../models/Conversation";
+import { replaceSmartQuotes, replaceStopWords, stripSpeakers } from "../utils/functions";
 import { logger } from "../utils/logger";
-import { stripSpeakers, replaceSmartQuotes, replaceStopWords } from "../utils/functions";
 
 /**
  * Parse text with CoreNLP server. Preprocessing removes speakers and replaces smart quotes

@@ -1,10 +1,10 @@
 import * as express from "express";
-import * as summaryService from "../services/summary";
 import * as passportConfig from "../config/passport";
+import * as summaryService from "../services/summary";
 
+import { Request, Response } from "express";
 import { asyncMiddleware } from "../utils/asyncMiddleware";
 import { logger } from "../utils/logger";
-import { Request, Response } from "express";
 
 /**
  * GET /summarize - Render summary form

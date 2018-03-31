@@ -1,9 +1,9 @@
-import { Role } from "../config/acl";
-import { AuthToken, User, UserModel, Profile } from "../models/User";
-import * as mongoose from "mongoose";
-import { WriteError } from "mongodb";
-import * as mailService from "./mail";
 import * as crypto from "crypto";
+import { WriteError } from "mongodb";
+import * as mongoose from "mongoose";
+import { Role } from "../config/acl";
+import { AuthToken, Profile, User, UserModel } from "../models/User";
+import * as mailService from "./mail";
 
 export async function signup(email: string, password: string, role: Role): Promise<User> {
     const UserModel = new User().getModelForClass(User, { existingMongoose: mongoose });

@@ -1,11 +1,11 @@
 import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
-import { logger } from "../utils/logger";
-import { rougeN } from "../services/rouge";
-import { corpusIDF } from "./corpus";
-import { parseDocument } from "./corenlp";
 import { annotators } from "../constants/annotators";
-import { TermMap } from "../models/Term";
 import { stopwords } from "../constants/filters";
+import { TermMap } from "../models/Term";
+import { rougeN } from "../services/rouge";
+import { logger } from "../utils/logger";
+import { parseDocument } from "./corenlp";
+import { corpusIDF } from "./corpus";
 
 function idfArraySort(t1: [string, number], t2: [string, number]): number {
     if (t1[1] > t2[1]) {

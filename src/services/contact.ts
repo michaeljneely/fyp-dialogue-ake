@@ -1,5 +1,5 @@
-import { logger } from "../utils/logger";
 import { Message, MessageModel } from "../models/Message";
+import { logger } from "../utils/logger";
 
 /**
  * Store contact form message

@@ -1,9 +1,9 @@
+import * as sg from "@sendgrid/mail";
+import * as passportConfig from "../config/passport";
 import * as contactService from "../services/contact";
 import * as mailService from "../services/mail";
-import * as passportConfig from "../config/passport";
-import * as sg from "@sendgrid/mail";
 
-import { Request, Response, Router, NextFunction } from "express";
+import { NextFunction, Request, Response, Router } from "express";
 import { asyncMiddleware } from "../utils/asyncMiddleware";
 import { logger } from "../utils/logger";
 

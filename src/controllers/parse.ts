@@ -1,11 +1,11 @@
 import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
 import * as express from "express";
+import { NextFunction, Request, Response } from "express";
 import * as passportConfig from "../config/passport";
-import { Request, Response, NextFunction } from "express";
-import { logger } from "../utils/logger";
 import { annotators } from "../constants/annotators";
-import { asyncMiddleware } from "../utils/asyncMiddleware";
 import { parseDocument } from "../services/corenlp";
+import { asyncMiddleware } from "../utils/asyncMiddleware";
+import { logger } from "../utils/logger";
 
 /**
  * GET /parse - Render parse form

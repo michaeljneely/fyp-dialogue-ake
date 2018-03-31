@@ -1,23 +1,23 @@
-import * as express from "express";
-import * as compression from "compression";  // compresses requests
-import * as session from "express-session";
-import * as bodyParser from "body-parser";
-import * as morgan from "morgan";
-import * as lusca from "lusca";
-import * as dotenv from "dotenv";
-import * as mongo from "connect-mongo";
-import * as flash from "express-flash";
-import * as path from "path";
-import * as mongoose from "mongoose";
-import * as passport from "passport";
-import * as expressValidator from "express-validator";
-import * as bluebird from "bluebird";
 import * as sgMail from "@sendgrid/mail";
-import * as acl from "./config/acl";
-import * as redis from "redis";
 import { AccessControl } from "accesscontrol";
+import * as bluebird from "bluebird";
+import * as bodyParser from "body-parser";
+import * as compression from "compression";  // compresses requests
+import * as mongo from "connect-mongo";
 import { ConnectorServer } from "corenlp";
+import * as dotenv from "dotenv";
+import * as express from "express";
+import * as flash from "express-flash";
+import * as session from "express-session";
+import * as expressValidator from "express-validator";
+import * as lusca from "lusca";
+import * as mongoose from "mongoose";
+import * as morgan from "morgan";
+import * as passport from "passport";
+import * as path from "path";
 import { shim } from "promise.prototype.finally";
+import * as redis from "redis";
+import * as acl from "./config/acl";
 
 // Security!!
 // https://expressjs.com/en/advanced/best-practice-security.html
@@ -33,8 +33,8 @@ shim();
 dotenv.config({ path: ".env" });
 
 // Load Logging
-import { logger, Stream } from "./utils/logger";
 import { asyncMiddleware } from "./utils/asyncMiddleware";
+import { logger, Stream } from "./utils/logger";
 
 // Morgan Stream
 const stream = new Stream();
@@ -43,12 +43,12 @@ const stream = new Stream();
 const MongoStore = mongo(session);
 
 // Routes
+import contactAPI from "./controllers/contact";
+import corpusAPI from "./controllers/corpus";
 import homeAPI from "./controllers/home";
 import parseAPI from "./controllers/parse";
 import summaryAPI from "./controllers/summarize";
-import corpusAPI from "./controllers/corpus";
 import userAPI from "./controllers/user";
-import contactAPI from "./controllers/contact";
 
 // API keys and Passport configuration
 import * as passportConfig from "./config/passport";

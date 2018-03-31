@@ -1,14 +1,14 @@
+import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
+import * as fs from "fs-extra";
+import * as mongoose from "mongoose";
+import * as path from "path";
+import { AlphaNumericRegex } from "../constants/filters";
 import { CorpusDocument, CorpusDocumentModel } from "../models/CorpusDocument";
 import { CorpusLemma, CorpusLemmaModel } from "../models/CorpusLemma";
 import { DocumentFrequency, DocumentFrequencyModel } from "../models/DocumentFrequency";
-import { parseDocument } from "./corenlp";
-import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
-import * as mongoose from "mongoose";
-import * as path from "path";
-import * as fs from "fs-extra";
-import { logger } from "../utils/logger";
 import { IReference } from "../models/Reference";
-import { AlphaNumericRegex } from "../constants/filters";
+import { logger } from "../utils/logger";
+import { parseDocument } from "./corenlp";
 
 export async function corpusIDF(lemma: string): Promise<number> {
     try {

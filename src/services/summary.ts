@@ -1,21 +1,21 @@
-import { logger } from "../utils/logger";
-import { Term, TermMap } from "../models/Term";
-import { shuffle, replaceStopWords } from "../utils/functions";
-import * as mongoose from "mongoose";
-import { UserLemma, UserLemmaModel } from "../models/UserLemma";
-import { Summaries, UserDocument, UserDocumentModel } from "../models/UserDocument";
-import { DocumentFrequencyModel } from "../models/DocumentFrequency";
-import { parseDocument } from "./corenlp";
-import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
 import { wrapSync } from "async";
-import * as corpusService from "./corpus";
-import { TFIDFSummary } from "./tfidf";
-import * as ldaService from "./lda";
-import { AlphaNumericRegex } from "../constants/filters";
+import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
 import * as _ from "lodash";
-import { Stack } from "../utils/stack";
+import * as mongoose from "mongoose";
+import { AlphaNumericRegex } from "../constants/filters";
 import { stopwords } from "../constants/filters";
+import { DocumentFrequencyModel } from "../models/DocumentFrequency";
+import { Term, TermMap } from "../models/Term";
+import { Summaries, UserDocument, UserDocumentModel } from "../models/UserDocument";
+import { UserLemma, UserLemmaModel } from "../models/UserLemma";
+import { replaceStopWords, shuffle } from "../utils/functions";
+import { logger } from "../utils/logger";
+import { Stack } from "../utils/stack";
+import { parseDocument } from "./corenlp";
+import * as corpusService from "./corpus";
 import { queryDBpedia } from "./dbpedia";
+import * as ldaService from "./lda";
+import { TFIDFSummary } from "./tfidf";
 
 const nounFilter = ["NN", "NNS", "NNP", "NNPS"];
 

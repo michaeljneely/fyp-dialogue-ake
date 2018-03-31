@@ -1,10 +1,10 @@
-import * as corpusService from "../services/corpus" ;
 import * as express from "express";
 import * as passportConfig from "../config/passport";
+import * as corpusService from "../services/corpus" ;
 
 import { accessControl } from "../app";
-import { asyncMiddleware } from "../utils/asyncMiddleware";
 import { CorpusDocument, CorpusDocumentModel } from "../models/CorpusDocument";
+import { asyncMiddleware } from "../utils/asyncMiddleware";
 import { logger } from "../utils/logger";
 
 /**

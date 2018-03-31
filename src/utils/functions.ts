@@ -1,5 +1,5 @@
-import *  as filters from "../constants/filters";
 import { uniq } from "lodash";
+import *  as filters from "../constants/filters";
 
 export function shuffle(array: Array<any>) {
     let currentIndex = array.length;

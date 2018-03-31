@@ -1,10 +1,10 @@
-import * as passport from "passport";
-import * as request from "request";
-import * as passportLocal from "passport-local";
 import * as _ from "lodash";
+import * as passport from "passport";
+import * as passportLocal from "passport-local";
+import * as request from "request";
 
+import { NextFunction, Request, Response } from "express";
 import { UserModel } from "../models/User";
-import { Request, Response, NextFunction } from "express";
 
 /*
     Define Passport Authentication Configuration

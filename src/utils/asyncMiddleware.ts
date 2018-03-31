@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
 
 // https://medium.com/@Abazhenov/using-async-await-in-express-with-node-8-b8af872c0016
 /**

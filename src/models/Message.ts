@@ -1,5 +1,5 @@
-import { prop, Typegoose, ModelType, InstanceType } from "typegoose";
 import * as mongoose from "mongoose";
+import { InstanceType, ModelType, prop, Typegoose } from "typegoose";
 export class Message extends Typegoose {
     @prop({ required: true })
     fromName: string;
