@@ -15,6 +15,7 @@
         "Refcount",
         "Stopword",
         "TFUIDF",
+        "Tokenizes",
         "Typegoose",
         "accesscontrol",
         "csrf",

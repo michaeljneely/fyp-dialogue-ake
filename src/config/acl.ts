@@ -1,3 +1,14 @@
+/*
+    Define ACL Permissions for the Application
+
+    User
+        - Full permissions on own account information
+
+    Admin
+        - Full permissions on own account information
+        - Full permissions on corpus data
+
+*/
 export const grants = {
     user: {
         account: {

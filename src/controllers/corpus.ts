@@ -8,28 +8,42 @@ import * as corpusService from "../services/corpus" ;
 import * as passportConfig from "../config/passport";
 import { asyncMiddleware } from "../utils/asyncMiddleware";
 
-export async function displayCorpus(req: express.Request, res: express.Response) {
+/**
+ * Render corpus page - admin only
+ * @param req - Express Request
+ * @param res - Express Response
+ */
+export async function displayCorpus(req: express.Request, res: express.Response): Promise<void> {
     const permission = accessControl.can(req.user.role).readAny("corpus");
     if (permission.granted) {
-        const documents = await CorpusDocumentModel.find({}).exec();
+        const documents = await CorpusDocumentModel.find({});
+        // Some Summary statistics here ...
         res.render("corpus", {
             title: "Corpus",
             corpus: documents
         });
-    } else {
+    }
+    else {
         res.status(403).send("Access Denied");
     }
 }
 
+/**
+ * Reconstruct corpus from database - admin only
+ * @param req - Express Request
+ * @param res - Express Response
+ */
 async function buildCorpus(req: express.Request, res: express.Response) {
     const permission = accessControl.can(req.user.role).deleteAny("corpus");
     if (permission.granted) {
         try {
-            const titles = await corpusService.buildCorpus();
-            req.flash("success", {msg: `Corpus built from ${titles.length} documents.`});
-        } catch (error) {
+            const sizeOfCorpus = await corpusService.buildCorpus();
+            req.flash("success", {msg: `Corpus built from ${sizeOfCorpus} documents.`});
+        }
+        catch (error) {
             req.flash("errors", {msg: error});
-        } finally {
+        }
+        finally {
             res.redirect("/corpus");
         }
     }

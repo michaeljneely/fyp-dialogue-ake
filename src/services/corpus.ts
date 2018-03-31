@@ -8,7 +8,7 @@ import * as path from "path";
 import * as fs from "fs-extra";
 import { logger } from "../utils/logger";
 import { IReference } from "../models/Reference";
-import { alphaNumericFilter } from "../constants/filters";
+import { AlphaNumericRegex } from "../constants/filters";
 
 export async function corpusIDF(lemma: string): Promise<number> {
     try {
@@ -49,7 +49,7 @@ export async function addDocumentToCorpus(title: string, text: string, reference
         let documentText = "";
         parsed.sentences().forEach((sentence: CoreNLP.simple.Sentence) => {
             sentence.tokens().forEach((token: CoreNLP.simple.Token) => {
-                if (alphaNumericFilter.test(token.lemma())) {
+                if (AlphaNumericRegex.test(token.lemma())) {
                     const lemma = token.lemma();
                     if (frequencyMap.has(lemma)) {
                         frequencyMap.set(lemma, frequencyMap.get(lemma) + 1);
@@ -71,7 +71,7 @@ export async function addDocumentToCorpus(title: string, text: string, reference
     }
 }
 
-export async function buildCorpus(): Promise<Array<string>> {
+export async function buildCorpus(): Promise<number> {
 
     async function _loadReferences(): Promise<Array<IReference>> {
         try {
@@ -118,7 +118,7 @@ export async function buildCorpus(): Promise<Array<string>> {
         await CorpusLemmaModel.remove({});
         const references = await _loadReferences();
         const titles = await _addDocuments(references);
-        return Promise.resolve(titles);
+        return Promise.resolve(titles.length);
     } catch (err) {
         logger.error(err);
         return Promise.reject(err);

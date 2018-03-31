@@ -1,10 +1,14 @@
-export const alphaNumericFilter = new RegExp(/^[a-z0-9]+$/, "i");
+/*
+    Regex's and Filters required to extract the desired information from text
+
+    AlphaNumeric - Match only alphanumeric characters
+    Speaker - Match up to two words before a colon at the beginning of a line.
+    Stopwords - Common English Stopwords obtained from https://www.ranks.nl/stopwords
+*/
+
+export const AlphaNumericRegex = new RegExp(/^[a-z0-9]+$/, "i");
 
 export const speakerRegex = new RegExp(/^((\w+)(?:[\s]?)){2}(?::)/, "gim");
-
-/*
-https://www.ranks.nl/stopwords
-*/
 
 export const stopwords: Array<string> = [
     "a",
@@ -32,7 +36,7 @@ export const stopwords: Array<string> = [
     "both",
     "but",
     "buy",
-    "cant't",
+    "can't",
     "cannot",
     "could",
     "couldn't",
