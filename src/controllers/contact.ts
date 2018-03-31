@@ -1,6 +1,8 @@
+import * as contactService from "../services/contact";
 import * as mailService from "../services/mail";
 import * as passportConfig from "../config/passport";
 import * as sg from "@sendgrid/mail";
+
 import { Request, Response, Router, NextFunction } from "express";
 import { asyncMiddleware } from "../utils/asyncMiddleware";
 import { logger } from "../utils/logger";
@@ -34,13 +36,15 @@ export async function postContact(req: Request, res: Response) {
     }
 
     try {
-        await mailService.contactHost(req.body.name, req.body.email, req.body.message);
+        const message = await contactService.storeMessage(req.body.name, req.body.email, req.body.message);
+        await mailService.contactHost(message.fromName, message.fromEmail, message.message);
     }
     catch (err) {
         logger.error(err);
     }
     finally {
         req.flash("success", { msg: "Email has been sent successfully!" });
+        logger.info("Mail sent to host.");
         return res.redirect("/contact");
     }
 }
