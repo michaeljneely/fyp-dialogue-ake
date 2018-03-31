@@ -9,6 +9,10 @@ const cteText = "Cat. Cats. Americas. George Washington. John in the hat. This i
 const testString = "This is a sentence";
 describe("TEST SemCluster Service", () => {
 
+    /*tslint:disable no-console*/
+    console.log(process.env.CoreNLPAddress);
+    const connector = new ConnectorServer({ dsn: process.env.CoreNLPAddress});
+
     beforeEach(function() {
         // Long for CI builds
         jasmine.DEFAULT_TIMEOUT_INTERVAL = 40000;
@@ -16,7 +20,7 @@ describe("TEST SemCluster Service", () => {
 
     it("Should correctly build a string from a Token Stack", async (done) => {
         const tokenStack = new Stack<CoreNLP.simple.Token>();
-        return corenlpService.parseDocument(testString, false)
+        return corenlpService.parseDocument(testString, false, connector)
             .then((response) => {
                 const document = response.document;
                 for (const sentence of document.sentences()) {
@@ -30,7 +34,6 @@ describe("TEST SemCluster Service", () => {
     });
 
     it("Should correctly identify all unique candidate terms", async (done) => {
-        const connector = new ConnectorServer({ dsn: process.env.CoreNLPAddress});
         return corenlpService.parseDocument(cteText, false, connector)
             .then((response) => {
                 const candidateTerms = semClusterService.extractCandidateTerms(response.document);
