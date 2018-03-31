@@ -43,7 +43,7 @@ const stream = new Stream();
 const MongoStore = mongo(session);
 
 // Routes
-import * as homeController from "./controllers/home";
+import homeAPI from "./controllers/home";
 import parseAPI from "./controllers/parse";
 import summaryAPI from "./controllers/summarize";
 import corpusAPI from "./controllers/corpus";
@@ -150,7 +150,7 @@ limiter({
     },
     onRateLimited: function (req: express.Request, res: express.Response, next: express.NextFunction) {
         logger.info(`Contact Rate Limit Exceeded for user ${req.user.id}`);
-        res.sendStatus(429);
+        res.status(429).send("Contact Rate Limit Exceeded.");
     }
 });
 
@@ -172,7 +172,7 @@ limiter({
     },
     onRateLimited: function (req: express.Request, res: express.Response, next: express.NextFunction) {
         logger.info(`Parse Rate Limit Exceeded for user ${req.user.id}`);
-        res.sendStatus(429);
+        res.status(429).send("Parsing Rate Limit Exceeded.");
     }
 });
 
@@ -194,14 +194,14 @@ limiter({
     },
     onRateLimited: function (req: express.Request, res: express.Response, next: express.NextFunction) {
         logger.info(`Summarizing Rate Limit Exceeded for user ${req.user.id}`);
-        res.sendStatus(429);
+        res.status(429).send("Summarizing Rate Limit Exceeded.");
     }
 });
 
 /**
  * Primary app routes.
  */
-app.get("/", homeController.index);
+app.use(homeAPI);
 app.use(corpusAPI);
 app.use(userAPI);
 app.use(contactAPI);

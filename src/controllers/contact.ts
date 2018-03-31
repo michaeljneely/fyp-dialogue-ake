@@ -12,7 +12,7 @@ import { logger } from "../utils/logger";
  * @param req - Express Request
  * @param res - Express Response
  */
-export function getContact(req: Request, res: Response) {
+function getContact(req: Request, res: Response) {
     res.render("contact", {
         title: "Contact"
     });
@@ -23,7 +23,7 @@ export function getContact(req: Request, res: Response) {
  * @param req - Express Request
  * @param res - Express Response
  */
-export async function postContact(req: Request, res: Response) {
+async function postContact(req: Request, res: Response) {
     req.assert("name", "Name cannot be blank").notEmpty();
     req.assert("email", "Email is not valid").isEmail();
     req.assert("message", "Message cannot be blank").notEmpty();
@@ -49,6 +49,7 @@ export async function postContact(req: Request, res: Response) {
     }
 }
 
+// Create Routes
 const contactAPI = Router();
 
 /**

@@ -1,19 +1,18 @@
-import * as express from "express";
-import { WriteError } from "mongodb";
-const request = require("express-validator");
-import { accessControl, connector } from "../app";
-import { CorpusDocument, CorpusDocumentModel } from "../models/CorpusDocument";
-import { CorpusLemma } from "../models/CorpusLemma";
 import * as corpusService from "../services/corpus" ;
+import * as express from "express";
 import * as passportConfig from "../config/passport";
+
+import { accessControl } from "../app";
 import { asyncMiddleware } from "../utils/asyncMiddleware";
+import { CorpusDocument, CorpusDocumentModel } from "../models/CorpusDocument";
+import { logger } from "../utils/logger";
 
 /**
  * Render corpus page - admin only
  * @param req - Express Request
  * @param res - Express Response
  */
-export async function displayCorpus(req: express.Request, res: express.Response): Promise<void> {
+async function displayCorpus(req: express.Request, res: express.Response) {
     const permission = accessControl.can(req.user.role).readAny("corpus");
     if (permission.granted) {
         const documents = await CorpusDocumentModel.find({});
@@ -38,10 +37,13 @@ async function buildCorpus(req: express.Request, res: express.Response) {
     if (permission.granted) {
         try {
             const sizeOfCorpus = await corpusService.buildCorpus();
-            req.flash("success", {msg: `Corpus built from ${sizeOfCorpus} documents.`});
+            const message = `Corpus built from ${sizeOfCorpus} documents.`;
+            logger.info(message);
+            req.flash("success", {msg: message});
         }
         catch (error) {
-            req.flash("errors", {msg: error});
+            logger.error(error);
+            req.flash("errors", {msg: "Oops! There was an issue rebuilding the corpus."});
         }
         finally {
             res.redirect("/corpus");
@@ -52,12 +54,25 @@ async function buildCorpus(req: express.Request, res: express.Response) {
 // Create Routes
 const corpusAPI = express.Router();
 
+/**
+ * GET /corpus
+ * Render corpus page
+ * Authentication Required - True
+ * Admin Only - True
+ */
 corpusAPI.get("/corpus", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   return displayCorpus(req, res);
 }));
 
+/**
+ * POST/corpus
+ * Reconstruct corpus
+ * Authentication Required - True
+ * Admin Only - True
+ */
 corpusAPI.post("/corpus", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   return buildCorpus(req, res);
 }));
 
+// Expose Routes
 export default corpusAPI;
