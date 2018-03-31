@@ -11,7 +11,7 @@ import { wrapSync } from "async";
 import * as corpusService from "./corpus";
 import { TFIDFSummary } from "./tfidf";
 import * as ldaService from "./lda";
-import { alphaNumericFilter } from "../constants/filters";
+import { AlphaNumericRegex } from "../constants/filters";
 import * as _ from "lodash";
 import { Stack } from "../utils/stack";
 import { stopwords } from "../constants/filters";
@@ -137,7 +137,7 @@ async function mapDocument(document: CoreNLP.simple.Document): Promise<MappedDoc
     let documentText = "";
     for (const sentence of document.sentences()) {
         for (const token of sentence.tokens()) {
-            if (alphaNumericFilter.test(token.lemma())) {
+            if (AlphaNumericRegex.test(token.lemma())) {
                 const lemma: string = token.lemma();
                 if (!termMap.has(lemma)) {
                     termMap.set(lemma, new Term(token));
