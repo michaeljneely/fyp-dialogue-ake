@@ -11,12 +11,12 @@ import { logger } from "../utils/logger";
  * @param {boolean} useCorpusAnnotators Use corpus annotators?
  * @returns {Promise<Conversation>} Parsed conversation
  */
-export async function parseDocument(text: string, useCorpusAnnotators: boolean = false): Promise<Conversation> {
+export async function parseDocument(text: string, useCorpusAnnotators: boolean = false, newConnector?: ConnectorServer): Promise<Conversation> {
     try {
         const [speakers, doc] = stripSpeakers(text);
         const document = replaceSmartQuotes(doc);
         const properties = (useCorpusAnnotators) ? corpusAnnotators : annotators;
-        const pipeline = new Pipeline(properties, process.env.LANGUAGE, connector);
+        const pipeline = (newConnector) ? new Pipeline(properties, process.env.LANGUAGE, newConnector) : new Pipeline(properties, process.env.LANGUAGE, connector);
         const sent = new CoreNLP.simple.Document(document);
         const result: CoreNLP.simple.Document = await pipeline.annotate(sent) as CoreNLP.simple.Document;
         return Promise.resolve({

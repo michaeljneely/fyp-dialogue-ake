@@ -1,4 +1,4 @@
-import CoreNLP from "corenlp";
+import CoreNLP, { ConnectorServer } from "corenlp";
 import * as request from "supertest";
 import * as app from "../src/app";
 import * as corenlpService from "../src/services/corenlp";
@@ -30,7 +30,8 @@ describe("TEST SemCluster Service", () => {
     });
 
     it("Should correctly identify all unique candidate terms", async (done) => {
-        return corenlpService.parseDocument(cteText, false)
+        const connector = new ConnectorServer({ dsn: process.env.CoreNLPAddress});
+        return corenlpService.parseDocument(cteText, false, connector)
             .then((response) => {
                 const candidateTerms = semClusterService.extractCandidateTerms(response.document);
                 expect(candidateTerms.length).toEqual(18);
