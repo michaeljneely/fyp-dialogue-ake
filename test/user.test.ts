@@ -1,14 +1,14 @@
+import * as chai from "chai";
 import * as request from "supertest";
 import * as app from "../src/app";
 
-var chai = require('chai');
-var expect = chai.expect;
-
 describe("GET /login", () => {
-  it("should return 200 OK", () => {
-    return request(app).get("/login")
-      .expect(200);
-  });
+    it("should return 200 OK", () => {
+        return request(app).get("/login")
+            .then((response) => {
+                expect(response.status).toBe(200);
+            });
+    });
 });
 
 describe("GET /signup", () => {
@@ -26,9 +26,9 @@ describe("POST /login", () => {
       .field("password", "Hunter2")
       .expect(302)
       .end(function(err, res) {
-        expect(res.error).not.to.be.undefined;
+        expect(res.error).not.toBeUndefined;
         done();
       });
-   
+
   });
 });

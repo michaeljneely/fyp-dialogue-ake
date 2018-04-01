@@ -1,17 +1,31 @@
 import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
-import { logger } from "../utils/logger";
 import { connector } from "../app";
-import { stopwords } from "../constants/stopwords";
-import { corpusAnnotators, annotators } from "../constants/annotators";
+import { annotators, corpusAnnotators } from "../constants/annotators";
+import { Conversation } from "../models/Conversation";
+import { replaceSmartQuotes, replaceStopWords, stripSpeakers } from "../utils/functions";
+import { logger } from "../utils/logger";
 
-export async function parseDocument(text: string, corpus: boolean = false): Promise<CoreNLP.simple.Document> {
-    const replaceSmartQuotesAndCommas = text.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\,]/g, "");
-    const document = replaceSmartQuotesAndCommas.split(" ").filter((lemma: string) => {
-        return stopwords.indexOf(lemma.trim().toLowerCase()) === -1;
-    }).join(" ");
-    const properties = (corpus) ? corpusAnnotators : annotators;
-    const pipeline = new Pipeline(properties, "English", connector);
-    const sent = new CoreNLP.simple.Document(document);
-    const result = await pipeline.annotate(sent) as CoreNLP.simple.Document;
-    return result;
+/**
+ * Parse text with CoreNLP server. Preprocessing removes speakers and replaces smart quotes
+ * @param {string} text Text to parse
+ * @param {boolean} useCorpusAnnotators Use corpus annotators?
+ * @returns {Promise<Conversation>} Parsed conversation
+ */
+export async function parseDocument(text: string, useCorpusAnnotators: boolean = false, newConnector?: ConnectorServer): Promise<Conversation> {
+    try {
+        const [speakers, doc] = stripSpeakers(text);
+        const document = replaceSmartQuotes(doc);
+        const properties = (useCorpusAnnotators) ? corpusAnnotators : annotators;
+        const pipeline = (newConnector) ? new Pipeline(properties, process.env.LANGUAGE, newConnector) : new Pipeline(properties, process.env.LANGUAGE, connector);
+        const sent = new CoreNLP.simple.Document(document);
+        const result: CoreNLP.simple.Document = await pipeline.annotate(sent) as CoreNLP.simple.Document;
+        return Promise.resolve({
+            speakers,
+            document: result
+        });
+    }
+    catch (error) {
+        logger.error(error);
+        return Promise.reject(error);
+    }
 }

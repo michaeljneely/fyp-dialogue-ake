@@ -3,7 +3,9 @@ module.exports = {
 		"**/src/**/*.ts",
 		"**/src/*.ts",
 		"!**/src/config/passport.ts",
-		"!**/src/types/*.ts"
+		"!**/src/types/*.ts",
+		"!**/src/app.ts",
+		"!**/src/server.ts"
 	],
 	globals: {
 		'ts-jest': {

@@ -1,17 +1,32 @@
-import * as passport from "passport";
-import * as request from "request";
-import * as passportLocal from "passport-local";
 import * as _ from "lodash";
+import * as passport from "passport";
+import * as passportLocal from "passport-local";
+import * as request from "request";
 
+import { NextFunction, Request, Response } from "express";
 import { UserModel } from "../models/User";
-import { Request, Response, NextFunction } from "express";
+
+/*
+    Define Passport Authentication Configuration
+
+    Supported Strategies
+        - Local
+            - Authenticate with (email, password)
+
+*/
 
 const LocalStrategy = passportLocal.Strategy;
 
+/**
+ * Serialize User
+ */
 passport.serializeUser<any, any>((user, done) => {
     done(undefined, user._id);
 });
 
+/**
+ * Deserialize User
+ */
 passport.deserializeUser((id, done) => {
     UserModel.findById(id, (err, user) => {
         done(err, user);

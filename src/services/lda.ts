@@ -1,8 +1,8 @@
-import { make2DNumberArray } from "../utils/functions";
-import { CorpusLemma, CorpusLemmaModel } from "../models/CorpusLemma";
-import { CorpusDocument, CorpusDocumentModel } from "../models/CorpusDocument";
-import { logger } from "../utils/logger";
 import * as _ from "lodash";
+import { CorpusDocument, CorpusDocumentModel } from "../models/CorpusDocument";
+import { CorpusLemma, CorpusLemmaModel } from "../models/CorpusLemma";
+import { make2DNumberArray } from "../utils/functions";
+import { logger } from "../utils/logger";
 
 interface Vocab {
     lemmaToIndex: Map<string, number>;

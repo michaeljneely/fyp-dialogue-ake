@@ -1,13 +1,15 @@
 
 {
-  "language": "node_js",
-  "node_js": "8",
-  "services": [
-    "mongodb"
-  ],
-  "script": [
-    "bash clean_duplicate_types.sh",
-    "npm run build",
-    "npm run test"
-  ]
+    "language": "node_js",
+    "node_js": "8",
+    "sudo": "required",
+    "services": [
+        "mongodb",
+        "redis"
+    ],
+    "script": [
+        "bash clean_duplicate_types.sh",
+        "npm run build",
+        "npm run test"
+    ]
 }
