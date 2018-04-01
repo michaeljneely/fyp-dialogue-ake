@@ -16,7 +16,6 @@
         "cd .."
     ],
     "script": [
-        "bash runCoreNLP.sh",
         "bash clean_duplicate_types.sh",
         "npm run build",
         "npm run test"
