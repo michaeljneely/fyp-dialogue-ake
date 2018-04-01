@@ -13,7 +13,7 @@
         "docker build -t nlp .",
         "docker run -dit -p 127.0.0.1:9000:9000 --restart always --name corenlp nlp",
         "docker ps -a",
-        "cd .."
+        "cd ..",
         "curl -v 127.0.0.1:9000/ping"
     ],
     "script": [
