@@ -1,21 +1,24 @@
-import { logger } from "../utils/logger";
-import { Term, TermMap } from "../models/Term";
-import { shuffle } from "../utils/functions";
-import * as mongoose from "mongoose";
-import { UserLemma, UserLemmaModel } from "../models/UserLemma";
-import { Summaries, UserDocument, UserDocumentModel } from "../models/UserDocument";
-import { DocumentFrequencyModel } from "../models/DocumentFrequency";
-import { parseDocument } from "./corenlp";
-import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
-import { posFilter } from "../constants/posFilter";
 import { wrapSync } from "async";
-import { stripSpeakers } from "../utils/functions";
+import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
+import * as _ from "lodash";
+import * as mongoose from "mongoose";
+import { AlphaNumericRegex } from "../constants/filters";
+import { stopwords } from "../constants/filters";
+import { DocumentFrequencyModel } from "../models/DocumentFrequency";
+import { Term, TermMap } from "../models/Term";
+import { Summaries, UserDocument, UserDocumentModel } from "../models/UserDocument";
+import { UserLemma, UserLemmaModel } from "../models/UserLemma";
+import { replaceStopWords, shuffle } from "../utils/functions";
+import { logger } from "../utils/logger";
+import { Stack } from "../utils/stack";
+import { parseDocument } from "./corenlp";
 import * as corpusService from "./corpus";
-import { TFIDFSummary } from "./tfidf";
+import { queryDBpedia } from "./dbpedia";
 import * as ldaService from "./lda";
+import * as semClusterService from "./semcluster";
+import { TFIDFSummary } from "./tfidf";
 
 const nounFilter = ["NN", "NNS", "NNP", "NNPS"];
-
 
 export async function userIDF(lemma: string): Promise<number> {
     try {
@@ -48,17 +51,40 @@ export async function addUserLemma(lemma: string, userId: mongoose.Types.ObjectI
     }
 }
 
-export async function addUserDocumentToCorpus(userId: mongoose.Types.ObjectId, document: string, wordLength: number): Promise<JSON> {
+export async function addUserDocumentToCorpus(userId: mongoose.Types.ObjectId, document: string, wordLength: number = 5): Promise<JSON> {
     try {
-        const [speakers, text] = stripSpeakers(document);
-        const parsed = await parseDocument(text, true);
+        const result = await parseDocument(document, true);
+        const parsed = result.document;
+        const speakers = result.speakers;
         const mappedDocument = await mapDocument(parsed);
         const ldaTopics = await ldaService.topicise([...mappedDocument.lemmaMap.keys()], wordLength);
         const lda = ldaTopics.map((topic: string, index) => { return `topic ${index}: ${topic}`; }).toString();
         const [tfidf, tfiudf] = TFIDFSummary(mappedDocument.termMap, wordLength);
+        const candidateTerms = semClusterService.extractCandidateTerms(parsed);
+        const semanticTerms = await Promise.all(candidateTerms.map(async (term: string) => {
+            const hits = await queryDBpedia(term);
+            return {
+                term,
+                hits
+            };
+        }));
+        semanticTerms.forEach((term) => logger.info(term.term, term.hits));
+        semanticTerms.sort((a, b) => {
+            if (a.hits > b.hits) {
+                return -1;
+            }
+            else if (a.hits < b.hits) {
+                return 1;
+            }
+            else {
+                return 0;
+            }
+        });
+        const woo = semanticTerms.map((t) => t.term).slice(0, wordLength - 1);
         const summaries: Summaries = {
             length: wordLength,
             random: summaryRandom(mappedDocument.termMap, wordLength).toString(),
+            basicSemCluster: woo.toString(),
             tfidf,
             tfiudf,
             lda
@@ -112,7 +138,7 @@ async function mapDocument(document: CoreNLP.simple.Document): Promise<MappedDoc
     let documentText = "";
     for (const sentence of document.sentences()) {
         for (const token of sentence.tokens()) {
-            if (posFilter.indexOf(token.pos()) === -1) {
+            if (AlphaNumericRegex.test(token.lemma())) {
                 const lemma: string = token.lemma();
                 if (!termMap.has(lemma)) {
                     termMap.set(lemma, new Term(token));
@@ -141,12 +167,26 @@ async function mapDocument(document: CoreNLP.simple.Document): Promise<MappedDoc
     });
 }
 
-// Return N random Nouns from Document as summary
+// Return N random Nouns or Noun-Phrases from Document as summary
 function summaryRandom(termMap: TermMap, wordLength: number): Array<string> {
     const nouns = [...termMap.values()].filter((term: Term) => {
         return nounFilter.indexOf(term.token.pos()) !== -1;
     });
     return shuffle(nouns).slice(0, wordLength).map((term: Term) => term.token.lemma());
+}
+
+function basicSemCluster(termMap: TermMap, wordLength: number): Array<string> {
+    // Noun (NNP | NNPS)
+    // Compound Noun (JJ) & (NN|NNS)+
+    // Entity (NNP|NNPS) * (0-1 stop word) * (NN|NNPS)+
+    const nounPhrases = [...termMap.values()].filter((term: Term) => {
+        logger.info(term.token.after());
+        return (term.token.pos() === "NNP" || term.token.pos() === "NNPS");
+    });
+    const bleep = _.sortBy(nounPhrases, [function(term: Term) {
+        return term.userIDF;
+    }]);
+    return bleep.slice(bleep.length - 6 , bleep.length - 1).map((term: Term) => term.token.lemma());
 }
 
 // export function summaryLDA() {

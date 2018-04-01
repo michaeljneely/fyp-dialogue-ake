@@ -1,11 +1,25 @@
-import { Request, Response } from "express";
+import * as express from "express";
 
 /**
- * GET /
- * Home page.
+ * GET / - Render Home page.
+ * @param req - Express Request
+ * @param res - Express Response
  */
-export let index = (req: Request, res: Response) => {
+function index(req: express.Request, res: express.Response) {
     res.render("home", {
         title: "Home"
     });
-};
+}
+
+// Create Routes
+const homeAPI = express.Router();
+
+/**
+ * GET /
+ * Render homepage
+ * Authentication Required - False
+ */
+homeAPI.get("/", index);
+
+// Expose Routes
+export default homeAPI;

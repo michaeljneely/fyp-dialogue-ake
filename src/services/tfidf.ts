@@ -1,11 +1,11 @@
 import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
-import { logger } from "../utils/logger";
-import { rougeN } from "../services/rouge";
-import { corpusIDF } from "./corpus";
-import { parseDocument } from "./corenlp";
-import { posFilter } from "../constants/posFilter";
 import { annotators } from "../constants/annotators";
+import { stopwords } from "../constants/filters";
 import { TermMap } from "../models/Term";
+import { rougeN } from "../services/rouge";
+import { logger } from "../utils/logger";
+import { parseDocument } from "./corenlp";
+import { corpusIDF } from "./corpus";
 
 function idfArraySort(t1: [string, number], t2: [string, number]): number {
     if (t1[1] > t2[1]) {
@@ -25,10 +25,12 @@ export function TFIDFSummary(termMap: TermMap, wordLength: number): [string, str
     const corpusTFIDFArray = new Array<[string, number]>();
     const userTFIDFArray = new Array<[string, number]>();
     for (const [lemma, term] of termMap.entries()) {
-        const corpusTFIDF = 1 + (Math.log(term.tf) * term.corpusIDF);
-        const userTFIDF = 1 + (Math.log(term.tf) * term.userIDF);
-        corpusTFIDFArray.push([lemma, corpusTFIDF]);
-        userTFIDFArray.push([lemma, userTFIDF]);
+        if (stopwords.indexOf(lemma) === -1) {
+            const corpusTFIDF = 1 + (Math.log(term.tf) * term.corpusIDF);
+            const userTFIDF = 1 + (Math.log(term.tf) * term.userIDF);
+            corpusTFIDFArray.push([lemma, corpusTFIDF]);
+            userTFIDFArray.push([lemma, userTFIDF]);
+        }
     }
     corpusTFIDFArray.sort(idfArraySort);
     userTFIDFArray.sort(idfArraySort);
