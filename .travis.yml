@@ -4,16 +4,8 @@
     "node_js": "8",
     "sudo": "required",
     "services": [
-        "docker",
         "mongodb",
         "redis"
-    ],
-    "before_install": [
-        "cd stanford",
-        "docker build -t nlp .",
-        "docker run -d -p 9000:9000 --name corenlp nlp",
-        "docker ps -a",
-        "cd .."
     ],
     "script": [
         "bash clean_duplicate_types.sh",

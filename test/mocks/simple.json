@@ -1,0 +1,148 @@
+{
+    "text": "This is a sentence",
+    "sentences": [
+      {
+        "index": 0,
+        "tokens": [
+          {
+            "index": 1,
+            "word": "This",
+            "originalText": "This",
+            "characterOffsetBegin": 0,
+            "characterOffsetEnd": 4,
+            "before": "",
+            "after": " ",
+            "pos": "DT",
+            "lemma": "this",
+            "ner": "O"
+          },
+          {
+            "index": 2,
+            "word": "is",
+            "originalText": "is",
+            "characterOffsetBegin": 5,
+            "characterOffsetEnd": 7,
+            "before": " ",
+            "after": " ",
+            "pos": "VBZ",
+            "lemma": "be",
+            "ner": "O"
+          },
+          {
+            "index": 3,
+            "word": "a",
+            "originalText": "a",
+            "characterOffsetBegin": 8,
+            "characterOffsetEnd": 9,
+            "before": " ",
+            "after": " ",
+            "pos": "DT",
+            "lemma": "a",
+            "ner": "O"
+          },
+          {
+            "index": 4,
+            "word": "sentence",
+            "originalText": "sentence",
+            "characterOffsetBegin": 10,
+            "characterOffsetEnd": 18,
+            "before": " ",
+            "after": "",
+            "pos": "NN",
+            "lemma": "sentence",
+            "ner": "O"
+          }
+        ],
+        "basicDependencies": [
+          {
+            "dep": "ROOT",
+            "governor": 0,
+            "governorGloss": "ROOT",
+            "dependent": 4,
+            "dependentGloss": "sentence"
+          },
+          {
+            "dep": "nsubj",
+            "governor": 4,
+            "governorGloss": "sentence",
+            "dependent": 1,
+            "dependentGloss": "This"
+          },
+          {
+            "dep": "cop",
+            "governor": 4,
+            "governorGloss": "sentence",
+            "dependent": 2,
+            "dependentGloss": "is"
+          },
+          {
+            "dep": "det",
+            "governor": 4,
+            "governorGloss": "sentence",
+            "dependent": 3,
+            "dependentGloss": "a"
+          }
+        ],
+        "enhancedDependencies": [
+          {
+            "dep": "ROOT",
+            "governor": 0,
+            "governorGloss": "ROOT",
+            "dependent": 4,
+            "dependentGloss": "sentence"
+          },
+          {
+            "dep": "nsubj",
+            "governor": 4,
+            "governorGloss": "sentence",
+            "dependent": 1,
+            "dependentGloss": "This"
+          },
+          {
+            "dep": "cop",
+            "governor": 4,
+            "governorGloss": "sentence",
+            "dependent": 2,
+            "dependentGloss": "is"
+          },
+          {
+            "dep": "det",
+            "governor": 4,
+            "governorGloss": "sentence",
+            "dependent": 3,
+            "dependentGloss": "a"
+          }
+        ],
+        "enhancedPlusPlusDependencies": [
+          {
+            "dep": "ROOT",
+            "governor": 0,
+            "governorGloss": "ROOT",
+            "dependent": 4,
+            "dependentGloss": "sentence"
+          },
+          {
+            "dep": "nsubj",
+            "governor": 4,
+            "governorGloss": "sentence",
+            "dependent": 1,
+            "dependentGloss": "This"
+          },
+          {
+            "dep": "cop",
+            "governor": 4,
+            "governorGloss": "sentence",
+            "dependent": 2,
+            "dependentGloss": "is"
+          },
+          {
+            "dep": "det",
+            "governor": 4,
+            "governorGloss": "sentence",
+            "dependent": 3,
+            "dependentGloss": "a"
+          }
+        ]
+      }
+    ]
+}
