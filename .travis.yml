@@ -11,7 +11,7 @@
     "before_install": [
         "cd stanford",
         "docker build -t nlp .",
-        "docker run -d -p 127.0.0.1:9000:9000 --name corenlp nlp",
+        "docker run -d -p 127.0.0.1:9000 --name corenlp nlp",
         "docker ps -a",
         "cd ..",
         "curl -v 127.0.0.1:9000/ping"
