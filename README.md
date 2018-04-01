@@ -4,3 +4,7 @@
 # My FYP Application
 
 Forked from Microsoft's [TypeScript-Node-Starter](https://github.com/Microsoft/TypeScript-Node-Starter)
+
+# Prereqs
+    - Mongodb
+    - Redis

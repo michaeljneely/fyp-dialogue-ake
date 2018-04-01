@@ -1,13 +1,24 @@
 
 {
-  "language": "node_js",
-  "node_js": "8",
-  "services": [
-    "mongodb"
-  ],
-  "script": [
-    "bash clean_duplicate_types.sh",
-    "npm run build",
-    "npm run test"
-  ]
+    "language": "node_js",
+    "node_js": "8",
+    "sudo": "required",
+    "services": [
+        "docker",
+        "mongodb",
+        "redis"
+    ],
+    "before_install": [
+        "cd stanford",
+        "docker build -t nlp .",
+        "docker run -dit -p 127.0.0.1:9000:9000 --restart always --name corenlp nlp",
+        "docker ps -a",
+        "cd .."
+        "curl -v 127.0.0.1:9000/ping"
+    ],
+    "script": [
+        "bash clean_duplicate_types.sh",
+        "npm run build",
+        "npm run test"
+    ]
 }

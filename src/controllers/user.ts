@@ -1,19 +1,19 @@
 import * as express from "express";
 import * as passport from "passport";
-import { User, UserModel, AuthToken, Profile } from "../models/User";
-import { Request, Response, NextFunction } from "express";
-import { IVerifyOptions } from "passport-local";
-import { WriteError } from "mongodb";
-const request = require("express-validator");
-import { accessControl } from "../app";
-import * as userService from "../services/user";
-import { asyncMiddleware } from "../utils/asyncMiddleware";
 import * as passportConfig from "../config/passport";
+import * as userService from "../services/user";
 
+import { NextFunction, Request, Response } from "express";
+import { IVerifyOptions } from "passport-local";
+import { accessControl } from "../app";
+import { AuthToken, Profile, User, UserModel } from "../models/User";
+import { asyncMiddleware } from "../utils/asyncMiddleware";
+import { logger } from "../utils/logger";
 
 /**
- * GET /login
- * Login page.
+ * GET /login - Render login page
+ * @param req Express Request
+ * @param res Express Response
  */
 function getLogin(req: Request, res: Response) {
     if (req.user) {
@@ -25,8 +25,11 @@ function getLogin(req: Request, res: Response) {
 }
 
 /**
- * POST /login
- * Sign in using email and password.
+ * POST /login - Sign in using email and password
+ * @param req Express Request
+ * @param res Express Response
+ * @param {string} req.body.email User email
+ * @param {string} req.body.password User password
  */
 function postLogin(req: Request, res: Response, next: NextFunction) {
     req.assert("email", "Email is not valid").isEmail();
@@ -55,8 +58,9 @@ function postLogin(req: Request, res: Response, next: NextFunction) {
 }
 
 /**
- * GET /logout
- * Log out.
+ * GET /logout - Perform logout action
+ * @param req Express Request
+ * @param res Express Response
  */
 function logout(req: Request, res: Response) {
     req.logout();
@@ -64,10 +68,12 @@ function logout(req: Request, res: Response) {
 }
 
 /**
- * GET /signup
- * Signup page.
+ * GET /signup - Render signup page.
+ * @param req Express Request
+ * @param res Express Response
  */
 function getSignup(req: Request, res: Response) {
+    // Only render if not already logged in
     if (req.user) {
         return res.redirect("/");
     }
@@ -77,8 +83,12 @@ function getSignup(req: Request, res: Response) {
 }
 
 /**
- * POST /signup
- * Create a new local account.
+ * POST /signup - Create a new local account.
+ * @param req Express Request
+ * @param res Express Response
+ * @param {string} req.body.email User email
+ * @param {string} req.body.password User password
+ * @param {string} req.body.confirmPassword Confirm user password
  */
 async function postSignup(req: Request, res: Response) {
     req.assert("email", "Email is not valid").isEmail();
@@ -97,19 +107,22 @@ async function postSignup(req: Request, res: Response) {
         const user = await userService.signup(req.body.email, req.body.password, "user");
         req.logIn(user, (err) => {
             if (err) {
-            return Promise.reject(err);
+                return Promise.reject(err);
             }
             return res.redirect("/");
         });
-    } catch (error) {
-        req.flash("errors", { msg: error });
+    }
+    catch (error) {
+        logger.error(error);
+        req.flash("errors", { msg: "Oops! There was an error creating your account." });
         return res.redirect("/signup");
     }
 }
 
 /**
- * GET /account
- * Profile page.
+ * GET /account - Render profile page.
+ * @param req Express Request
+ * @param res Express Response
  */
 function getAccount(req: Request, res: Response) {
     const permission = accessControl.can(req.user.role).readOwn("account");
@@ -123,8 +136,11 @@ function getAccount(req: Request, res: Response) {
 }
 
 /**
- * POST /account/profile
- * Update profile information.
+ * POST /account/profile - Update profile information.
+ * @param req Express Request
+ * @param res Express Response
+ * @param {string} req.body.email User Email
+ * @param {Profile} req.body.profile User Profile
  */
 async function postUpdateProfile(req: Request, res: Response) {
     req.assert("email", "Please enter a valid email address.").isEmail();
@@ -151,15 +167,19 @@ async function postUpdateProfile(req: Request, res: Response) {
         req.flash("success", { msg: "Profile information has been updated." });
         res.redirect("/account");
 
-    } catch (err) {
-        req.flash("errors", {msg: err});
+    }
+    catch (error) {
+        logger.error(error);
+        req.flash("errors", {msg: "Oops! There was an issue updating your account."});
         return res.redirect("/account");
     }
 }
 
 /**
- * POST /account/password
- * Update current password.
+ * POST /account/password - Update current password.
+ * @param req Express Request
+ * @param res Express Response
+ * @param {string} req.body.password New user password
  */
 async function postUpdatePassword(req: Request, res: Response) {
     req.assert("password", "Password must be at least 4 characters long").len({ min: 4 });
@@ -175,15 +195,18 @@ async function postUpdatePassword(req: Request, res: Response) {
         await userService.updatePassword(req.user.id, req.body.password);
         req.flash("success", { msg: "Password has been changed." });
         res.redirect("/account");
-    } catch (err) {
-        req.flash("error", { msg: "ERROR"});
-        return Promise.reject(err);
+    }
+    catch (error) {
+        logger.error(error);
+        req.flash("error", { msg: "Oops! There was an issue updating your password."});
+        return Promise.reject(error);
     }
 }
 
 /**
- * POST /account/delete
- * Delete user account.
+ * POST /account/delete - Delete user account.
+ * @param req Express Request
+ * @param res Express Response
  */
 async function postDeleteAccount(req: Request, res: Response) {
     try {
@@ -191,29 +214,38 @@ async function postDeleteAccount(req: Request, res: Response) {
         req.logout();
         req.flash("info", { msg: "Your account has been deleted." });
         res.redirect("/");
-    } catch (err) {
-        return Promise.reject(err);
+    }
+    catch (error) {
+        logger.info(error);
+        req.flash("error", { msg: "Oops! There was an issue deleting your account."});
+        return Promise.reject(error);
     }
 }
 
 /**
- * GET /account/unlink/:provider
- * Unlink OAuth provider.
+ * GET /account/unlink/:provider - Unlink OAuth provider
+ * @param req Express Request
+ * @param res Express Response
+ * @param {string} req.params.provider OAuth provider
  */
 async function getOauthUnlink(req: Request, res: Response) {
-    const provider = req.params.provider as string;
+    const provider: string = req.params.provider;
     try {
         await userService.performOauthUnlink(req.user.id, provider);
         req.flash("info", { msg: `${provider} account has been unlinked.` });
         res.redirect("/account");
-    } catch (err) {
-        return Promise.reject(err);
+    }
+    catch (error) {
+        logger.error(error);
+        return Promise.reject(error);
     }
 }
 
  /**
-  * GET /reset/:token
-  * Reset Password page.
+  * GET /reset/:token - Reset Password page.
+  * @param req Express Request
+  * @param res Express Response
+  * @param {string} req.params.token Password reset token
   */
 export async function getReset(req: Request, res: Response) {
     if (req.isAuthenticated()) {
@@ -228,15 +260,20 @@ export async function getReset(req: Request, res: Response) {
         res.render("account/reset", {
             title: "Password Reset"
         });
-    } catch (err) {
-        return Promise.reject(err);
+    }
+    catch (error) {
+        logger.error(error);
+        return Promise.reject(error);
     }
 }
 
-// /**
-//  * POST /reset/:token
-//  * Process the reset password request.
-//  */
+/**
+ * POST /reset/:token - Process the reset password request
+ * @param req Express Request
+ * @param res Express Response
+ * @param {string} req.body.password New user password
+ * @param {string} req.body.confirm Confirm user password
+ */
 export async function postReset(req: Request, res: Response) {
     req.assert("password", "Password must be at least 4 characters long.").len({ min: 4 });
     req.assert("confirm", "Passwords must match.").equals(req.body.password);
@@ -252,14 +289,17 @@ export async function postReset(req: Request, res: Response) {
         await userService.resetPassword(req.params.token, req.body.password);
         req.flash("success", { msg: "Success! Your password has been changed." });
         res.redirect("/");
-    } catch (err) {
-        return Promise.reject(err);
+    }
+    catch (error) {
+        logger.error(error);
+        return Promise.reject(error);
     }
 }
 
 /**
- * GET /forgot
- * Forgot Password page.
+ * GET /forgot - Render forgot Password page
+ * @param req Express Request
+ * @param res Express Response
  */
 function getForgot(req: Request, res: Response) {
     if (req.isAuthenticated()) {
@@ -270,10 +310,12 @@ function getForgot(req: Request, res: Response) {
     });
 }
 
-// /**
-//  * POST /forgot
-//  * Create a random token, then the send user an email with a reset link.
-//  */
+/**
+ * POST /forgot - Create a random token, then the send user an email with a reset link
+ * @param req Express Request
+ * @param res Express Response
+ * @param {string} req.body.email Email to send token to
+ */
 export async function postForgot(req: Request, res: Response) {
     req.assert("email", "Please enter a valid email address.").isEmail();
     req.sanitize("email").normalizeEmail({ gmail_remove_dots: false });
@@ -288,44 +330,132 @@ export async function postForgot(req: Request, res: Response) {
     try {
         await userService.forgottenPassword(req.body.email, req.headers.host);
         req.flash("info", { msg: `An e-mail has been sent to ${req.body.email} with further instructions.` });
-    } catch (err) {
-        req.flash("errors", {msg: err});
-    } finally {
+    }
+    catch (error) {
+        logger.error(error);
+        req.flash("errors", {msg: error});
+    }
+    finally {
         res.redirect("/forgot");
     }
 }
 
+// Create Routes
 const userAPI = express.Router();
 
+/**
+ * GET /login
+ * Render login page
+ * Authentication Required - False
+ */
 userAPI.get("/login", getLogin);
+
+/**
+ * POST /login
+ * Perform login action
+ * Authentication Required - False
+ */
 userAPI.post("/login", postLogin);
+
+/**
+ * GET /logout
+ * Perform logout action
+ * Authentication Required - False
+ */
 userAPI.get("/logout", logout);
+
+/**
+ * GET /forgot
+ * Render forgotten password page
+ * Authentication Required - False
+ */
 userAPI.get("/forgot", getForgot);
+
+/**
+ * POST /forgot
+ * Send password reset token
+ * Authentication Required - False
+ */
 userAPI.post("/forgot", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     return postForgot(req, res);
 }));
+
+/**
+ * GET /reset/:token
+ * Render reset passowrd page
+ * Authentication Required - False
+ */
 userAPI.get("/reset/:token", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     return getReset(req, res);
 }));
+
+/**
+ * POST /reset/:token
+ * Perform reset password action
+ * Authentication Required - False
+ */
 userAPI.post("/reset/:token", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     return postReset(req, res);
 }));
+
+/**
+ * GET /signup
+ * Render signup page
+ * Authentication Required - False
+ */
 userAPI.get("/signup", getSignup);
+
+/**
+ * POST /signup
+ * Perform signup action
+ * Authentication Required - False
+ */
 userAPI.post("/signup", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   return postSignup(req, res);
 }));
+
+/**
+ * GET /account/profile
+ * Render account page
+ * Authentication Required - True
+ */
+userAPI.get("/account", passportConfig.isAuthenticated, getAccount);
+
+/**
+ * POST /account/profile
+ * Update account information
+ * Authentication Required - True
+ */
 userAPI.post("/account/profile", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     return postUpdateProfile(req, res);
 }));
-userAPI.get("/account", passportConfig.isAuthenticated, getAccount);
+
+/**
+ * POST /account/password
+ * Update account password
+ * Authentication Required - True
+ */
 userAPI.post("/account/password", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     return postUpdatePassword(req, res);
 }));
+
+/**
+ * POST /account/delete
+ * Delete account
+ * Authentication Required - True
+ */
 userAPI.post("/account/delete", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     return postDeleteAccount(req, res);
 }));
+
+/**
+ * POST /account/unlink/:provider
+ * Unlink specified OAuth provider
+ * Authentication Required - True
+ */
 userAPI.get("/account/unlink/:provider", passportConfig.isAuthenticated, asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     return getOauthUnlink(req, res);
 }));
 
+// Expose Routes
 export default userAPI;

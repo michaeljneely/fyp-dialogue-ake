@@ -13,8 +13,11 @@ logs
 results
 tmp
 
-#Build
+# Build
 public/css/main.css
+
+# Redis
+*.rdb
 
 # API keys and secrets
 .env
@@ -39,4 +42,5 @@ coverage/
 dist/**/*
 
 # Corpus
-corpus/*.txt
+corpus/**/*.txt
+corpus/**/*.json

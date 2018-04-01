@@ -1,4 +1,4 @@
-import { n, l, s } from "rouge";
+import { l, n, s } from "rouge";
 
 // Implement Rouge Metrics
 

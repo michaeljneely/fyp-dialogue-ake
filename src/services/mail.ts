@@ -1,5 +1,5 @@
-import { User, UserModel } from "../models/User";
 import * as sg from "@sendgrid/mail";
+import { User, UserModel } from "../models/User";
 
 export async function sendPasswordResetConfirmation(email: string): Promise<void> {
     try {
