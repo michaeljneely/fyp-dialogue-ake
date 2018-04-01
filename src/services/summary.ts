@@ -15,6 +15,7 @@ import { parseDocument } from "./corenlp";
 import * as corpusService from "./corpus";
 import { queryDBpedia } from "./dbpedia";
 import * as ldaService from "./lda";
+import * as semClusterService from "./semcluster";
 import { TFIDFSummary } from "./tfidf";
 
 const nounFilter = ["NN", "NNS", "NNP", "NNPS"];
@@ -59,7 +60,7 @@ export async function addUserDocumentToCorpus(userId: mongoose.Types.ObjectId, d
         const ldaTopics = await ldaService.topicise([...mappedDocument.lemmaMap.keys()], wordLength);
         const lda = ldaTopics.map((topic: string, index) => { return `topic ${index}: ${topic}`; }).toString();
         const [tfidf, tfiudf] = TFIDFSummary(mappedDocument.termMap, wordLength);
-        const candidateTerms = extractCandidateTerms(parsed, wordLength);
+        const candidateTerms = semClusterService.extractCandidateTerms(parsed);
         const semanticTerms = await Promise.all(candidateTerms.map(async (term: string) => {
             const hits = await queryDBpedia(term);
             return {
@@ -172,123 +173,6 @@ function summaryRandom(termMap: TermMap, wordLength: number): Array<string> {
         return nounFilter.indexOf(term.token.pos()) !== -1;
     });
     return shuffle(nouns).slice(0, wordLength).map((term: Term) => term.token.lemma());
-}
-
-
-function extractCandidateTerms(document: CoreNLP.simple.Document, wordLength: number): Array<string> {
-    const noun = ["NN", "NNS"];
-    const nounPhrase = ["NNP", "NNPS"];
-
-    function _buildStringFromStack(stack: Stack<CoreNLP.simple.Token>): string {
-        let res = "";
-        stack.data().forEach((token) => {
-            res += `${token.word()} `;
-        });
-        logger.info(`Term Candidate ${res} added.`);
-        return res.trim();
-    }
-
-    const candidateTerms = new Array<string>();
-
-    const termStack = new Stack<CoreNLP.simple.Token>();
-
-    // Noun (N) = (NN | NNS)
-    // Compound Noun (C) = (JJ) * (NN | NNS)+
-    // Entity (E) = (NNP | NNPS) * (S) * (NNP | NNPS)+
-    for (const sentence of document.sentences()) {
-        sentence.tokens().forEach((token, index) => {
-            logger.info(token.pos());
-            const top = termStack.peek();
-            let done = false;
-            // If there are currently items in the stack
-            if (top) {
-                // If top is stopword
-                if (stopwords.indexOf(top.lemma()) !== -1) {
-                    logger.info("top is stopword");
-                    // Add token if it is a noun phrase
-                    if (nounPhrase.indexOf(token.pos()) !== -1) {
-                        termStack.push(token);
-                    }
-                    termStack.clear();
-                    // ** Else Discard stack
-                 }
-                // If top is adjective
-                else if (top.pos() === "JJ") {
-                    logger.info("top is adjective");
-                    // If token is noun
-                    if (noun.indexOf(token.pos()) !== -1) {
-                        termStack.push(token);
-                        // If next token is not a noun, terminate
-                        if ((index + 1 >= sentence.tokens().length) || noun.indexOf(sentence.tokens()[index + 1].pos()) === -1) {
-                            done = true;
-                        }
-                    }
-                    else {
-                        termStack.clear();
-                    }
-                    // ** Else Discard Stack
-                }
-                // If top is Noun
-                else if (!done && noun.indexOf(top.pos()) !== -1) {
-                    logger.info("top is noun");
-                    // Add token if it is a noun
-                    if (noun.indexOf(token.pos()) !== -1) {
-                        termStack.push(token);
-                        logger.info("another noun!");
-                        // If next token is not a noun, terminate
-                        if ((index + 1 >= sentence.tokens().length) || noun.indexOf(sentence.tokens()[index + 1].pos()) === -1) {
-                            logger.info("Terminating as Compound Noun");
-                            done = true;
-                        }
-                    } else {
-                        termStack.clear();
-                    }
-                    // ** Else Discard stack
-                }
-                // If top is noun phrase
-                else if (!done && nounPhrase.indexOf(top.pos()) !== -1) {
-                    logger.info("top is Noun Phrase!");
-                    // If token is stopword, add if stack only contains 1 Noun Phrase
-                    // If token is Noun Phrase, add
-                    if (((stopwords.indexOf(token.lemma()) !== -1) && (termStack.data.length === 1))) {
-                        logger.info("adding stopword");
-                        termStack.push(token);
-                    }
-                    else if (nounPhrase.indexOf(token.pos()) !== -1) {
-                        logger.info("adding noun phrase");
-                        termStack.push(token);
-                        // If next token is not a noun phrase, terminate
-                        if ((index + 1 >= sentence.tokens().length) || nounPhrase.indexOf(sentence.tokens()[index + 1].pos()) === -1) {
-                            logger.info("Terminating as Entity");
-                            done = true;
-                        }
-                    } else {
-                        termStack.clear();
-                    }
-                }
-            }
-            // Otherwise we begin building a phrase
-            else {
-                if (stopwords.indexOf(token.lemma()) === -1) {
-                    // If token is a noun, adjective, or noun phrase - add it
-                    if ((noun.indexOf(token.pos()) !== -1) || (nounPhrase.indexOf(token.pos()) !== -1) || (token.pos() === "JJ")) {
-                        logger.info(`Building New Phrase. Adding ${token.pos()}`);
-                        termStack.push(token);
-                    }
-                }
-            }
-            // Termination?
-            if (done || index === (sentence.tokens().length - 1) ) {
-                logger.info("Done! Adding Term Candidate...");
-                candidateTerms.push(_buildStringFromStack(termStack));
-                termStack.clear();
-                // Terminate stack and add to candidate phrases
-            }
-        });
-        // Clear the stack after processing a sentence
-        termStack.clear();
-    }
-    return _.uniq(candidateTerms);
 }
 
 function basicSemCluster(termMap: TermMap, wordLength: number): Array<string> {

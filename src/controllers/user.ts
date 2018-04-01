@@ -165,7 +165,7 @@ async function postUpdateProfile(req: Request, res: Response) {
         await userService.updateProfile(req.user.id, email, profile);
 
         req.flash("success", { msg: "Profile information has been updated." });
-        res.redirect("/account");
+        return res.redirect("/account");
 
     }
     catch (error) {
@@ -194,7 +194,7 @@ async function postUpdatePassword(req: Request, res: Response) {
     try {
         await userService.updatePassword(req.user.id, req.body.password);
         req.flash("success", { msg: "Password has been changed." });
-        res.redirect("/account");
+        return res.redirect("/account");
     }
     catch (error) {
         logger.error(error);
@@ -210,10 +210,16 @@ async function postUpdatePassword(req: Request, res: Response) {
  */
 async function postDeleteAccount(req: Request, res: Response) {
     try {
-        await userService.deleteAccount(req.user.id);
-        req.logout();
-        req.flash("info", { msg: "Your account has been deleted." });
-        res.redirect("/");
+        const permission = accessControl.can(req.user.role).deleteOwn("account");
+        if (permission.granted) {
+            await userService.deleteAccount(req.user.email, req.user.id);
+            req.logout();
+            req.flash("info", { msg: "Your account has been deleted." });
+            res.redirect("/");
+        }
+        else {
+            throw `Unauthorized Delete Action Performed by ${req.user.id}`;
+        }
     }
     catch (error) {
         logger.info(error);
@@ -252,8 +258,8 @@ export async function getReset(req: Request, res: Response) {
         return res.redirect("/");
     }
     try {
-        const user: User = await userService.getResetToken(req.params.token);
-        if (!user) {
+        const tokenExists = await userService.resetTokenExists(req.params.token);
+        if (!tokenExists) {
             req.flash("errors", { msg: "Password reset token is invalid or has expired." });
             return res.redirect("/forgot");
         }
@@ -328,7 +334,7 @@ export async function postForgot(req: Request, res: Response) {
     }
 
     try {
-        await userService.forgottenPassword(req.body.email, req.headers.host);
+        await userService.generateResetToken(req.body.email);
         req.flash("info", { msg: `An e-mail has been sent to ${req.body.email} with further instructions.` });
     }
     catch (error) {
@@ -382,7 +388,7 @@ userAPI.post("/forgot", asyncMiddleware(async (req: express.Request, res: expres
 
 /**
  * GET /reset/:token
- * Render reset passowrd page
+ * Render reset password page
  * Authentication Required - False
  */
 userAPI.get("/reset/:token", asyncMiddleware(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
