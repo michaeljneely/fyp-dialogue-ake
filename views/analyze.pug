@@ -1,0 +1,35 @@
+extends layout
+
+block content
+    .main-content
+        h3.main-title Analyze
+        p.lead Analyze the performance of the summarizer
+        hr
+    
+    form.form-horizontal(method='POST')
+        input(type='hidden', name='_csrf', value=_csrf)
+        .form-group
+            label(class='col-sm-2 control-label', for='text') Conversation
+            .col-sm-8
+                textarea.main-textarea.form-control(name='text', id='text', autofocus=true, placeholder='Enter conversation text to analyze...', rows=10, required)
+        .form-group
+            label(class='col-sm-2 control-label', for='keywords') Keywords
+            .col-sm-8
+                input.form-control(type='text', name='keywords', id='keywords', placeholder='Enter the comma-separated keywords of the conversation...', required)
+        .form-group
+            label(class='col-sm-2 control-label', for='text') Short Summary
+            .col-sm-8
+                textarea.main-textarea.form-control(name='shortSummary', id='shortSummary', placeholder='Enter a short summary of the conversation...', rows=2, required)
+        .form-group
+            label(class='col-sm-2 control-label', for='text') Medium Summary
+            .col-sm-8
+                textarea.main-textarea.form-control(name='mediumSummary', id='mediumSummary', placeholder='Enter a medium length summary of the conversation...', rows=3, required)
+        .form-group
+            label(class='col-sm-2 control-label', for='text') Long Summary
+            .col-sm-8
+                textarea.main-textarea.form-control(name='longSummary', id='longSummary', placeholder='Enter a long summary of the conversation...', rows=5, required)
+        .form-group
+            .col-sm-offset-2.col-sm-8
+                button.btn.btn-primary(type='submit')
+                    i.fa.fa-envelope
+                    | Send

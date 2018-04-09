@@ -1,21 +1,7 @@
 extends layout
 
 block content
-  .page-header
-    h3 Summary Form
-
-  form.form-horizontal(method='POST')
-    input(type='hidden', name='_csrf', value=_csrf)
-    .form-group
-      label(class='col-sm-2 control-label', for='text') Text
-      .col-sm-8
-        textarea.form-control(name='text', id='text', autofocus=true)
-    .form-group
-      label(class='col-sm-2 control-label', for='wordLength') Number of Words
-      .col-sm-8
-        input.form-control(type='number', name='wordLength', id='wordLength', value=5, min=1, max=20)
-    .form-group
-      .col-sm-offset-2.col-sm-8
-        button.btn.btn-primary(type='submit')
-          i.fa.fa-envelope
-          | Send
+    .main-content
+        h3.main-title Summary
+        hr
+        p #{summary.speakers} discussed #{summary.summary}

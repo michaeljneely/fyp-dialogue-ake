@@ -1,3 +1,7 @@
+/*
+    Generic Stack Implementation
+*/
+
 export class Stack<T> {
     private _store: T[];
 

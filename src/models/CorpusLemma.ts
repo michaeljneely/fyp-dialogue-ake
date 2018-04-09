@@ -1,5 +1,4 @@
-import * as mongoose from "mongoose";
-import { arrayProp, InstanceType, ModelType, prop, Typegoose } from "typegoose";
+import { arrayProp, prop, Typegoose } from "typegoose";
 import { DocumentFrequency } from "./DocumentFrequency";
 
 export class CorpusLemma extends Typegoose {

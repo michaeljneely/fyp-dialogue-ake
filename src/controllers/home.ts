@@ -1,4 +1,5 @@
 import * as express from "express";
+import * as fs from "fs-extra";
 
 /**
  * GET / - Render Home page.
@@ -6,8 +7,10 @@ import * as express from "express";
  * @param res - Express Response
  */
 function index(req: express.Request, res: express.Response) {
+    const md = "#Hello\n";
     res.render("home", {
-        title: "Home"
+        title: "Home",
+        md: md
     });
 }
 

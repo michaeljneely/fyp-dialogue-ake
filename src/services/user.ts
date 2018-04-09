@@ -1,5 +1,5 @@
 import * as crypto from "crypto";
-import { ObjectId, WriteError } from "mongodb";
+import { ObjectId } from "mongodb";
 import * as mongoose from "mongoose";
 import { Role } from "../config/acl";
 import { AuthToken, Profile, User, UserModel } from "../models/User";

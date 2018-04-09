@@ -1,11 +1,10 @@
-import * as sg from "@sendgrid/mail";
+import { NextFunction, Request, Response, Router } from "express";
 import * as passportConfig from "../config/passport";
 import * as contactService from "../services/contact";
 import * as mailService from "../services/mail";
-
-import { NextFunction, Request, Response, Router } from "express";
 import { asyncMiddleware } from "../utils/asyncMiddleware";
 import { logger } from "../utils/logger";
+
 
 /**
  * GET /contact - Render contact form
@@ -44,7 +43,6 @@ async function postContact(req: Request, res: Response) {
     }
     finally {
         req.flash("success", { msg: "Email has been sent successfully!" });
-        logger.info(`Mail from ${req.body.email} sent to host.`);
         return res.redirect("/contact");
     }
 }

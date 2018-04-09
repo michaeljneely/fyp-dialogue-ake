@@ -43,6 +43,7 @@ const stream = new Stream();
 const MongoStore = mongo(session);
 
 // Routes
+import analysisAPI from "./controllers/analyze";
 import contactAPI from "./controllers/contact";
 import corpusAPI from "./controllers/corpus";
 import homeAPI from "./controllers/home";
@@ -198,6 +199,28 @@ limiter({
     }
 });
 
+// Limit Analysis (large load on CoreNLP server, CPU, and DBpedia)
+limiter({
+    path: "/analyze",
+    method: "post",
+    // Limit on IP
+    lookup: ["connection.remoteAddress"],
+    total: process.env.SUMMARIZE_RATE_LIMIT_PER_HOUR,
+    expire: 1000 * 60 * 60,
+    // Whitelist admin
+    whitelist: function (req: express.Request) {
+        if (req.user && req.user.role && req.user.role === "admin") {
+            logger.info(`admin bypass of /analyze rate limit performed by ${req.user.id}.`);
+            return true;
+        }
+        return false;
+    },
+    onRateLimited: function (req: express.Request, res: express.Response, next: express.NextFunction) {
+        logger.info(`Analysis Rate Limit Exceeded for user ${req.user.id}`);
+        res.status(429).send("Analysis Rate Limit Exceeded.");
+    }
+});
+
 /**
  * Primary app routes.
  */
@@ -207,5 +230,6 @@ app.use(userAPI);
 app.use(contactAPI);
 app.use(summaryAPI);
 app.use(parseAPI);
+app.use(analysisAPI);
 
 module.exports = app;

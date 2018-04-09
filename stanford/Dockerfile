@@ -8,4 +8,4 @@ WORKDIR stanford-corenlp-full-2018-01-31
 RUN export CLASSPATH="`find . -name '*.jar'`" 
 ENV PORT 9000 
 EXPOSE $PORT 
-CMD java -d64 -Xmx4g -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer -timeout 60000 -parse.model /u/nlp/data/srparser/englishSR.ser.gz -preload tokenize,ssplit,pos,lemma,ner,depparse
+CMD java -d64 -Xmx4g -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer -timeout 60000 -parse.model /u/nlp/data/srparser/englishSR.ser.gz -preload tokenize,ssplit,pos,lemma,ner

@@ -1,93 +1,119 @@
+import CoreNLP from "corenlp";
 import * as _ from "lodash";
-import { CorpusDocument, CorpusDocumentModel } from "../models/CorpusDocument";
-import { CorpusLemma, CorpusLemmaModel } from "../models/CorpusLemma";
-import { make2DNumberArray } from "../utils/functions";
-import { logger } from "../utils/logger";
+import { CorpusCandidateTerm, CorpusCandidateTermModel } from "../../models/corpusCandidateTerm";
+import { CorpusDocument, CorpusDocumentModel } from "../../models/CorpusDocument";
+import { make2DNumberArray } from "../../utils/functions";
+import { logger } from "../../utils/logger";
+import { extractCandidateTermsFromCoreNLPDocument } from "./candidateTerm";
 
+/*
+    Perform Latent Dirichlet Allocation (LDA)
+        - A method of extracting topics that define a document
+        - The big question is how many distinct topics does a document have?
+        - Limitation: topics are limited to terms in the vocabulary
+
+    Based off of work by: https://github.com/primaryobjects/lda/
+*/
+
+// Vocabulary interface necessary for LDA
 interface Vocab {
-    lemmaToIndex: Map<string, number>;
-    indexToLemma: Map<number, string>;
+    // Get vocabulary index by term
+    candidateTermToIndex: Map<string, number>;
+    // Get vocabulary term by index
+    indexToCandidateTerm: Map<number, string>;
+    // Each document is represented by an array of vocabulary indices
     documents: Array<Array<number>>;
 }
 
-// Build lemma -> index and index -> lemma map
-async function buildVocab(documentLemmas: Array<string>): Promise<Vocab> {
-    const a = new Map<number, string>();
-    const b = new Map<string, number>();
+
+// Build the Vocabulary interface necessary for LDA - Only consider Candidate Terms (NP chunks)
+async function buildCorpusVocab(terms: Array<string>): Promise<Vocab> {
+    const candidateTermToIndex = new Map<string, number>();
+    const indexToCandidateTerm = new Map<number, string>();
     let index = -1;
     try {
-        const lemmas = await CorpusLemmaModel.find({});
-        if (lemmas) {
-            const yo = lemmas.map((lemma: CorpusLemma) => lemma.lemma);
+        const corpusCandidateTerms = await CorpusCandidateTermModel.find({});
+        if (corpusCandidateTerms) {
+            const ccts = corpusCandidateTerms.map((cct: CorpusCandidateTerm) => cct.term);
             // Extract Corpus Lemmas
-            lemmas.forEach((corpusLemma: CorpusLemma) => {
+            _.uniq(ccts).forEach((cct: string) => {
                 index++;
-                a.set(index, corpusLemma.lemma);
-                b.set(corpusLemma.lemma, index);
+                indexToCandidateTerm.set(index, cct);
+                candidateTermToIndex.set(cct, index);
             });
             // Merge in unique lemmas from Document
-            documentLemmas.forEach((lemma: string) => {
-                if ( ! b.has(lemma)) {
+            terms.forEach((term: string) => {
+                if ( ! candidateTermToIndex.has(term)) {
                     index++;
-                    b.set(lemma, index);
-                    a.set(index, lemma);
+                    candidateTermToIndex.set(term, index);
+                    indexToCandidateTerm.set(index, term);
                 }
             });
+            // Generate document vectors
             const documents = await CorpusDocumentModel.find({});
             const docs = new Array<Array<number>>();
             documents.forEach((document: CorpusDocument) => {
                 const docVector = new Array<number>();
-                document.text.split(" ").forEach((lemma: string) => {
-                    if (lemma) {
-                        docVector.push(b.get(lemma));
+                const dcts = extractCandidateTermsFromCoreNLPDocument(CoreNLP.simple.Document.fromJSON(document.processedText)).toStringArray();
+                dcts.forEach((dct: string) => {
+                    if (candidateTermToIndex.get(dct) !== undefined ) {
+                        docVector.push(candidateTermToIndex.get(dct));
                     }
                 });
                 docs.push(docVector);
             });
-
             return Promise.resolve({
-                lemmaToIndex: b,
-                indexToLemma: a,
+                candidateTermToIndex,
+                indexToCandidateTerm,
                 documents: docs
             });
         }
-    } catch (err) {
-        return Promise.reject(err);
+    }
+    catch (error) {
+        logger.error(error);
+        return Promise.reject(error);
     }
 }
 
-export async function topicise(documentLemmas: Array<string>, K: number): Promise<Array<string>> {
-    const V = await buildVocab(documentLemmas);
-    const documents = V.documents;
-    const lda = new LdaGibbsSampler(documents, V.lemmaToIndex.size);
-    // good values alpha = 2, beta = .5
-    const alpha = 2;
-    const beta = .5;
-    lda.gibbs(K, alpha, beta);
-    // Theta appears okay
-    const theta = lda.getTheta();
-    const phi = lda.getPhi();
-    const text = "";
-    // topics
-    let topTerms = 10;
-    const topicText = new Array<string>(phi.length).fill("");
-    for (let k = 0; k < phi.length; k++) {
-        const tuples = new Array<string>().fill("");
-        for (let w = 0; w < phi[k].length; w++) {
-             tuples.push("" + phi[k][w].toPrecision(2) + "_" + V.indexToLemma.get(w));
-        }
-        tuples.sort().reverse();
-        if (topTerms > V.indexToLemma.size) topTerms = V.indexToLemma.size;
-        for (let t = 0; t < topTerms; t++) {
-            const topicTerm = tuples[t].split("_")[1];
-            const prob = parseFloat(tuples[t].split("_")[0]) * 100;
-            if (prob < 0.0001) {
-                continue;
+export async function topicise(cts: Array<string>, K: number): Promise<Array<Array<string>>> {
+    try {
+        const V = await buildCorpusVocab(cts);
+        const documents = V.documents;
+        const lda = new LdaGibbsSampler(documents, V.candidateTermToIndex.size);
+        // good values alpha = 2, beta = .5
+        const alpha = 2;
+        const beta = .5;
+        lda.gibbs(K, alpha, beta);
+        // Theta appears okay
+        const theta = lda.getTheta();
+        const phi = lda.getPhi();
+        // topics
+        const topTerms = 10;
+        const topics = new Array<Array<string>>();
+        for (let k = 0; k < phi.length; k++) {
+            const tuples = new Array<[number, string]>(k);
+            const a = new Array<string>(k);
+            for (let w = 0; w < phi[k].length; w++) {
+                tuples.push([phi[k][w], V.indexToCandidateTerm.get(w - 1)]);
             }
-            topicText[k] += ( topicTerm + " ");
+            tuples.sort((a, b) => {
+                if (a[0] > b[0]) {
+                    return -1;
+                }
+                else if (a[0] < b[0]) {
+                    return 1;
+                }
+                else return 0;
+            });
+            const topTerms = (V.candidateTermToIndex.size < 10) ? V.candidateTermToIndex.size : 10;
+            topics.push(tuples.slice(0, topTerms - 1).map(([prob, term]) => term));
         }
+        return Promise.resolve(topics);
     }
-    return Promise.resolve(topicText);
+    catch (error) {
+        logger.error(error);
+        return Promise.reject(error);
+    }
 }
 
 export class LdaGibbsSampler {
@@ -319,4 +345,5 @@ export class LdaGibbsSampler {
         }
         return phi;
     }
+
 }

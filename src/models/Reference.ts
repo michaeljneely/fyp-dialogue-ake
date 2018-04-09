@@ -1,3 +1,5 @@
+import CoreNLP from "corenlp";
+
 export interface IReference {
     textFile: string;
     summaries: {
@@ -7,3 +9,9 @@ export interface IReference {
     };
     keywords: Array<string>;
 }
+
+export type Reference = {
+    name: string;
+    summary: string;
+    annotated: CoreNLP.simple.Document;
+};

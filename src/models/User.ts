@@ -1,7 +1,7 @@
 import * as bcrypt from "bcrypt-nodejs";
 import * as crypto from "crypto";
 import * as mongoose from "mongoose";
-import { instanceMethod, InstanceType, ModelType, plugin, pre, prop, staticMethod, Typegoose } from "typegoose";
+import { instanceMethod, pre, prop, Typegoose } from "typegoose";
 import { Role } from "../config/acl";
 
 @pre<User>("save", async function(next) {

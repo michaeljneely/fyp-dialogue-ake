@@ -1,9 +1,7 @@
-import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
 import * as express from "express";
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import * as passportConfig from "../config/passport";
-import { annotators } from "../constants/annotators";
-import { parseDocument } from "../services/corenlp";
+import { annotate } from "../services/corenlp/corenlp";
 import { asyncMiddleware } from "../utils/asyncMiddleware";
 import { logger } from "../utils/logger";
 
@@ -35,8 +33,8 @@ async function parse(req: Request, res: Response) {
     }
 
     try {
-        const parsed = await parseDocument(req.body.text, false);
-        res.json(parsed.document.toJSON());
+        const parsed = await annotate(req.body.text);
+        res.json(parsed.toJSON());
     } catch (err) {
         logger.error(err);
         return Promise.reject("Oops! There was an issue parsing this text.");

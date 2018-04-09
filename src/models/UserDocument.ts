@@ -1,5 +1,5 @@
 import * as mongoose from "mongoose";
-import { InstanceType, ModelType, prop, Typegoose } from "typegoose";
+import { prop, Typegoose } from "typegoose";
 
 export type Summaries = {
     length: number,
@@ -16,8 +16,12 @@ export class UserDocument extends Typegoose {
     @prop({ required: true })
     date: Date;
     @prop({ required: true })
-    text: string;
+    rawText: string;
     @prop({ required: true })
+    processedText: JSON;
+    @prop()
+    text: string;
+    @prop()
     length: number;
     @prop()
     speakers: Array<string>;

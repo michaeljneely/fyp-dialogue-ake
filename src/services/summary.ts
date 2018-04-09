@@ -1,211 +1,74 @@
-import { wrapSync } from "async";
-import CoreNLP, { ConnectorServer, Pipeline, Properties } from "corenlp";
-import * as _ from "lodash";
 import * as mongoose from "mongoose";
-import { AlphaNumericRegex } from "../constants/filters";
-import { stopwords } from "../constants/filters";
-import { DocumentFrequencyModel } from "../models/DocumentFrequency";
-import { Term, TermMap } from "../models/Term";
-import { Summaries, UserDocument, UserDocumentModel } from "../models/UserDocument";
-import { UserLemma, UserLemmaModel } from "../models/UserLemma";
-import { replaceStopWords, shuffle } from "../utils/functions";
+import { replaceSmartQuotes, stripSpeakers } from "../utils/functions";
 import { logger } from "../utils/logger";
-import { Stack } from "../utils/stack";
-import { parseDocument } from "./corenlp";
-import * as corpusService from "./corpus";
-import { queryDBpedia } from "./dbpedia";
-import * as ldaService from "./lda";
-import * as semClusterService from "./semcluster";
-import { TFIDFSummary } from "./tfidf";
+import * as coreNLPService from "./corenlp/corenlp";
+import { saveUserDocument } from "./documents/user";
+import { extractCandidateTermsFromCoreNLPDocument } from "./processors/candidateTerm";
+import { extractMeaningfulLemmasFromCoreNLPDocument } from "./processors/lemma";
+import { candidateTermTFUIDFSummary } from "./summarizers/CandidateTermTFIDF";
+import { semanticPowerAndSpecificitySummary } from "./summarizers/SemanticPowerAndSpecificity";
 
-const nounFilter = ["NN", "NNS", "NNP", "NNPS"];
+/*
+    Service that uses the best performing Summary Strategy to summarize a conversation
+*/
 
-export async function userIDF(lemma: string): Promise<number> {
+// Contract with Controller
+export type Summary = {
+    speakers: string,
+    summary: string
+};
+
+/**
+ * Use the best summary strategy to summarize a conversation
+ * @param text Conversation
+ * @param userId User ID
+ * @param wordLength Length of summary
+ * @returns {Summary} the summarized conversation and its formatted speakers
+ */
+export async function summarizeConversation(text: string, userId: mongoose.Types.ObjectId, wordLength: number): Promise<Summary> {
     try {
-        const userLemma = await UserLemmaModel.findOne({lemma});
-        const collectionSize = await UserDocumentModel.find().count();
-        if (collectionSize) {
-            const docsContainingLemma = (userLemma) ? userLemma.frequencies.length : 1;
-            return Promise.resolve(Math.log(collectionSize / docsContainingLemma));
-        }
-        return Promise.resolve(1);
-    } catch (err) {
-        return Promise.reject(err);
+        // Annotate conversation
+        const [speakers, conversation] = stripSpeakers(text);
+        const annotated = await coreNLPService.annotate(replaceSmartQuotes(conversation));
+
+        // Extract lemmas and candidate terms
+        const lemmas = extractMeaningfulLemmasFromCoreNLPDocument(annotated);
+        const candidateTerms = extractCandidateTermsFromCoreNLPDocument(annotated);
+
+        // Build Summary
+        const summary = await semanticPowerAndSpecificitySummary(annotated, wordLength, .75);
+
+        // Save document, lemmas, and candidate terms
+        const saved = await saveUserDocument(userId, speakers, annotated, text, lemmas, candidateTerms);
+
+        // Return best summary - at the moment: basicSemCluster
+        return Promise.resolve({
+            speakers: formatSpeakers(speakers),
+            summary: summary.join(", ")
+        } as Summary);
+    }
+    catch (error) {
+        logger.error(error);
+        return Promise.reject(error);
     }
 }
 
-export async function addUserLemma(lemma: string, userId: mongoose.Types.ObjectId, documentID: mongoose.Types.ObjectId, frequency: number): Promise<UserLemma> {
-    try {
-        const documentFrequency = new DocumentFrequencyModel({ documentID, frequency });
-        let userLemma = await UserLemmaModel.findOne({owner: userId, lemma});
-        if (userLemma) {
-            userLemma.frequencies.push(documentFrequency);
+/**
+ * Transform an array of speakers into the beginning of an English sentence
+ * @param {Array<string>} speakers Array of speakers
+ * @returns {string} Speakers as the beginning of an English Sentence
+ * @example formatSpeakers(["John", "Mary", "Jim"]) -> "John, Mary, and Jim"
+ */
+function formatSpeakers(speakers: Array<string>): string {
+    return speakers.map((speaker, index) => {
+        if (speakers.length === 1) {
+            return speaker;
+        }
+        if (speakers.length >= 2 && index === speakers.length - 1) {
+            return `and ${speaker}`;
         }
         else {
-            userLemma = new UserLemmaModel({owner: userId, lemma, frequencies: [documentFrequency]});
+            return `${speaker}, `;
         }
-        const saved = await userLemma.save();
-        return Promise.resolve(saved);
-    } catch (err) {
-        return Promise.reject(err);
-    }
-}
-
-export async function addUserDocumentToCorpus(userId: mongoose.Types.ObjectId, document: string, wordLength: number = 5): Promise<JSON> {
-    try {
-        const result = await parseDocument(document, true);
-        const parsed = result.document;
-        const speakers = result.speakers;
-        const mappedDocument = await mapDocument(parsed);
-        const ldaTopics = await ldaService.topicise([...mappedDocument.lemmaMap.keys()], wordLength);
-        const lda = ldaTopics.map((topic: string, index) => { return `topic ${index}: ${topic}`; }).toString();
-        const [tfidf, tfiudf] = TFIDFSummary(mappedDocument.termMap, wordLength);
-        const candidateTerms = semClusterService.extractCandidateTerms(parsed);
-        const semanticTerms = await Promise.all(candidateTerms.map(async (term: string) => {
-            const hits = await queryDBpedia(term);
-            return {
-                term,
-                hits
-            };
-        }));
-        semanticTerms.forEach((term) => logger.info(term.term, term.hits));
-        semanticTerms.sort((a, b) => {
-            if (a.hits > b.hits) {
-                return -1;
-            }
-            else if (a.hits < b.hits) {
-                return 1;
-            }
-            else {
-                return 0;
-            }
-        });
-        const woo = semanticTerms.map((t) => t.term).slice(0, wordLength - 1);
-        const summaries: Summaries = {
-            length: wordLength,
-            random: summaryRandom(mappedDocument.termMap, wordLength).toString(),
-            basicSemCluster: woo.toString(),
-            tfidf,
-            tfiudf,
-            lda
-        };
-        const userDocument = await new UserDocumentModel({
-            owner: userId,
-            text: mappedDocument.documentText,
-            length: mappedDocument.documentLength,
-            date: Date.now(),
-            speakers,
-            summaries
-        }).save();
-        for (const [lemma, frequency] of mappedDocument.lemmaMap.entries()) {
-            await addUserLemma(lemma, userId, userDocument._id, frequency);
-        }
-        return Promise.resolve(JSON.parse(JSON.stringify(userDocument.summaries)));
-    } catch (err) {
-        return Promise.reject(err);
-    }
-}
-
-type LemmaMap = Map<string, number>;
-
-interface SavedDoc {
-    document: UserDocument;
-    lemmaMap: LemmaMap;
-}
-
-interface MappedDocument {
-    termMap: TermMap;
-    lemmaMap: LemmaMap;
-    documentLength: number;
-    documentText: string;
-}
-
-// function buildSummaries(termMap: TermMap): Array<string> {
-//     // N random Words
-//     // N C_TFIDF
-//     // N U_TFIDF
-//     // N alpha * C_TFIDF + (1 - alpha) * U_TFIDF
-//     // N LDA
-//     const random = `nRandom**${summaryRandom(termMap, 5)}`;
-//     const summaries = new Array<string>(random);
-//     return summaries;
-// }
-
-async function mapDocument(document: CoreNLP.simple.Document): Promise<MappedDocument> {
-    const termMap = new Map() as TermMap;
-    const lemmaMap = new Map() as LemmaMap;
-    let documentLength = 0;
-    let documentText = "";
-    for (const sentence of document.sentences()) {
-        for (const token of sentence.tokens()) {
-            if (AlphaNumericRegex.test(token.lemma())) {
-                const lemma: string = token.lemma();
-                if (!termMap.has(lemma)) {
-                    termMap.set(lemma, new Term(token));
-                }
-                else {
-                    termMap.get(lemma).tf++;
-                }
-                if (!lemmaMap.has(lemma)) {
-                    lemmaMap.set(lemma, 1);
-                }
-                else {
-                    lemmaMap.set(lemma, lemmaMap.get(lemma) + 1);
-                }
-                termMap.get(lemma).corpusIDF = await corpusService.corpusIDF(lemma);
-                termMap.get(lemma).userIDF = await userIDF(lemma);
-                documentLength++;
-                documentText += `${lemma} `;
-            }
-        }
-    }
-    return Promise.resolve({
-        termMap,
-        lemmaMap,
-        documentLength,
-        documentText
-    });
-}
-
-// Return N random Nouns or Noun-Phrases from Document as summary
-function summaryRandom(termMap: TermMap, wordLength: number): Array<string> {
-    const nouns = [...termMap.values()].filter((term: Term) => {
-        return nounFilter.indexOf(term.token.pos()) !== -1;
-    });
-    return shuffle(nouns).slice(0, wordLength).map((term: Term) => term.token.lemma());
-}
-
-function basicSemCluster(termMap: TermMap, wordLength: number): Array<string> {
-    // Noun (NNP | NNPS)
-    // Compound Noun (JJ) & (NN|NNS)+
-    // Entity (NNP|NNPS) * (0-1 stop word) * (NN|NNPS)+
-    const nounPhrases = [...termMap.values()].filter((term: Term) => {
-        logger.info(term.token.after());
-        return (term.token.pos() === "NNP" || term.token.pos() === "NNPS");
-    });
-    const bleep = _.sortBy(nounPhrases, [function(term: Term) {
-        return term.userIDF;
-    }]);
-    return bleep.slice(bleep.length - 6 , bleep.length - 1).map((term: Term) => term.token.lemma());
-}
-
-// export function summaryLDA() {
-
-// }
-// export function summaryNounPhraseBasic() {
-
-// }
-
-// export function summaryNounPhraseAdvanced() {
-
-// }
-
-// export function summarySpeaker() {
-
-// }
-
-
-export async function summarize(text: string, userId: mongoose.Types.ObjectId, wordLength: number) {
-    const moop = await addUserDocumentToCorpus(userId, text, wordLength);
-    return Promise.resolve(moop);
+    }).join("");
 }
