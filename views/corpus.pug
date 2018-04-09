@@ -1,13 +1,30 @@
 extends layout
 
 block content
-    .main-block
+    .main-content
         h3.main-title Corpus
+        p.lead An overview of every document contained in the application's corpus.
         hr
-        p The corpus contains #{corpus.length} document(s)
+        p The corpus contains 
+            strong #{corpus.length}
+            |  documents
         br
-        .p More information to be displayed here soon...
-        hr
+        div.list-group
+            for doc,index in corpus
+                div.list-group-item.list-group-item-action.flex-column.align-items-start
+                    div.d-flex.justify-content-between
+                        h5.mb-1 #{doc.title}
+                        span.align-right
+                            form.form-horizontal( method='POST' action =`analyze/${doc.documentId}`)
+                                input(type='hidden', name='_csrf', value=_csrf)
+                                .form-group
+                                    button.btn.btn-primary(type='submit')
+                                        i.fa.fa-wrench
+                                        | Analyze
+                    p.mb-1 Added: #{doc.dateAdded}
+                    p.mb-1 Speakers: #{doc.speakers}
+                    p.mb-1.flex-text Keywords: #{doc.keywords}
+        br
         form.form-horizontal( method='POST')
             input(type='hidden', name='_csrf', value=_csrf)
             .form-group

@@ -2,6 +2,9 @@ import { Logger, transports } from "winston";
 
 const logLevel = (process.env.NODE_ENV === "development") ? "debug" : "info";
 
+/*
+    Logging service
+*/
 
 export class Stream {
     write(text: string) {

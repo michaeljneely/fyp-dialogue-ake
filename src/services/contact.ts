@@ -2,7 +2,7 @@ import { Message, MessageModel } from "../models/Message";
 import { logger } from "../utils/logger";
 
 /**
- * Store contact form message
+ * Store a contact form's message
  * @param {string} name Sender name
  * @param {string} email Sender email
  * @param {string} text Sender message
@@ -15,7 +15,6 @@ export async function storeMessage(name: string, email: string, text: string): P
             fromEmail: email,
             message: text
         }).save();
-        logger.info(`Message from ${email} stored.`);
         return Promise.resolve(message);
     }
     catch (err) {

@@ -1,14 +1,14 @@
 import * as express from "express";
-import * as passport from "passport";
-import * as passportConfig from "../config/passport";
-import * as userService from "../services/user";
-
 import { NextFunction, Request, Response } from "express";
+import * as passport from "passport";
 import { IVerifyOptions } from "passport-local";
 import { accessControl } from "../app";
-import { AuthToken, Profile, User, UserModel } from "../models/User";
+import * as passportConfig from "../config/passport";
+import { Profile } from "../models/User";
+import * as userService from "../services/user";
 import { asyncMiddleware } from "../utils/asyncMiddleware";
 import { logger } from "../utils/logger";
+
 
 /**
  * GET /login - Render login page
@@ -222,7 +222,7 @@ async function postDeleteAccount(req: Request, res: Response) {
         }
     }
     catch (error) {
-        logger.info(error);
+        logger.error(error);
         req.flash("error", { msg: "Oops! There was an issue deleting your account."});
         return Promise.reject(error);
     }

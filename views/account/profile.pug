@@ -1,77 +1,81 @@
 extends ../layout
 
 block content
-  .page-header
-    h3 Profile Information
+    .main-content
+        h3.main-title Profile Information
+        p.lead Tell us about yourself!
+        hr
 
-  form.form-horizontal(action='/account/profile', method='POST')
-    input(type='hidden', name='_csrf', value=_csrf)
-    .form-group
-      label.col-sm-3.control-label(for='email') Email
-      .col-sm-7
-        input.form-control(type='email', name='email', id='email', value=user.email)
-    .form-group
-      label.col-sm-3.control-label(for='name') Name
-      .col-sm-7
-        input.form-control(type='text', name='name', id='name', value=user.profile.name)
-    .form-group
-      label.col-sm-3.control-label Gender
-      .col-sm-6
-        label.radio.col-sm-3
-          input(type='radio', checked=user.profile.gender=='male', name='gender', value='male', data-toggle='radio')
-          span Male
-        label.radio.col-sm-3
-          input(type='radio', checked=user.profile.gender=='female', name='gender', value='female', data-toggle='radio')
-          span Female
-        label.radio.col-sm-3
-          input(type='radio', checked=user.profile.gender=='other', name='gender', value='other', data-toggle='radio')
-          span Other
-    .form-group
-      label.col-sm-3.control-label(for='location') Location
-      .col-sm-7
-        input.form-control(type='text', name='location', id='location', value=user.profile.location)
-    .form-group
-      label.col-sm-3.control-label(for='website') Website
-      .col-sm-7
-        input.form-control(type='text', name='website', id='website', value=user.profile.website)
-    .form-group
-      label.col-sm-3.control-label Gravatar
-      .col-sm-4
-        img(src=user.gravatar(), class='profile', width='100', height='100', alt=((user.profile.name || user.email || user.id)))
-    .form-group
-      .col-sm-offset-3.col-sm-4
-        button.btn.btn.btn-primary(type='submit')
-          i.fa.fa-pencil
-          | Update Profile
+    form.form-horizontal(action='/account/profile', method='POST')
+        input(type='hidden', name='_csrf', value=_csrf)
+        .form-group
+            label.col-sm-3.control-label(for='email') Email
+            .col-sm-7
+                input.form-control(type='email', name='email', id='email', value=user.email)
+        .form-group
+            label.col-sm-3.control-label(for='name') Name
+            .col-sm-7
+                input.form-control(type='text', name='name', id='name', value=user.profile.name)
+        .form-group
+            label.col-sm-3.control-label Gender
+            .col-sm-6
+                input(type='radio', checked=user.profile.gender=='male', name='gender', value='male', data-toggle='radio')
+                i.fa.fa-male.fa-padded
+                    |  Male
+                input(type='radio', checked=user.profile.gender=='female', name='gender', value='female', data-toggle='radio')
+                i.fa.fa-female.fa-padded
+                    |  Female
+                input(type='radio', checked=user.profile.gender=='other', name='gender', value='other', data-toggle='radio')
+                i.fa.fa-question.fa-padded
+                    |  Other
+        .form-group
+            label.col-sm-3.control-label(for='location') Location
+            .col-sm-7
+                input.form-control(type='text', name='location', id='location', value=user.profile.location)
+        .form-group
+            label.col-sm-3.control-label(for='website') Website
+            .col-sm-7
+                input.form-control(type='text', name='website', id='website', value=user.profile.website)
+        .form-group
+            label.col-sm-3.control-label Gravatar
+            .col-sm-4
+                img(src=user.gravatar(), class='profile', width='100', height='100', alt=((user.profile.name || user.email || user.id)))
+        .form-group
+            .col-sm-offset-3.col-sm-4
+                button.btn.btn.btn-primary(type='submit')
+                    i.fa.fa-pencil
+                    | Update Profile
 
-  .page-header
-    h3 Change Password
+    
+    hr
+    h2.main-title Change Your Password
+    hr
 
-  form.form-horizontal(action='/account/password', method='POST')
-    input(type='hidden', name='_csrf', value=_csrf)
-    .form-group
-      label.col-sm-3.control-label(for='password') New Password
-      .col-sm-7
-        input.form-control(type='password', name='password', id='password')
-    .form-group
-      label.col-sm-3.control-label(for='confirmPassword') Confirm Password
-      .col-sm-7
-        input.form-control(type='password', name='confirmPassword', id='confirmPassword')
-    .form-group
-      .col-sm-offset-3.col-sm-4
-        button.btn.btn-primary(type='submit')
-          i.fa.fa-lock
-          | Change Password
+    form.form-horizontal(action='/account/password', method='POST')
+        input(type='hidden', name='_csrf', value=_csrf)
+        .form-group
+            label.col-sm-3.control-label(for='password') New Password
+            .col-sm-7
+                input.form-control(type='password', name='password', id='password')
+        .form-group
+            label.col-sm-3.control-label(for='confirmPassword') Confirm Password
+            .col-sm-7
+                input.form-control(type='password', name='confirmPassword', id='confirmPassword')
+        .form-group
+            .col-sm-offset-3.col-sm-4
+                button.btn.btn-primary(type='submit')
+                    i.fa.fa-lock
+                    | Change Password
+    hr
+    h3.main-title Delete Account
+    p.lead We'll be sad to see you leave 😥
+    hr
 
-  .page-header
-    h3 Delete Account
-
-  form.form-horizontal(action='/account/delete', method='POST')
-    .form-group
-      p.col-sm-offset-3.col-sm-4 You can delete your account, but keep in mind this action is irreversible.
-      input(type='hidden', name='_csrf', value=_csrf)
-      .col-sm-offset-3.col-sm-4
-        button.btn.btn-danger(type='submit')
-          i.fa.fa-trash
-          | Delete my account
-
+    form.form-horizontal(action='/account/delete', method='POST')
+        .form-group
+            p.col-sm-offset-3.col-sm-6 You can delete your account, but keep in mind this action is irreversible.
+            input(type='hidden', name='_csrf', value=_csrf)
+            .col-sm-offset-3.col-sm-4
+                button.btn.btn-danger(type='submit')
+                    i.fa.fa-trash
+                    | Delete my account

@@ -1,39 +1,41 @@
 nav.navbar.fixed-top.navbar-expand-lg.navbar-light.bg-light
-  a.navbar-brand(href='/')
-    i.fa.fa-cube
-    | FYP
-  button.navbar-toggler(type="button", data-toggle="collapse", data-target="#navbarNav", aria-controls="navbarNav", aria-expanded="false", aria-label="Toggle navigation")
-    span.navbar-toggler-icon
-  .collapse.navbar-collapse(id="navbarNav")
-    ul.navbar-nav.mr-auto
-      li.nav-item(class=(title == 'Home') ? 'active' : undefined)
-        a.nav-link(href='/') Home
-      li.nav-item(class=(title == 'Contact') ? 'active' : undefined)
-        a.nav-link(href='/contact') Contact
-      if user
-        li.nav-item(class=(title == 'Parse') ? 'active' : undefined)
-          a.nav-link(href='/parse') Parse
-        li.nav-item(class=(title == 'Summarize') ? 'active' : undefined)
-          a.nav-link(href='/summarize') Summarize
-      if (user && user.role == 'admin')
-        li.nav-item(class=(title == 'Corpus') ? 'active' : undefined)
-            a.nav-link(href='/corpus') Corpus
-    ul.navbar-nav.navbar-right
-      if !user
-        li.nav-item(class=(title == 'Login') ? 'active' : undefined)
-          a.nav-link(href='/login') Login
-        li.nav-item(class=(title == 'Create Account') ? 'active' : undefined)
-          a.nav-link(href='/signup') Create Account
-      else
-        li.nav-item.dropdown(class=(title == 'Account Management') ? 'active' : undefined)
-          a.nav-link.dropdown-toggle(id="navbarDropdown", href="#", role="button", data-toggle="dropdown", aria-haspopup="true", aria-expanded="false")
-            if user.profile.picture
-              img(src=user.profile.picture, alt=(user.profile.name || user.email || user.id))
+    a.navbar-brand(href='/')
+        i.fa.fa-comment
+        | FYP
+    button.navbar-toggler(type="button", data-toggle="collapse", data-target="#navbarNav", aria-controls="navbarNav", aria-expanded="false", aria-label="Toggle navigation")
+        span.navbar-toggler-icon
+    .collapse.navbar-collapse(id="navbarNav")
+        ul.navbar-nav.mr-auto
+            li.nav-item(class=(title == 'Home') ? 'active' : undefined)
+                a.nav-link(href='/') Home
+            if user
+                li.nav-item(class=(title == 'Parse') ? 'active' : undefined)
+                    a.nav-link(href='/parse') Parse
+                li.nav-item(class=(title == 'Summarize') ? 'active' : undefined)
+                    a.nav-link(href='/summarize') Summarize
+                li.nav-item(class=(title == 'Analyze') ? 'active' : undefined)
+                    a.nav-link(href='/analyze') Analyze
+            if (user && user.role == 'admin')
+                li.nav-item(class=(title == 'Corpus') ? 'active' : undefined)
+                    a.nav-link(href='/corpus') Corpus
+            li.nav-item(class=(title == 'Contact') ? 'active' : undefined)
+                a.nav-link(href='/contact') Contact
+        ul.navbar-nav.navbar-right
+            if !user
+                li.nav-item(class=(title == 'Login') ? 'active' : undefined)
+                    a.nav-link(href='/login') Login
+                li.nav-item(class=(title == 'Create Account') ? 'active' : undefined)
+                    a.nav-link(href='/signup') Create Account
             else
-              img(src=user.gravatar(60), alt=(user.profile.name || user.email || user.id))
-            span=user.profile.name || user.email || user.id
-          .dropdown-menu(aria-labelledby="navbarDropdown")
-            a.dropdown-item(href='/account') My Account
-            .dropdown-divider
-            a.dropdown-item(href='/logout') Logout
+                li.nav-item.dropdown(class=(title == 'Account Management') ? 'active' : undefined)
+                    a.nav-link.dropdown-toggle(id="navbarDropdown", href="#", role="button", data-toggle="dropdown", aria-haspopup="true", aria-expanded="false")
+                        if user.profile.picture
+                            img(src=user.profile.picture, alt=(user.profile.name || user.email || user.id))
+                        else
+                            img(src=user.gravatar(60), alt=(user.profile.name || user.email || user.id))
+                        span=user.profile.name || user.email || user.id
+                    .dropdown-menu(aria-labelledby="navbarDropdown")
+                        a.dropdown-item(href='/account') My Account
+                        .dropdown-divider
+                        a.dropdown-item(href='/logout') Logout
             

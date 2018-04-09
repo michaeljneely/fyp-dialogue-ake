@@ -1,0 +1,38 @@
+extends layout
+
+block content
+    .main-content
+        h3.main-title Results
+        hr
+        for summary in results
+            div.card.mb-3
+                div.card-body
+                    h5.card-title #{summary.reference.name}
+                    h6.card-subtitle.mb-2.text-muted
+                        i "#{summary.reference.summary}"
+                    div.card-text   
+                        table.table.table-hover.w-100
+                            thead
+                                tr
+                                    th(scope='col') Method
+                                    th(scope='col') Generated Summary
+                                    th(scope='col') Scores
+                            tbody
+                                for generated in summary.generated
+                                    tr
+                                        td.w-25
+                                            p #{generated.method}
+                                        td.w-50
+                                            p
+                                                for word,index in generated.summary
+                                                    if index > 0
+                                                        span 
+                                                    if word.match
+                                                        span.text-match #{word.term}
+                                                    else
+                                                        span.text-no-match #{word.term}
+                                        td.w-25
+                                            ul
+                                                for score in generated.scores
+                                                    li #{score.method} - #{score.score}
+                            

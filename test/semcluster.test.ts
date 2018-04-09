@@ -1,11 +1,12 @@
-import CoreNLP, { ConnectorServer } from "corenlp";
+import CoreNLP from "corenlp";
 import * as fs from "fs-extra";
 import * as path from "path";
 import * as sinon from "sinon";
 import * as request from "supertest";
 import * as app from "../src/app";
-import * as corenlpService from "../src/services/corenlp";
-import * as semClusterService from "../src/services/semcluster";
+import { CandidateTermTypes, ExtractedCandidateTerm } from "../src/models/CandidateTerm";
+import * as corenlpService from "../src/services/corenlp/corenlp";
+import * as candidateTermService from "../src/services/processors/candidateTerm";
 import { Stack } from "../src/utils/stack";
 
 describe("TEST SemCluster Service", () => {
@@ -15,7 +16,7 @@ describe("TEST SemCluster Service", () => {
     // Complex document to test every branch of the candidate term extraction function
     const cteText = "Cat. Cats. Americas. George Washington. John in the hat. This is minty gum. John of Smith. John Smith of. John Smith West. John of Smith West. Dog bird dog. This is minty not gum. James of minty. gold medal the. the. running. spicy gum. fresh gum stick. Michael. Michael running.";
     // Stubbing CoreNLP Server saves a substantial amount of time
-    const coreNLPStub = sinon.stub(corenlpService, "parseDocument");
+    const coreNLPStub = sinon.stub(corenlpService, "annotate");
 
     afterEach(() => {
         coreNLPStub.reset();
@@ -30,7 +31,7 @@ describe("TEST SemCluster Service", () => {
             document: simpleDocument,
             speakers: new Array<string>()
         });
-        const result = await corenlpService.parseDocument(testString, false);
+        const result = await corenlpService.annotate(testString, false);
         const document = result.document;
         // Build token stack
         const tokenStack = new Stack<CoreNLP.simple.Token>();
@@ -40,7 +41,7 @@ describe("TEST SemCluster Service", () => {
             });
         }
         // Verify behavior
-        expect(semClusterService.buildStringFromTokenStack(tokenStack)).toEqual(testString);
+        expect(candidateTermService.buildStringFromTokenStack(tokenStack)).toEqual(testString.toLowerCase());
         coreNLPStub.reset();
     });
 
@@ -53,28 +54,28 @@ describe("TEST SemCluster Service", () => {
             document: complexDocument,
             speakers: new Array<string>()
         });
-        const result = await corenlpService.parseDocument(cteText, false);
+        const result = await corenlpService.annotate(cteText, false);
         // Extract candidate terms and verify
-        const candidateTerms = semClusterService.extractCandidateTerms(result.document);
-        expect(candidateTerms.length).toEqual(18);
-        expect(candidateTerms).toContain("Cat");
-        expect(candidateTerms).toContain("Cats");
-        expect(candidateTerms).toContain("Americas");
-        expect(candidateTerms).toContain("George Washington");
-        expect(candidateTerms).toContain("John");
+        const candidateTerms = candidateTermService.extractCandidateTermsFromCoreNLPDocument(result.document).toStringArray();
+        expect(candidateTerms.length).toBe(18);
+        expect(candidateTerms).toContain("cat");
+        expect(candidateTerms).toContain("cats");
+        expect(candidateTerms).toContain("americas");
+        expect(candidateTerms).toContain("george washington");
+        expect(candidateTerms).toContain("john");
         expect(candidateTerms).toContain("hat");
         expect(candidateTerms).toContain("minty gum");
-        expect(candidateTerms).toContain("John of Smith");
-        expect(candidateTerms).toContain("John Smith");
-        expect(candidateTerms).toContain("John Smith West");
-        expect(candidateTerms).toContain("John of Smith West");
-        expect(candidateTerms).toContain("Dog bird dog");
+        expect(candidateTerms).toContain("john of smith");
+        expect(candidateTerms).toContain("john smith");
+        expect(candidateTerms).toContain("john smith west");
+        expect(candidateTerms).toContain("john of smith west");
+        expect(candidateTerms).toContain("dog bird dog");
         expect(candidateTerms).toContain("gum");
-        expect(candidateTerms).toContain("James");
+        expect(candidateTerms).toContain("james");
         expect(candidateTerms).toContain("gold medal");
         expect(candidateTerms).toContain("spicy gum");
         expect(candidateTerms).toContain("fresh gum stick");
-        expect(candidateTerms).toContain("Michael");
+        expect(candidateTerms).toContain("michael");
         coreNLPStub.reset();
     });
 });

@@ -1,10 +1,10 @@
 import * as express from "express";
+import { Request, Response } from "express";
 import * as passportConfig from "../config/passport";
 import * as summaryService from "../services/summary";
-
-import { Request, Response } from "express";
 import { asyncMiddleware } from "../utils/asyncMiddleware";
 import { logger } from "../utils/logger";
+
 
 /**
  * GET /summarize - Render summary form
@@ -12,8 +12,8 @@ import { logger } from "../utils/logger";
  * @param res Express Response
  */
 function index(req: Request, res: Response) {
-    res.render("summary", {
-        title: "Summary"
+    res.render("summarize", {
+        title: "Summarize"
     });
 }
 
@@ -37,8 +37,11 @@ async function summarize(req: Request, res: Response) {
     }
 
     try {
-        const summaries = await summaryService.summarize(req.body.text, req.user.id, parseInt(req.body.wordLength));
-        res.json(summaries);
+        const summary = await summaryService.summarizeConversation(req.body.text, req.user.id, parseInt(req.body.wordLength));
+        res.render("summary", {
+            title: "Summary",
+            summary: summary
+        });
     }
     catch (err) {
         logger.error(err);

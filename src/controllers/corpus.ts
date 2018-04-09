@@ -1,11 +1,10 @@
 import * as express from "express";
-import * as passportConfig from "../config/passport";
-import * as corpusService from "../services/corpus" ;
-
 import { accessControl } from "../app";
-import { CorpusDocument, CorpusDocumentModel } from "../models/CorpusDocument";
+import * as passportConfig from "../config/passport";
+import * as corpusService from "../services/documents/corpus";
 import { asyncMiddleware } from "../utils/asyncMiddleware";
 import { logger } from "../utils/logger";
+
 
 /**
  * Render corpus page - admin only
@@ -15,7 +14,7 @@ import { logger } from "../utils/logger";
 async function displayCorpus(req: express.Request, res: express.Response) {
     const permission = accessControl.can(req.user.role).readAny("corpus");
     if (permission.granted) {
-        const documents = await CorpusDocumentModel.find({});
+        const documents = await corpusService.showAllDocuments();
         // Some Summary statistics here ...
         res.render("corpus", {
             title: "Corpus",
@@ -38,7 +37,6 @@ async function buildCorpus(req: express.Request, res: express.Response) {
         try {
             const sizeOfCorpus = await corpusService.buildCorpus();
             const message = `Corpus built from ${sizeOfCorpus} documents.`;
-            logger.info(message);
             req.flash("success", {msg: message});
         }
         catch (error) {
@@ -48,6 +46,9 @@ async function buildCorpus(req: express.Request, res: express.Response) {
         finally {
             res.redirect("/corpus");
         }
+    }
+    else {
+        res.status(403).send("Access Denied");
     }
 }
 

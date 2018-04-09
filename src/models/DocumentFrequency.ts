@@ -1,5 +1,5 @@
 import * as mongoose from "mongoose";
-import { InstanceType, ModelType, prop, Typegoose } from "typegoose";
+import { prop, Typegoose } from "typegoose";
 
 export class DocumentFrequency extends Typegoose {
     @prop({ required: true })

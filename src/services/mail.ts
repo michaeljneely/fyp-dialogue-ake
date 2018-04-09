@@ -1,5 +1,4 @@
 import * as sg from "@sendgrid/mail";
-import { User, UserModel } from "../models/User";
 
 /**
  * Send password reset confirmation via sendgrid

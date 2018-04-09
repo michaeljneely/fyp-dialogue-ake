@@ -69,7 +69,7 @@ textarea {
 
 // Main Block
 .main-content {
-  padding: 20px;
+  padding-top: 20px;
 }
 // Main Title
 .main-title {
@@ -80,4 +80,26 @@ textarea {
 .main-textarea {
   width: 100%;
   height: 100%;
+}
+
+// Text Highlighting
+// -------------------------
+.text-match {
+  color: #26C281;
+}
+
+.text-no-match {
+  color: #CF3A24;
+}
+
+.flex-text {
+  word-break: break-all;
+}
+
+input[type="radio"] {
+  margin-right: 0;
+}
+
+.fa-padded {
+  padding: 10px;
 }
