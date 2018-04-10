@@ -1,6 +1,7 @@
 import * as _ from "lodash";
 import { SummaryMetric } from "../../models/Summary";
 import { normalizeStringArray } from "../../utils/functions";
+import { logger } from "../../utils/logger";
 
 /*
 Rouge Metric
@@ -32,6 +33,12 @@ export function nGrams(terms: Array<string>, n: number): Array<Array<string>> {
 export function rougeN(reference: Array<string>, candidate: Array<string>, n: number): number {
     const candidateNGrams = nGrams(candidate, n).map((nGram) => nGram.join(" "));
     const referenceNGrams = nGrams(reference, n).map((nGram) => nGram.join(" "));
+    // logger.info(`candidate: `);
+    // candidateNGrams.forEach((candidate) => logger.info(candidate));
+    // logger.info(`reference: `);
+    // referenceNGrams.forEach((reference) => logger.info(reference));
     const matches = _.intersection(normalizeStringArray(candidateNGrams), normalizeStringArray(referenceNGrams));
+    // logger.info(`matches: `);
+    // matches.forEach((match) => logger.info(match));
     return matches.length / referenceNGrams.length;
 }

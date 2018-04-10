@@ -1,21 +1,10 @@
 import CoreNLP from "corenlp";
+import { EntityType, NamedEntityTerm } from "../../models/NamedEntityTerm";
 import { Stack } from "../../utils/stack";
 
 /*
     Service to abstract processing of Named Entities
 */
-
-export type entityNamed = "PERSON" | "LOCATION" | "ORGANIZATION" | "MISC";
-export type entityNumerical = "MONEY" | "NUMBER" | "ORDINAL" | "PERCENT";
-export type entityTemporal = "DATE" | "TIME" | "DURATION" | "SET";
-export type entityNone = "O";
-export type NamedEntity = entityNamed | entityNumerical | entityTemporal | entityNone;
-
-
-export interface NamedEntityTerm {
-    term: string;
-    entityType: NamedEntity;
-}
 
 /**
  * Extract all Named Entities from a CoreNLP Document
@@ -26,17 +15,14 @@ export function extractNamedEntitiesFromCoreNLPDocument(annotated: CoreNLP.simpl
     const entityStack = new Stack<NamedEntityTerm>();
     annotated.sentences().forEach((sentence) => {
         sentence.tokens().forEach((token) => {
-            const ner = token.ner() as NamedEntity;
+            const ner = token.ner() as EntityType;
             if (ner !== "O") {
                 const top = entityStack.peek();
-                if (top && top.entityType !== ner) {
+                if (top && top.type !== ner) {
                     entities.push(flushEntityStack(entityStack));
                     entityStack.clear();
                 }
-                entityStack.push({
-                    term: token.word(),
-                    entityType: ner,
-                });
+                entityStack.push(new NamedEntityTerm(token.word().toLowerCase(), ner));
             }
         });
         const top = entityStack.peek();
@@ -54,14 +40,12 @@ export function extractNamedEntitiesFromCoreNLPDocument(annotated: CoreNLP.simpl
  * @param {Stack<NamedEntityTerm>} stack
  */
 function flushEntityStack(stack: Stack<NamedEntityTerm>): NamedEntityTerm {
-    const ret: NamedEntityTerm = {
-        term: "",
-        entityType: undefined
-    };
+    let term: string = "";
+    let type: EntityType;
     stack.data().forEach((net: NamedEntityTerm) => {
-        ret.term = ret.term.concat(" " + net.term.toLowerCase());
-        ret.entityType = (ret.entityType === net.entityType) ? ret.entityType : net.entityType;
+        term = term.concat(" " + net.term.toLowerCase());
+        type = (type === net.type) ? type : net.type;
     });
-    ret.term = ret.term.trim();
-    return ret;
+    term = term.trim();
+    return new NamedEntityTerm(term, type);
 }

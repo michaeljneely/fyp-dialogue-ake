@@ -1,6 +1,7 @@
 import * as mongoose from "mongoose";
 import { arrayProp, InstanceType, ModelType, prop, Typegoose } from "typegoose";
 import { DocumentFrequency } from "./DocumentFrequency";
+import { Term } from "./NamedEntityTerm";
 
 export enum CandidateTermTypes {
     Noun,
@@ -25,23 +26,18 @@ export const CandidateTermModel = new CandidateTerm().getModelForClass(Candidate
 });
 
 
-export class ExtractedCandidateTerm {
-    private _term: string;
+export class ExtractedCandidateTerm extends Term {
     private _type: CandidateTermTypes;
     constructor(term: string, type: CandidateTermTypes) {
-        this._term = term;
+        super(term);
         this._type = type;
-    }
-
-    public get term() {
-        return this._term;
     }
 
     public get type() {
         return this._type;
     }
-    public equals(ect: ExtractedCandidateTerm): boolean {
-        return ((this._term === ect.term) && (this._type === ect.type));
+    public equals(t: Term): boolean {
+        return this._term === t.term;
     }
 }
 

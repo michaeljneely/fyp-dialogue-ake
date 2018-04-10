@@ -100,3 +100,31 @@ export function reduceNumberInRange(num: number, min: number, max: number): numb
 export function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+
+export function permute(input: Array<any>): Array<Array<any>> {
+    const ret = new Array<any>();
+
+    const permute = (arr: Array<any>, m: Array<any> = []) => {
+        if (arr.length === 0) {
+            ret.push(m);
+        }
+        else {
+            for (let i = 0; i < arr.length; i++) {
+                const current = arr.slice();
+                const next = current.splice(i, 1);
+                permute(current.slice(), m.concat(next));
+            }
+        }
+   };
+
+   permute(input);
+
+   return ret;
+}
+
+export async function asyncFilter(arr: Array<any>, callback: Function) {
+    return (await Promise.all(arr.map(async item => {
+         return (await callback(item)) ? item : undefined;
+    }))).filter((i: any) => i !== undefined);
+}

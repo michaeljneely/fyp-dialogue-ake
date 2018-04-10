@@ -66,6 +66,7 @@ async function postAnalyzeDocument(req: Request, res: Response) {
     const permission = accessControl.can(req.user.role).readAny("corpus");
     if (permission.granted) {
         try {
+            logger.info(`analyzing corpus document`);
             const documentId: string = req.params.documentId;
             const results = await analysisService.analyzeCorpusConversation(documentId);
             res.render("results", {

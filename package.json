@@ -58,6 +58,7 @@
     "redis": "2.8.0",
     "reflect-metadata": "0.1.12",
     "request": "2.83.0",
+    "string-similarity": "1.2.0",
     "typegoose": "5.0.0",
     "winston": "2.4.0",
     "xml-js": "1.6.2"

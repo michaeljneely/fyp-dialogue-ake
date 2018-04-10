@@ -20,15 +20,13 @@ export async function queryDBpedia(input: string, queryClass: string = "", maxHi
     try {
         const queryString = encodeURIComponent(input.trim());
         const res = await got(`http://lookup.dbpedia.org/api/search/KeywordSearch?QueryString=${queryString}&QueryClass=${queryClass}&MaxHits=${maxHits}`);
-        if (res !== undefined && res.body !== undefined) {
-            try {
-                const ks: KeywordSearch = JSON.parse(convert.xml2json(res.body, {compact: true, spaces: 4}));
-                return Promise.resolve(ks);
-            } catch (err) {
-                // No body returned -> 0 results
-            }
+        if (res && res.body) {
+            const ks: KeywordSearch = JSON.parse(convert.xml2json(res.body, {compact: true, spaces: 4}));
+            return ks;
         }
-        return Promise.resolve(undefined);
+        else {
+            return undefined;
+        }
     }
     catch (error) {
         logger.error(error);
@@ -45,23 +43,27 @@ export async function getDBpediaScore(input: string): Promise<number> {
     try {
         const term = input.toLowerCase().trim();
         const existingScore = await DBpediaScoreModel.findOne({term});
-        if (_.isUndefined(existingScore) || _.isNull(existingScore)) {
-            // DBpedia gets angry if you query to fast
-            await sleep(1000);
+        if (!existingScore) {
+            await sleep(500);
             const ks = await queryDBpedia(input);
-            if (ks && ks.ArrayOfResult.Result) {
+            if (ks && ks.ArrayOfResult && Object.prototype.hasOwnProperty("length")) {
                 const scoreModel = await new DBpediaScoreModel({
                     term,
-                    numResults: ks.ArrayOfResult.Result.length || 0
+                    numResults: ks.ArrayOfResult.Result.length
                 }).save();
-                const score = scoreModel.numResults;
-                return ((score === 0)) ? 0 : ((51 - score) / 50);
+                return ( (51 - scoreModel.numResults) / 50);
             }
             else {
+                const scoreModel = await new DBpediaScoreModel({
+                    term,
+                    numResults: 0
+                }).save();
                 return 0;
             }
         }
-        return (existingScore.numResults === 0) ? 0 : ((51 - existingScore.numResults) / 50);
+        else {
+            return ((51 - existingScore.numResults) / 50);
+        }
     }
     catch (error) {
         logger.error(error);
