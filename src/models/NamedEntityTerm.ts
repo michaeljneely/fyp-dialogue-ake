@@ -1,4 +1,4 @@
-type EntityTypeNamed = "PERSON" | "LOCATION" | "ORGANIZATION" | "MISC";
+type EntityTypeNamed = "PERSON" | "LOCATION" | "ORGANIZATION" | "MISC" | "COUNTRY" | "NATIONALITY" | "COUNTRY" | "STATE_OR_PROVENCE" | "TITLE" | "IDEOLOGY" | "RELIGION" | "CRIMINAL_CHARGE" | "CAUSE_OF_DEATH";
 
 type EntityTypeNumber =  | "MONEY" | "NUMBER" | "ORDINAL" | "PERCENT";
 type EntityTypeDuration = "DATE" | "TIME" | "DURATION" | "SET";

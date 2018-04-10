@@ -20,7 +20,14 @@ interface TermWithTFIDF {
 
 export async function npAndNERSummary(annotated: CoreNLP.simple.Document, numberOfWords: number): Promise<Array<string>> {
 
+    const namedEntityFilter = ["PERSON", "LOCATION", "ORGANIZATION", "MISC", "COUNTRY", "NATIONALITY", "COUNTRY", "STATE_OR_PROVENCE", "TITLE", "IDEOLOGY", "RELIGION", "CRIMINAL_CHARGE", "CAUSE_OF_DEATH"];
     function _namedEntityAndCandidateTermComparator(obj1: Term, obj2: Term): boolean {
+        if (obj1 instanceof NamedEntityTerm) {
+            return namedEntityFilter.indexOf(obj1.type) === -1;
+        }
+        else if (obj2 instanceof NamedEntityTerm) {
+            return namedEntityFilter.indexOf(obj2.type) === -1;
+        }
         return obj1.term === obj2.term;
     }
 
@@ -31,6 +38,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
 
         // Extract Named Entities
         const namedEntities = extractNamedEntitiesFromCoreNLPDocument(annotated);
+        logger.info(`${candidateTerms.size() - namedEntities.length} total terms to consider`);
         namedEntities.forEach((ne) => {
             logger.info(`Named Entity: ${ne.term}`);
         });
@@ -39,42 +47,35 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
         if (_.isEmpty(namedEntities) && _.isEmpty(candidateTerms.toStringArray())) {
             return [annotated.toString()];
         }
-        const importantNamedEntities = ["PERSON", "LOCATION", "ORGANIZATION", "MISC", "COUNTRY", "NATIONALITY", "COUNTRY", "STATE_OR_PROVENCE", "TITLE", "IDEOLOGY", "RELIGION", "CRIMINAL_CHARGE", "CAUSE_OF_DEATH"];
-        const blep: Array<Term> = _.unionWith(candidateTermKeys, namedEntities, _namedEntityAndCandidateTermComparator);
 
-        const bloop = blep.filter((b) => {
-            if (b.term.length < 2) return false;
-            if (b instanceof NamedEntityTerm) {
-                logger.info(`Checking ${b.term}`);
-                logger.info(`Type: ${b.type}`);
-                const q = importantNamedEntities.indexOf(b.type) !== -1;
-                logger.info(`${q}`);
-                return q;
-            }
-            else if (b instanceof ExtractedCandidateTerm) {
-                return true;
-            }
-        });
-        logger.info(`remove ${blep.length - bloop.length} terms`);
+        const bloop: Array<Term> = _.unionWith(namedEntities, candidateTermKeys, _namedEntityAndCandidateTermComparator);
+
+        logger.info(`removed ${(namedEntities.length + candidateTerms.size()) - bloop.length} terms`);
 
         const termsToRemove = new Array<Term>();
         for (let i = 0; i < bloop.length; i++) {
-            const rest = bloop.slice(0, i).concat((bloop.slice( i + 1, bloop.length)));
+            const rest = bloop.slice(0, i).concat((bloop.slice(i + 1, bloop.length)));
             for (let j = 0; j < rest.length; j++) {
                 if (stringSimilarity.compareTwoStrings(bloop[i].term, rest[j].term) > 0.75) {
-                    bloop[i].term.length > rest[j].term.length ? termsToRemove.push(bloop[i]) : termsToRemove.push(rest[j]);
+                    if (termsToRemove.indexOf(bloop[i]) === -1) {
+                        logger.info(`${bloop[i].term} and ${rest[j].term} too similar`);
+                        if (bloop[i] instanceof NamedEntityTerm) {
+                            logger.info(`removing ${rest[j]}`);
+                            termsToRemove.push(rest[j]);
+                        }
+                        else bloop[i].term.length > rest[j].term.length ? termsToRemove.push(bloop[i]) : termsToRemove.push(rest[j]);
+                    }
                 }
             }
         }
         const termsToConsider = bloop.filter((bleep) => termsToRemove.indexOf(bleep) === -1);
-        logger.info(`removed ${bloop.length - termsToConsider.length} terms out of a possible ${bloop.length}`);
+        logger.info(`removed ${bloop.length - termsToConsider.length} terms.`);
 
         if (termsToConsider.length < numberOfWords) {
             return termsToConsider.map((ttc) => ttc.term);
         }
         logger.info(`beginning to query dbpedia`);
         const chomp: Array<Term>  = await asyncFilter(termsToConsider, (async (term: Term): Promise<boolean> => {
-            logger.info(`async filter call`);
             if (term instanceof ExtractedCandidateTerm) {
                 const score = await getDBpediaScore(term.term);
                 logger.info(`term: ${term.term}, score: ${score}`);
@@ -126,10 +127,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
             else return 0;
         });
 
-        finalFinalFinal.forEach(((fff) => {
-            logger.info(fff.term.term);
-            logger.info(fff.tfidf.toPrecision(4));
-        }));
+        logger.info(`${finalFinalFinal.length} terms left to consider`);
 
         return ["hello"];
     }
