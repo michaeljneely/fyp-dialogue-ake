@@ -1,6 +1,7 @@
 import CoreNLP from "corenlp";
 import { EntityType, NamedEntityTerm } from "../../models/NamedEntityTerm";
 import { Stack } from "../../utils/stack";
+import { logger } from "../../utils/logger";
 
 /*
     Service to abstract processing of Named Entities
@@ -14,17 +15,23 @@ export function extractNamedEntitiesFromCoreNLPDocument(annotated: CoreNLP.simpl
     const entities = new Array<NamedEntityTerm>();
     const entityStack = new Stack<NamedEntityTerm>();
     annotated.sentences().forEach((sentence) => {
-        sentence.tokens().forEach((token) => {
-            const ner = token.ner() as EntityType;
+        const tokens = sentence.tokens();
+        for (let i = 0; i < tokens.length; i++) {
+            logger.info(tokens[i].word());
+            const ner = tokens[i].ner() as EntityType;
             if (ner !== "O") {
                 const top = entityStack.peek();
                 if (top && top.type !== ner) {
                     entities.push(flushEntityStack(entityStack));
                     entityStack.clear();
                 }
-                entityStack.push(new NamedEntityTerm(token.word().toLowerCase(), ner));
+                entityStack.push(new NamedEntityTerm(tokens[i].word().toLowerCase(), ner));
             }
-        });
+            else if (i > 0 && tokens[i - 1].ner() !== ner) {
+                entities.push(flushEntityStack(entityStack));
+                entityStack.clear();
+            }
+        }
         const top = entityStack.peek();
         if (top) {
             entities.push(flushEntityStack(entityStack));

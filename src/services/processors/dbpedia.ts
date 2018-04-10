@@ -19,6 +19,9 @@ import { logger } from "../../utils/logger";
 export async function queryDBpedia(input: string, queryClass: string = "", maxHits: number = 50): Promise<KeywordSearch> {
     try {
         const queryString = encodeURIComponent(input.trim());
+        logger.info(`Current Time: ${Date.now().toString()}`);
+        await sleep(2000);
+        logger.info(`Date after sleep: ${Date.now().toString()}`);
         const res = await got(`http://lookup.dbpedia.org/api/search/KeywordSearch?QueryString=${queryString}&QueryClass=${queryClass}&MaxHits=${maxHits}`);
         if (res && res.body) {
             const ks: KeywordSearch = JSON.parse(convert.xml2json(res.body, {compact: true, spaces: 4}));
@@ -44,14 +47,22 @@ export async function getDBpediaScore(input: string): Promise<number> {
         const term = input.toLowerCase().trim();
         const existingScore = await DBpediaScoreModel.findOne({term});
         if (!existingScore) {
-            await sleep(500);
             const ks = await queryDBpedia(input);
-            if (ks && ks.ArrayOfResult && Object.prototype.hasOwnProperty("length")) {
-                const scoreModel = await new DBpediaScoreModel({
-                    term,
-                    numResults: ks.ArrayOfResult.Result.length
-                }).save();
-                return ( (51 - scoreModel.numResults) / 50);
+            if (ks && ks.ArrayOfResult) {
+                try {
+                    const scoreModel = await new DBpediaScoreModel({
+                        term,
+                        numResults: ks.ArrayOfResult.Result.length
+                    }).save();
+                    return ( (51 - scoreModel.numResults) / 50);
+                }
+                catch (error) {
+                    const scoreModel = await new DBpediaScoreModel({
+                        term,
+                        numResults: 0
+                    }).save();
+                    return 0;
+                }
             }
             else {
                 const scoreModel = await new DBpediaScoreModel({

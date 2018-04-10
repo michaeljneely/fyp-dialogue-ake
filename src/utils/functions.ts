@@ -1,5 +1,6 @@
 import { uniq } from "lodash";
 import * as filters from "../constants/filters";
+import { logger } from "./logger";
 
 /**
  * Perform a Fisher-Yates Shuffle
@@ -42,10 +43,12 @@ export function make2DNumberArray(x: number, y: number) {
  */
 export function stripSpeakers(conversation: string): [Array<string>, string] {
     const speakers: Array<string> = [];
+    logger.info(`conversation before${conversation}`);
     const text =  conversation.replace(filters.speakerRegex, ((speaker: string) => {
         speakers.push(speaker.trim().replace(":", ""));
         return "";
     }));
+    logger.info(`conversation after${text}`);
     return [uniq(speakers), text];
 }
 
@@ -97,9 +100,7 @@ export function reduceNumberInRange(num: number, min: number, max: number): numb
  * Sleep for X ms
  * @param ms Milliseconds
  */
-export function sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
+export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 
 export function permute(input: Array<any>): Array<Array<any>> {

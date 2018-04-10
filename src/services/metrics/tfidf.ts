@@ -6,6 +6,7 @@ import { CorpusLemmaModel } from "../../models/CorpusLemma";
 import { UserCandidateTermModel } from "../../models/UserCandidateTerm";
 import { UserDocumentModel } from "../../models/UserDocument";
 import { UserLemmaModel } from "../../models/UserLemma";
+import { logger } from "../../utils/logger";
 
 /*
     Service to Calculate TFIDF Metrics

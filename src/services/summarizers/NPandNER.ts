@@ -9,6 +9,7 @@ import { extractCandidateTermsFromCoreNLPDocument } from "../processors/candidat
 import { getDBpediaScore, queryDBpedia } from "../processors/dbpedia";
 import { extractNamedEntitiesFromCoreNLPDocument } from "../processors/namedEntities";
 const stringSimilarity = require("string-similarity");
+import { TerminateEnvironmentResources } from "aws-sdk/clients/elasticbeanstalk";
 import * as bluebird from "bluebird";
 import { getCountInCoreNLPDocument } from "../corenlp/corenlp";
 import { calculateTFIDF, candidateTermIDFCorpus, lemmaIDFCorpus } from "../metrics/tfidf";
@@ -16,6 +17,11 @@ import { calculateTFIDF, candidateTermIDFCorpus, lemmaIDFCorpus } from "../metri
 interface TermWithTFIDF {
     term: Term;
     tfidf: number;
+}
+
+interface TermWithScore {
+    term: Term;
+    score: number;
 }
 
 export async function npAndNERSummary(annotated: CoreNLP.simple.Document, numberOfWords: number): Promise<Array<string>> {
@@ -38,15 +44,15 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
 
         // Extract Named Entities
         const namedEntities = extractNamedEntitiesFromCoreNLPDocument(annotated);
-        logger.info(`${candidateTerms.size() - namedEntities.length} total terms to consider`);
-        namedEntities.forEach((ne) => {
-            logger.info(`Named Entity: ${ne.term}`);
-        });
+        logger.info(`${candidateTerms.size() + namedEntities.length} total terms to consider`);
 
         // Early termination
         if (_.isEmpty(namedEntities) && _.isEmpty(candidateTerms.toStringArray())) {
             return [annotated.toString()];
         }
+        namedEntities.forEach((ner) => {
+            logger.info(`NAMED ENTITY: ${ner.term}`);
+        });
 
         const bloop: Array<Term> = _.unionWith(namedEntities, candidateTermKeys, _namedEntityAndCandidateTermComparator);
 
@@ -68,6 +74,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
                 }
             }
         }
+        await getDBpediaScore("hello!");
         const termsToConsider = bloop.filter((bleep) => termsToRemove.indexOf(bleep) === -1);
         logger.info(`removed ${bloop.length - termsToConsider.length} terms.`);
 
@@ -75,26 +82,47 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
             return termsToConsider.map((ttc) => ttc.term);
         }
         logger.info(`beginning to query dbpedia`);
-        const chomp: Array<Term>  = await asyncFilter(termsToConsider, (async (term: Term): Promise<boolean> => {
-            if (term instanceof ExtractedCandidateTerm) {
-                const score = await getDBpediaScore(term.term);
-                logger.info(`term: ${term.term}, score: ${score}`);
-                return score > 0.5;
+        async function processDBP(arr: Array<Term>): Promise<Array<Term>> {
+            const ret = new Array<Term>();
+            for (let i = 0; i < arr.length; i++) {
+                logger.info(`waiting on iter ${i}`);
+                const score = await getDBpediaScore(arr[i].term);
+                if (score > 0.5) {
+                    ret.push(arr[i]);
+                }
+                logger.info(`done with iter ${i}`);
             }
-            else {
-                logger.info(`NamedEntity!: ${term.term}`);
-                return Promise.resolve(true);
-            }
-        }));
-        logger.info(`done querying. Only ${chomp.length} items remaining`);
-        let tfIdfTotal: number = 0;
-        let ectCount: number = 0;
-        const finalFinalTerms = await Promise.all(chomp.map(async (term: Term): Promise<TermWithTFIDF> => {
+            return ret;
+        }
+
+        logger.info(`${termsToConsider.length}`);
+        const tyrebf = await processDBP(termsToConsider);
+
+        // const chomp: Array<Term>  = await asyncFilter(termsToConsider, (async (term: Term): Promise<boolean> => {
+        //     if (term instanceof ExtractedCandidateTerm) {
+        //         const score = await getDBpediaScore(term.term);
+        //         logger.info(`term: ${term.term}, score: ${score}`);
+        //         return score > 0.5;
+        //     }
+        //     else if (term instanceof NamedEntityTerm) {
+        //         logger.info(`NamedEntity!: ${term.term}`);
+        //         const score = await getDBpediaScore(term.term);
+        //         logger.info(`term: ${term.term}, score: ${score}`);
+        //         return score > 0.5;
+        //     }
+        // }));
+        // logger.info(`done querying. Only ${chomp.length} items remaining`);
+        // const tfIdfTotal: number = 0;
+        // const ectCount: number = 0;
+        // TFIDF -> top half
+        // Named entity -> top half
+
+        const finalFinalTerms = await Promise.all(tyrebf.map(async (term: Term): Promise<TermWithTFIDF> => {
             if (term instanceof ExtractedCandidateTerm) {
                 const idf = await candidateTermIDFCorpus(term);
                 const tfidf = calculateTFIDF(candidateTerms.get(term)["1"], idf);
-                tfIdfTotal += tfidf;
-                ectCount += 1;
+                // tfIdfTotal += tfidf;
+                // ectCount += 1;
                 return {
                     term,
                     tfidf,
@@ -109,15 +137,16 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
                 };
             }
         }));
-        const averageTFIDF = tfIdfTotal / ectCount;
-        const QQQ = finalFinalTerms.filter((term: TermWithTFIDF) => {
-            if (term.term instanceof ExtractedCandidateTerm) {
-                return term.tfidf > averageTFIDF;
-            }
-            else return true;
-        });
+        // const averageTFIDF = tfIdfTotal / ectCount;
+        // const QQQ = finalFinalTerms.filter((term: TermWithTFIDF) => {
+        //     if (term.term instanceof ExtractedCandidateTerm) {
+        //         logger.info(`WAAAAAAAAAA: ${term.term.term} - ${term.tfidf} - ${averageTFIDF}`);
+        //         return term.tfidf > averageTFIDF;
+        //     }
+        //     else return true;
+        // });
 
-        const finalFinalFinal = QQQ.sort((t1, t2) => {
+        const finalFinalFinal = finalFinalTerms.sort((t1, t2) => {
             if (t1.tfidf > t2.tfidf) {
                 return -1;
             }
@@ -127,8 +156,12 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
             else return 0;
         });
 
-        logger.info(`${finalFinalFinal.length} terms left to consider`);
+        finalFinalFinal.forEach((fff) => {
+            logger.info(fff.term.term);
+            logger.info(`${fff.tfidf}`);
+        });
 
+        logger.info(`${finalFinalFinal.length} terms left to consider`);
         return ["hello"];
     }
     catch (error) {
