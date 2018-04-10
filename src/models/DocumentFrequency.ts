@@ -8,4 +8,9 @@ export class DocumentFrequency extends Typegoose {
     frequency: number;
 }
 
-export const DocumentFrequencyModel = new DocumentFrequency().getModelForClass(DocumentFrequency);
+export const DocumentFrequencyModel = new DocumentFrequency().getModelForClass(DocumentFrequency, {
+    existingConnection: mongoose.connection,
+    schemaOptions : {
+        timestamps: true
+    }
+});

@@ -5,7 +5,7 @@ import { DocumentFrequency } from "./DocumentFrequency";
 
 export class UserCandidateTerm extends Typegoose {
     @prop({ required: true, index: true })
-    owner: mongoose.Schema.Types.ObjectId;
+    owner: mongoose.Types.ObjectId;
     @prop({ required: true, index: true })
     term: string;
     @prop({ required: true })
@@ -14,4 +14,9 @@ export class UserCandidateTerm extends Typegoose {
     frequencies: Array<DocumentFrequency>;
 }
 
-export const UserCandidateTermModel = new UserCandidateTerm().getModelForClass(UserCandidateTerm);
+export const UserCandidateTermModel = new UserCandidateTerm().getModelForClass(UserCandidateTerm, {
+    existingConnection: mongoose.connection,
+    schemaOptions: {
+        timestamps: true
+    }
+});

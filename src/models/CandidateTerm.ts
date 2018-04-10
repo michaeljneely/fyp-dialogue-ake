@@ -17,7 +17,12 @@ export class CandidateTerm extends Typegoose {
     frequencies: Array<DocumentFrequency>;
 }
 
-export const CandidateTermModel = new CandidateTerm().getModelForClass(CandidateTerm);
+export const CandidateTermModel = new CandidateTerm().getModelForClass(CandidateTerm, {
+    existingConnection: mongoose.connection,
+    schemaOptions : {
+        timestamps: true
+    }
+});
 
 
 export class ExtractedCandidateTerm {

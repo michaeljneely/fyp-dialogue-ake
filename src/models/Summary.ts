@@ -68,7 +68,7 @@ export abstract class Summary {
  */
 export function buildSummaryTermArray(generated: Array<string>, reference: string): Array<SummaryTerm> {
     return generated.map((term) => {
-        const match = reference.indexOf(term.toLowerCase()) !== -1;
+        const match = new RegExp("\\b" + term + "\\b", "i").test(reference);
         return {
             term,
             match

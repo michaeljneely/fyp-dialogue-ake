@@ -1,6 +1,9 @@
 import * as got from "got";
+import _ = require("lodash");
 import * as convert from "xml-js";
 import { KeywordSearch } from "../../models/DBpedia";
+import { DBpediaScoreModel } from "../../models/DBpediaScore";
+import { sleep } from "../../utils/functions";
 import { logger } from "../../utils/logger";
 
 /*
@@ -26,8 +29,9 @@ export async function queryDBpedia(input: string, queryClass: string = "", maxHi
             }
         }
         return Promise.resolve(undefined);
-    } catch (err) {
-        logger.error(err.response.body || err);
+    }
+    catch (error) {
+        logger.error(error);
         return Promise.reject("Error querying DBpedia.");
     }
 }
@@ -39,19 +43,28 @@ export async function queryDBpedia(input: string, queryClass: string = "", maxHi
  */
 export async function getDBpediaScore(input: string): Promise<number> {
     try {
-        const ks = await queryDBpedia(input);
-        if (ks && ks.ArrayOfResult.Result && ks.ArrayOfResult.Result.length > 0) {
-            if (ks.ArrayOfResult.Result.length === 1) {
-                return 1;
+        const term = input.toLowerCase().trim();
+        const existingScore = await DBpediaScoreModel.findOne({term});
+        if (_.isUndefined(existingScore) || _.isNull(existingScore)) {
+            // DBpedia gets angry if you query to fast
+            await sleep(1000);
+            const ks = await queryDBpedia(input);
+            if (ks && ks.ArrayOfResult.Result) {
+                const scoreModel = await new DBpediaScoreModel({
+                    term,
+                    numResults: ks.ArrayOfResult.Result.length || 0
+                }).save();
+                const score = scoreModel.numResults;
+                return ((score === 0)) ? 0 : ((51 - score) / 50);
             }
-            else return ((51 - ks.ArrayOfResult.Result.length) / 50);
+            else {
+                return 0;
+            }
         }
-        else {
-            return 0;
-        }
+        return (existingScore.numResults === 0) ? 0 : ((51 - existingScore.numResults) / 50);
     }
     catch (error) {
         logger.error(error);
-        return Promise.reject(error);
+        return Promise.reject("Could not get DBpedia Score");
     }
 }

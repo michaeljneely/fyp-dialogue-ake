@@ -12,16 +12,17 @@ import { logger } from "../../utils/logger";
  * @param {ConnectorServer} newConnector? If supplied, create a new connection to the CoreNLP server
  * @returns {CoreNLP.simple.Document}
  */
-export async function annotate(text: string, newConnector?: ConnectorServer): Promise<CoreNLP.simple.Document> {
+export async function annotate(text: string): Promise<CoreNLP.simple.Document> {
     try {
-        const pipeline = (newConnector) ? new Pipeline(annotators, process.env.LANGUAGE, newConnector) : new Pipeline(annotators, process.env.LANGUAGE, connector);
+        logger.info(`annotate() called with text of length ${text.length}`);
+        const pipeline = new Pipeline(annotators, process.env.LANGUAGE, connector);
         const document = new CoreNLP.simple.Document(text);
         const result: CoreNLP.simple.Document = await pipeline.annotate(document) as CoreNLP.simple.Document;
         return Promise.resolve(result);
     }
     catch (error) {
         logger.error(error);
-        return Promise.reject(error);
+        return Promise.reject("Oops! There was an issue connecting to CoreNLP server");
     }
 }
 

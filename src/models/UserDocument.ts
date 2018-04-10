@@ -12,7 +12,7 @@ export type Summaries = {
 
 export class UserDocument extends Typegoose {
     @prop({ required: true, index: true })
-    owner: mongoose.Schema.Types.ObjectId;
+    owner: mongoose.Types.ObjectId;
     @prop({ required: true })
     date: Date;
     @prop({ required: true })
@@ -28,4 +28,9 @@ export class UserDocument extends Typegoose {
     @prop()
     summaries: Summaries;
 }
-export const UserDocumentModel = new UserDocument().getModelForClass(UserDocument);
+export const UserDocumentModel = new UserDocument().getModelForClass(UserDocument, {
+    existingConnection: mongoose.connection,
+    schemaOptions : {
+        timestamps: true
+    }
+});

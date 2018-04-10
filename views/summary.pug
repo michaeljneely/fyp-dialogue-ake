@@ -4,4 +4,8 @@ block content
     .main-content
         h3.main-title Summary
         hr
-        p #{summary.speakers} discussed #{summary.summary}
+        if summary.summary
+            if summary.speakers
+                p #{summary.speakers} discussed #{summary.summary}
+            else
+                p #{summary.summary}

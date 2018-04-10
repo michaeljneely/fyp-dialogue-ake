@@ -1,3 +1,4 @@
+import * as mongoose from "mongoose";
 import { prop, Typegoose } from "typegoose";
 
 export class CorpusDocument extends Typegoose {
@@ -23,4 +24,9 @@ export type referenceSummaries = {
     long: string
 };
 
-export const CorpusDocumentModel = new CorpusDocument().getModelForClass(CorpusDocument);
+export const CorpusDocumentModel = new CorpusDocument().getModelForClass(CorpusDocument, {
+    existingConnection: mongoose.connection,
+    schemaOptions : {
+        timestamps: true
+    }
+});

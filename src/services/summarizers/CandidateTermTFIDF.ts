@@ -92,7 +92,7 @@ type candidateTermWithTFIDF = {
  * @param {number} length Number of terms to return
  * @returns {Array<string>} Top N terms based on TFIDF ranking (application corpus only)
  */
-async function candidateTermTFIDFSummary(candidateTerms: ExtractedCandidateTermMap, length: number): Promise<Array<string>> {
+export async function candidateTermTFIDFSummary(candidateTerms: ExtractedCandidateTermMap, length: number): Promise<Array<string>> {
     try {
         const terms = new Array<candidateTermWithTFIDF>();
         for (const candidateTerm of candidateTerms) {
