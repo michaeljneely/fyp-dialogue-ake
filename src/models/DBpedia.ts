@@ -23,7 +23,7 @@ export interface DBpediaResult {
     };
     Templates: any;
     Redirects: any;
-    Refcount: XMLNode;
+    Refcount: any;
 }
 
 export interface DBpediaClass {

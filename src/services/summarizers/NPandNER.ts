@@ -6,7 +6,7 @@ import { NamedEntityTerm, Term } from "../../models/NamedEntityTerm";
 import { logger } from "../../utils/logger";
 import { calculateTFIDF, candidateTermIDFCorpus, termIDFCorpus } from "../metrics/tfidf";
 import { extractCandidateTermsFromCoreNLPDocument } from "../processors/candidateTerm";
-import { getDBpediaScore } from "../processors/dbpedia";
+import { getDBpediaScore, queryDBpedia } from "../processors/dbpedia";
 import { extractNamedEntitiesFromCoreNLPDocument } from "../processors/namedEntities";
 const stringSimilarity = require("string-similarity");
 
@@ -120,6 +120,8 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
         }
 
         logger.info(`Beginning to query DBpedia to remove vague Candidate Terms`);
+        const score = await getDBpediaScore("wefhouwefhuwefhu");
+        logger.info(`score: ${score}`);
         const specificTerms = await _processDBP(termsToConsider);
 
         // Early Exit Condition 3;

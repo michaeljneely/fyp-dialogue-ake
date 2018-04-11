@@ -2,7 +2,7 @@ import * as got from "got";
 import _ = require("lodash");
 import * as convert from "xml-js";
 import { KeywordSearch } from "../../models/DBpedia";
-import { DBpediaScoreModel } from "../../models/DBpediaScore";
+import { DBpediaResult, DBpediaScoreModel } from "../../models/DBpediaScore";
 import { sleep } from "../../utils/functions";
 import { logger } from "../../utils/logger";
 
@@ -18,10 +18,9 @@ import { logger } from "../../utils/logger";
  */
 export async function queryDBpedia(input: string, queryClass: string = "", maxHits: number = 50): Promise<KeywordSearch> {
     try {
+        logger.info(`queryDBpedia() called. Querying for '${input}'`);
         const queryString = encodeURIComponent(input.trim());
-        logger.info(`Current Time: ${Date.now().toString()}`);
         await sleep(2000);
-        logger.info(`Date after sleep: ${Date.now().toString()}`);
         const res = await got(`http://lookup.dbpedia.org/api/search/KeywordSearch?QueryString=${queryString}&QueryClass=${queryClass}&MaxHits=${maxHits}`);
         if (res && res.body) {
             const ks: KeywordSearch = JSON.parse(convert.xml2json(res.body, {compact: true, spaces: 4}));
@@ -50,10 +49,12 @@ export async function getDBpediaScore(input: string): Promise<number> {
         if (!existingScore) {
             const ks = await queryDBpedia(input);
             if (ks && ks.ArrayOfResult) {
+                // For Scores with no Results, ArrayOfResult has information, but no items. Need to catch.
                 try {
+                    const score = ks.ArrayOfResult.Result.length || 1;
                     const scoreModel = await new DBpediaScoreModel({
                         term,
-                        numResults: ks.ArrayOfResult.Result.length
+                        numResults: score
                     }).save();
                     return ( (51 - scoreModel.numResults) / 50);
                 }
@@ -74,7 +75,7 @@ export async function getDBpediaScore(input: string): Promise<number> {
             }
         }
         else {
-            return ((51 - existingScore.numResults) / 50);
+            return (existingScore.numResults === 0) ? 0 : ((51 - existingScore.numResults) / 50);
         }
     }
     catch (error) {
