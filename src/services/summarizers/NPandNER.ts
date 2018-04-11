@@ -1,10 +1,11 @@
 import { EALREADY, SSL_OP_NO_TLSv1 } from "constants";
 import CoreNLP from "corenlp";
 import _ = require("lodash");
-import { CandidateTerm, ExtractedCandidateTerm, ExtractedCandidateTermMap } from "../../models/CandidateTerm";
-import { NamedEntityTerm, Term } from "../../models/NamedEntityTerm";
+import { CandidateTerm } from "../../models/CandidateTerm";
+import { NamedEntityTerm } from "../../models/NamedEntityTerm";
+import { Term } from "../../models/Term";
 import { logger } from "../../utils/logger";
-import { calculateTFIDF, candidateTermIDFCorpus, termIDFCorpus } from "../metrics/tfidf";
+import { calculateTFIDF, termIDFCorpus, termIDFUser } from "../metrics/tfidf";
 import { extractCandidateTermsFromCoreNLPDocument } from "../processors/candidateTerm";
 import { getDBpediaScore, queryDBpedia } from "../processors/dbpedia";
 import { extractNamedEntitiesFromCoreNLPDocument } from "../processors/namedEntities";
@@ -42,7 +43,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
         const ret = new Array<Term>();
         for (let i = 0; i < arr.length; i++) {
             const term = arr[i];
-            if (term instanceof ExtractedCandidateTerm && term.term.length > 1) {
+            if (term instanceof CandidateTerm && term.term.length > 1) {
                 const score = await getDBpediaScore(term.term);
                 if (score > 0.5) {
                     ret.push(term);
@@ -69,7 +70,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
         logger.info(`npAndNERSummary() called with request to return ${numberOfWords} words...`);
         // Extract Candidate Terms
         const candidateTermMap =  extractCandidateTermsFromCoreNLPDocument(annotated);
-        const candidateTermKeys = [...candidateTermMap.keys()].map((key) => ExtractedCandidateTerm.fromString(key));
+        const candidateTermKeys = [...candidateTermMap.keys()].map((key) => CandidateTerm.fromString(key));
 
         // Extract Named Entities
         const namedEntityMap = extractNamedEntitiesFromCoreNLPDocument(annotated);
@@ -97,10 +98,10 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
                 const t2 = rest[j];
                 if (alreadyChecked.indexOf(Term.toString(t1)) === -1 && termsToRemove.indexOf(Term.toString(t2)) === -1 && termsToRemove.indexOf(Term.toString(t1)) === -1) {
                     if (stringSimilarity.compareTwoStrings(t1.term, t2.term) > 0.75) {
-                        if ((t1 instanceof NamedEntityTerm) && (t2 instanceof ExtractedCandidateTerm)) {
+                        if ((t1 instanceof NamedEntityTerm) && (t2 instanceof CandidateTerm)) {
                             termsToRemove.push(Term.toString(t2));
                         }
-                        else if ((t2 instanceof NamedEntityTerm) && (t1 instanceof ExtractedCandidateTerm)) {
+                        else if ((t2 instanceof NamedEntityTerm) && (t1 instanceof CandidateTerm)) {
                             termsToRemove.push(Term.toString(t2));
                         }
                         else {
@@ -140,7 +141,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
         let neCount: number = 0;
 
         const finalFinalTerms = await Promise.all(specificTerms.map(async (term: Term): Promise<TermWithTFIDF> => {
-            if (term instanceof ExtractedCandidateTerm) {
+            if (term instanceof CandidateTerm) {
                 const tf = candidateTermMap.get(Term.toString(term));
                 const idf = await termIDFCorpus(term);
                 const tfidf = tf * idf;
@@ -162,7 +163,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
         const neTFIDFAverage = neTFIDFTotal / neCount;
 
         const finalFinalFinal = finalFinalTerms.filter((twt: TermWithTFIDF) => {
-            if (twt.term instanceof ExtractedCandidateTerm) {
+            if (twt.term instanceof CandidateTerm) {
                 return twt.tfidf >= ectTFIDFAverage;
             }
             else {

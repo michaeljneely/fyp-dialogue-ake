@@ -3,10 +3,10 @@ import * as fs from "fs-extra";
 import * as mongoose from "mongoose";
 import * as path from "path";
 import { CandidateTerm, CorpusCandidateTerm, CorpusCandidateTermModel } from "../../models/CandidateTerm";
-import { CorpusDocument, CorpusDocumentModel, referenceSummaries } from "../../models/CorpusDocument";
+import { CorpusDocument, CorpusDocumentModel } from "../../models/Document";
 import { DocumentFrequencyModel } from "../../models/DocumentFrequency";
 import { CorpusLemma, CorpusLemmaModel } from "../../models/Lemma";
-import { IReference } from "../../models/Reference";
+import { IReference, ReferenceSummaries } from "../../models/Reference";
 import { replaceSmartQuotes, stripSpeakers } from "../../utils/functions";
 import { logger } from "../../utils/logger";
 import { annotate } from "../corenlp/corenlp";
@@ -101,7 +101,7 @@ export async function buildCorpus(): Promise<number> {
  * @param candidateTerms Map of Unique candidate terms and their frequencies
  * @param referenceSummaries User provided reference summaries
  */
-export async function saveCorpusDocument(title: string, speakers: Array<string>, keywords: Array<string>, annotated: CoreNLP.simple.Document, rawText: string, lemmas: Map<string, number>, candidateTerms: Map<string, number>, referenceSummaries: referenceSummaries): Promise<CorpusDocument & mongoose.Document> {
+export async function saveCorpusDocument(title: string, speakers: Array<string>, keywords: Array<string>, annotated: CoreNLP.simple.Document, rawText: string, lemmas: Map<string, number>, candidateTerms: Map<string, number>, referenceSummaries: ReferenceSummaries): Promise<CorpusDocument & mongoose.Document> {
     try {
         const corpusDocument = await new CorpusDocumentModel({
             title: title,

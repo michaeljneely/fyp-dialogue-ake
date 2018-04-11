@@ -62,7 +62,7 @@ export async function semanticPowerAndSpecificitySummary(annotated: CoreNLP.simp
         const namedEntities = extractNamedEntitiesFromCoreNLPDocument(annotated).map((entity => entity.term));
 
         // Early termination
-        if (_.isEmpty(namedEntities) && _.isEmpty(candidateTerms.toStringArray())) {
+        if (_.isEmpty(namedEntities) && _.isEmpty([...candidateTerms.keys()])) {
             return [annotated.toString()];
         }
 

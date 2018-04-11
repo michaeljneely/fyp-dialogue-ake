@@ -1,14 +1,13 @@
 import * as mongoose from "mongoose";
-import { ExtractedCandidateTerm, ExtractedCandidateTermMap } from "../../models/CandidateTerm";
+import { CandidateTerm } from "../../models/CandidateTerm";
 import { Conversation } from "../../models/Conversation";
-import { CorpusDocumentModel } from "../../models/CorpusDocument";
+import { CorpusDocumentModel, UserDocumentModel } from "../../models/Document";
 import { Reference } from "../../models/Reference";
 import { buildSummaryTermArray, GeneratedSummary, Summary } from "../../models/Summary";
-import { UserDocumentModel } from "../../models/UserDocument";
 import { logger } from "../../utils/logger";
 import { calculateAllScores } from "../metrics/scores";
 import { calculateTFIDF, calculateWeightedTFUIDF } from "../metrics/tfidf";
-import { candidateTermIDFCorpus, candidateTermIDFUser } from "../metrics/tfidf";
+import { termIDFCorpus, termIDFUser } from "../metrics/tfidf";
 import { extractCandidateTermsFromCoreNLPDocument } from "../processors/candidateTerm";
 
 /*
@@ -29,8 +28,8 @@ export class CorpusCandidateTermTFIDFSummary extends Summary {
             const candidateTerms = extractCandidateTermsFromCoreNLPDocument(this.conversation.annotated);
             const generatedSummaries = this.references.map(async (reference, index) => {
                 const referenceCandidateTerms = extractCandidateTermsFromCoreNLPDocument(reference.annotated);
-                const candidateSummary = await candidateTermTFIDFSummary(candidateTerms, referenceCandidateTerms.size());
-                const referenceSummary = referenceCandidateTerms.toStringArray();
+                const candidateSummary = await candidateTermTFIDFSummary(candidateTerms, referenceCandidateTerms.size);
+                const referenceSummary = [...referenceCandidateTerms.keys()];
                 return {
                     reference,
                     method: this.summaryMethod,
@@ -62,8 +61,8 @@ export class UserCandidateTermTFIDFSummary extends Summary {
             const candidateTerms = extractCandidateTermsFromCoreNLPDocument(this.conversation.annotated);
             const generatedSummaries = this.references.map(async (reference, index) => {
                 const referenceCandidateTerms = extractCandidateTermsFromCoreNLPDocument(reference.annotated);
-                const candidateSummary = await candidateTermTFUIDFSummary(this.userId, candidateTerms, referenceCandidateTerms.size());
-                const referenceSummary = referenceCandidateTerms.toStringArray();
+                const candidateSummary = await candidateTermTFUIDFSummary(this.userId, candidateTerms, referenceCandidateTerms.size);
+                const referenceSummary = [...referenceCandidateTerms.keys()];
                 return {
                     reference,
                     method: this.summaryMethod,
@@ -82,7 +81,7 @@ export class UserCandidateTermTFIDFSummary extends Summary {
 
 // Used for term sorting
 type candidateTermWithTFIDF = {
-    ct: ExtractedCandidateTerm,
+    ct: CandidateTerm,
     tfidf: number
 };
 
@@ -92,12 +91,12 @@ type candidateTermWithTFIDF = {
  * @param {number} length Number of terms to return
  * @returns {Array<string>} Top N terms based on TFIDF ranking (application corpus only)
  */
-export async function candidateTermTFIDFSummary(candidateTerms: ExtractedCandidateTermMap, length: number): Promise<Array<string>> {
+export async function candidateTermTFIDFSummary(candidateTerms: Map<string, number>, length: number): Promise<Array<string>> {
     try {
         const terms = new Array<candidateTermWithTFIDF>();
         for (const candidateTerm of candidateTerms) {
-            const idf = await candidateTermIDFCorpus(candidateTerm["0"]);
-            terms.push({ct: candidateTerm["0"], tfidf: calculateTFIDF(candidateTerm["1"], idf)});
+            const idf = await termIDFCorpus(CandidateTerm.fromString(candidateTerm["0"]));
+            terms.push({ct: CandidateTerm.fromString(candidateTerm["0"]), tfidf: calculateTFIDF(candidateTerm["1"], idf)});
         }
         return Promise.resolve(sortAndReturn(terms, length));
     }
@@ -114,13 +113,13 @@ export async function candidateTermTFIDFSummary(candidateTerms: ExtractedCandida
  * @param {number} length Number of terms to return
  * @returns {Array<string>} Top N terms based on Weighted TFIDF ranking (application and user corpus)
  */
-export async function candidateTermTFUIDFSummary(userId: mongoose.Types.ObjectId, candidateTerms: ExtractedCandidateTermMap, length: number): Promise<Array<string>> {
+export async function candidateTermTFUIDFSummary(userId: mongoose.Types.ObjectId, candidateTerms: Map<string, number>, length: number): Promise<Array<string>> {
     const terms = new Array<candidateTermWithTFIDF>();
     try {
         for (const candidateTerm of candidateTerms) {
-            const uIdf = await candidateTermIDFUser(userId, candidateTerm["0"]);
-            const cIdf = await candidateTermIDFCorpus(candidateTerm["0"]);
-            terms.push({ct: candidateTerm["0"], tfidf: calculateWeightedTFUIDF(candidateTerm["1"], cIdf, uIdf, 0.5)});
+            const uIdf = await termIDFUser(userId, CandidateTerm.fromString(candidateTerm["0"]));
+            const cIdf = await termIDFCorpus(CandidateTerm.fromString(candidateTerm["0"]));
+            terms.push({ct: CandidateTerm.fromString(candidateTerm["0"]), tfidf: calculateWeightedTFUIDF(candidateTerm["1"], cIdf, uIdf, 0.5)});
         }
         return Promise.resolve(sortAndReturn(terms, length));
     }

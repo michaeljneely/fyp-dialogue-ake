@@ -1,9 +1,8 @@
 import * as mongoose from "mongoose";
 import { Conversation } from "../../models/Conversation";
-import { CorpusDocumentModel } from "../../models/CorpusDocument";
+import { CorpusDocumentModel, UserDocumentModel } from "../../models/Document";
 import { Reference } from "../../models/Reference";
 import { buildSummaryTermArray, GeneratedSummary, Summary } from "../../models/Summary";
-import { UserDocumentModel } from "../../models/UserDocument";
 import { logger } from "../../utils/logger";
 import { calculateAllScores } from "../metrics/scores";
 import { calculateTFIDF, calculateWeightedTFUIDF } from "../metrics/tfidf";

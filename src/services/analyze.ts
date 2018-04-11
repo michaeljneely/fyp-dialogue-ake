@@ -1,7 +1,7 @@
 import CoreNLP from "corenlp";
 import * as mongoose from "mongoose";
 import { Conversation } from "../models/Conversation";
-import { CorpusDocumentModel } from "../models/CorpusDocument";
+import { CorpusDocumentModel } from "../models/Document";
 import { Reference } from "../models/Reference";
 import { FinalSummary, GeneratedSummary, SummaryTerm } from "../models/Summary";
 import { stripSpeakers } from "../utils/functions";
