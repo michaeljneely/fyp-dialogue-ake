@@ -42,7 +42,7 @@ export async function summarizeConversation(text: string, userId: mongoose.Types
 
         // Build Summary
         const summary = await npAndNERSummary(annotated, candidateTerms, namedEntities, wordLength);
-        const lda = await LDASummary(annotated, candidateTerms, wordLength);
+        const lda = await LDASummary(annotated, candidateTerms, wordLength, 1);
         // Save document, lemmas, and candidate terms
         const saved = await saveUserDocument(userId, speakers, annotated, text, lemmas, candidateTerms, namedEntities);
 

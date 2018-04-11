@@ -2,13 +2,16 @@ import CoreNLP from "corenlp";
 import * as mongoose from "mongoose";
 import { Conversation } from "../models/Conversation";
 import { CorpusDocumentModel } from "../models/Document";
+import { MetricTypes } from "../models/Metrics";
 import { Reference } from "../models/Reference";
 import { FinalSummary, GeneratedSummary, SummaryTerm } from "../models/Summary";
 import { stripSpeakers } from "../utils/functions";
 import { logger } from "../utils/logger";
 import { annotate } from "./corenlp/corenlp";
-import { CorpusCandidateTermTFIDFSummary, UserCandidateTermTFIDFSummary } from "./summarizers/CandidateTermTFIDF";
-import { CorpusLemmaTFIDFSummary, UserLemmaTFIDFSummary } from "./summarizers/LemmaTFIDF";
+import { calculateAllScores } from "./metrics/scores";
+import { extractCandidateTermsFromCoreNLPDocument } from "./processors/candidateTerm";
+import { candidateTermTFIDFSummary, candidateTermTFUIDFSummary } from "./summarizers/CandidateTermTFIDF";
+import { corpusLemmaTFIDFSummary, userLemmaTFIDFSummary } from "./summarizers/LemmaTFIDF";
 
 /*
     Service to analyze a User-provided conversation, or one that already exists in the application corpus
@@ -49,11 +52,31 @@ export async function analyzeUserConversation(userId: mongoose.Types.ObjectId, r
             summary: longSummary,
             annotated: await annotate(longSummary)
         };
-        const summary1 = await new UserLemmaTFIDFSummary(conversation, [shortReference, mediumReference, longReference], keyWordArray, userId).summarize();
-        const summary2 = await new CorpusLemmaTFIDFSummary(conversation, [shortReference, mediumReference, longReference], keyWordArray).summarize();
-        const summary3 = await new CorpusCandidateTermTFIDFSummary(conversation, [shortReference, mediumReference, longReference], keyWordArray).summarize();
-        const summary4 = await new UserCandidateTermTFIDFSummary(conversation, [shortReference, mediumReference, longReference], keyWordArray, userId).summarize();
-        return JSON.parse(JSON.stringify(combineSummaries(summary1.concat(summary2, summary3, summary4))));
+        const shortReferenceCandidateTerms = extractCandidateTermsFromCoreNLPDocument(shortReference.annotated);
+        const mediumReferenceCandidateTerms = extractCandidateTermsFromCoreNLPDocument(mediumReference.annotated);
+        const longReferenceCandidateTerms = extractCandidateTermsFromCoreNLPDocument(longReference.annotated);
+        const conversationCandidateTerms = extractCandidateTermsFromCoreNLPDocument(conversation.annotated);
+
+        const shortCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, shortReferenceCandidateTerms.size);
+        const mediumCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, mediumReferenceCandidateTerms.size);
+        const longCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, longReferenceCandidateTerms.size);
+
+        const summary1 = [
+            buildSummaryAnalysisResult(shortReference, "CandidateTermTFIDFSummary", shortCandidateTermTFIDFSummary.summary, ["Recall", "Precision"]),
+            buildSummaryAnalysisResult(mediumReference, "CandidateTermTFIDFSummary", mediumCandidateTermTFIDFSummary.summary, ["Recall", "Precision"]),
+            buildSummaryAnalysisResult(longReference, "CandidateTermTFIDFSummary", longCandidateTermTFIDFSummary.summary, ["Recall", "Precision"]),
+        ];
+
+        // const summary1 = calculateSummaryR;
+        // logger.info(`Short Summary: ${shortCandidateTermTFIDFSummary.summary}`);
+        // logger.info(`Medium Summary: ${mediumCandidateTermTFIDFSummary.summary}`);
+        // logger.info(`Long Summary: ${longCandidateTermTFIDFSummary.summary}`);
+        // const summary1 = await new UserLemmaTFIDFSummary(conversation, [shortReference, mediumReference, longReference], keyWordArray, userId).summarize();
+        // const summary2 = await new CorpusLemmaTFIDFSummary(conversation, [shortReference, mediumReference, longReference], keyWordArray).summarize();
+        // const summary3 = await new CorpusCandidateTermTFIDFSummary(conversation, [shortReference, mediumReference, longReference], keyWordArray).summarize();
+        // const summary4 = await new UserCandidateTermTFIDFSummary(conversation, [shortReference, mediumReference, longReference], keyWordArray, userId).summarize();
+        // return JSON.parse(JSON.stringify(combineSummaries(summary1.concat(summary2, summary3, summary4))));
+        return JSON.parse(JSON.stringify(combineSummaries(summary1)));
     }
     catch (error) {
         logger.error(error);
@@ -91,10 +114,11 @@ export async function analyzeCorpusConversation(documentId: string): Promise<JSO
             summary: document.referenceSummaries.long,
             annotated: await annotate(document.referenceSummaries.long)
         };
-        const summary1 = await new CorpusLemmaTFIDFSummary(conversation, [shortReference, mediumReference, longReference], document.keywords).summarize();
-        const summary2 = await new CorpusCandidateTermTFIDFSummary(conversation, [shortReference, mediumReference, longReference], document.keywords).summarize();
+        // const CorpusCandidateTermTFIDFSummary
+        // const summary1 = await new CorpusLemmaTFIDFSummary(conversation, [shortReference, mediumReference, longReference], document.keywords).summarize();
+        // const summary2 = await new CorpusCandidateTermTFIDFSummary(conversation, [shortReference, mediumReference, longReference], document.keywords).summarize();
         // const summary3 = await new LatentDirichletAllocationSummary(conversation, [shortReference, mediumReference, longReference], document.keywords).summarize();
-        return JSON.parse(JSON.stringify(combineSummaries(summary1.concat(summary2))));
+       //  return JSON.parse(JSON.stringify(combineSummaries(summary1.concat(summary2))));
     }
     catch (error) {
         logger.error(error);
@@ -128,4 +152,33 @@ function combineSummaries(summaries: Array<GeneratedSummary>): Array<FinalSummar
             generated: generatedSummary
         };
     });
+}
+
+function buildSummaryAnalysisResult(reference: Reference, method: string, summary: string, metrics: Array<MetricTypes>): GeneratedSummary {
+    return {
+        reference,
+        method,
+        summary: buildSummaryTermArray(summary, reference.summary),
+        scores: calculateAllScores(summary, reference.summary, metrics)
+    };
+}
+
+/*
+export type  GeneratedSummary = {
+    reference: Reference,
+    method: string,
+    summary: Array<SummaryTerm>,
+    scores: Array<SummaryMetric>
+};
+*/
+
+export function buildSummaryTermArray(generated: string, reference: string): Array<SummaryTerm> {
+    return new Array<SummaryTerm>();
+    // return generated.map((term) => {
+    //     const match = new RegExp("\\b" + term + "\\b", "i").test(reference);
+    //     return {
+    //         term,
+    //         match
+    //     };
+    // });
 }

@@ -3,81 +3,12 @@ import { CandidateTerm } from "../../models/CandidateTerm";
 import { Conversation } from "../../models/Conversation";
 import { CorpusDocumentModel, UserDocumentModel } from "../../models/Document";
 import { Reference } from "../../models/Reference";
-import { buildSummaryTermArray, GeneratedSummary, Summary } from "../../models/Summary";
+import { GeneratedSummary, ISummary } from "../../models/Summary";
 import { logger } from "../../utils/logger";
 import { calculateAllScores } from "../metrics/scores";
 import { calculateTFIDF, calculateWeightedTFUIDF } from "../metrics/tfidf";
 import { termIDFCorpus, termIDFUser } from "../metrics/tfidf";
 import { extractCandidateTermsFromCoreNLPDocument } from "../processors/candidateTerm";
-
-/*
-    Summary Methods that Use Candidate Terms (NP Chunks) and TFIDF Calculations
-*/
-
-/**
- * This summary method calculates the top Candidate Terms as ranked by TFIDF (application corpus only)
- */
-export class CorpusCandidateTermTFIDFSummary extends Summary {
-    constructor(conversation: Conversation, references: Array<Reference>, keywords: Array<string>) {
-        super(conversation, references, keywords);
-        this.summaryMethod = "CorpusCandidateTermTFIDFSummary";
-    }
-
-    public summarize(): Promise<GeneratedSummary[]> {
-        try {
-            const candidateTerms = extractCandidateTermsFromCoreNLPDocument(this.conversation.annotated);
-            const generatedSummaries = this.references.map(async (reference, index) => {
-                const referenceCandidateTerms = extractCandidateTermsFromCoreNLPDocument(reference.annotated);
-                const candidateSummary = await candidateTermTFIDFSummary(candidateTerms, referenceCandidateTerms.size);
-                const referenceSummary = [...referenceCandidateTerms.keys()];
-                return {
-                    reference,
-                    method: this.summaryMethod,
-                    summary: buildSummaryTermArray(candidateSummary, reference.summary.toLowerCase()),
-                    scores: calculateAllScores(candidateSummary, referenceSummary, 2)
-                } as GeneratedSummary;
-            });
-            return Promise.all(generatedSummaries);
-        }
-        catch (error) {
-            logger.error(error);
-            return Promise.reject(error);
-        }
-    }
-}
-
-/**
- * This summary method calculates the top Candidate Terms as ranked by Weighted TFIDF (application and user corpus)
- */
-export class UserCandidateTermTFIDFSummary extends Summary {
-
-    constructor(conversation: Conversation, references: Array<Reference>, keywords: Array<string>, userId: mongoose.Types.ObjectId) {
-        super(conversation, references, keywords, userId);
-        this.summaryMethod = "UserCandidateTermTFIDFSummary";
-    }
-
-    public summarize(): Promise<GeneratedSummary[]> {
-        try {
-            const candidateTerms = extractCandidateTermsFromCoreNLPDocument(this.conversation.annotated);
-            const generatedSummaries = this.references.map(async (reference, index) => {
-                const referenceCandidateTerms = extractCandidateTermsFromCoreNLPDocument(reference.annotated);
-                const candidateSummary = await candidateTermTFUIDFSummary(this.userId, candidateTerms, referenceCandidateTerms.size);
-                const referenceSummary = [...referenceCandidateTerms.keys()];
-                return {
-                    reference,
-                    method: this.summaryMethod,
-                    summary: buildSummaryTermArray(candidateSummary, reference.summary.toLowerCase()),
-                    scores: calculateAllScores(candidateSummary, referenceSummary, 2),
-                } as GeneratedSummary;
-            });
-            return Promise.all(generatedSummaries);
-        }
-        catch (error) {
-            logger.error(error);
-            return Promise.reject(error);
-        }
-    }
-}
 
 // Used for term sorting
 type candidateTermWithTFIDF = {
@@ -91,14 +22,18 @@ type candidateTermWithTFIDF = {
  * @param {number} length Number of terms to return
  * @returns {Array<string>} Top N terms based on TFIDF ranking (application corpus only)
  */
-export async function candidateTermTFIDFSummary(candidateTerms: Map<string, number>, length: number): Promise<Array<string>> {
+export async function candidateTermTFIDFSummary(candidateTerms: Map<string, number>, length: number): Promise<ISummary> {
     try {
         const terms = new Array<candidateTermWithTFIDF>();
         for (const candidateTerm of candidateTerms) {
             const idf = await termIDFCorpus(CandidateTerm.fromString(candidateTerm["0"]));
             terms.push({ct: CandidateTerm.fromString(candidateTerm["0"]), tfidf: calculateTFIDF(candidateTerm["1"], idf)});
         }
-        return Promise.resolve(sortAndReturn(terms, length));
+        return {
+            method: "CandidateTermTFIDFSummary",
+            summary: sortAndReturn(terms, length).join(", "),
+            candidateTerms: candidateTerms
+        };
     }
     catch (error) {
         logger.error(error);
@@ -113,7 +48,7 @@ export async function candidateTermTFIDFSummary(candidateTerms: Map<string, numb
  * @param {number} length Number of terms to return
  * @returns {Array<string>} Top N terms based on Weighted TFIDF ranking (application and user corpus)
  */
-export async function candidateTermTFUIDFSummary(userId: mongoose.Types.ObjectId, candidateTerms: Map<string, number>, length: number): Promise<Array<string>> {
+export async function candidateTermTFUIDFSummary(userId: mongoose.Types.ObjectId, candidateTerms: Map<string, number>, length: number): Promise<ISummary> {
     const terms = new Array<candidateTermWithTFIDF>();
     try {
         for (const candidateTerm of candidateTerms) {
@@ -121,7 +56,11 @@ export async function candidateTermTFUIDFSummary(userId: mongoose.Types.ObjectId
             const cIdf = await termIDFCorpus(CandidateTerm.fromString(candidateTerm["0"]));
             terms.push({ct: CandidateTerm.fromString(candidateTerm["0"]), tfidf: calculateWeightedTFUIDF(candidateTerm["1"], cIdf, uIdf, 0.5)});
         }
-        return Promise.resolve(sortAndReturn(terms, length));
+        return {
+            method: "CandidateTermTFUIDFSummary",
+            summary: sortAndReturn(terms, length).join(", "),
+            candidateTerms: candidateTerms
+        };
     }
     catch (error) {
         logger.error(error);
