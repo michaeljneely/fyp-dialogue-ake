@@ -28,7 +28,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
     const namedEntityFilter = ["PERSON", "LOCATION", "ORGANIZATION", "MISC", "NATIONALITY", "COUNTRY", "STATE_OR_PROVENCE", "TITLE", "IDEOLOGY", "RELIGION", "CRIMINAL_CHARGE", "CAUSE_OF_DEATH"];
     const namedEntityDBpediaFilter = ["PERSON", "LOCATION", "ORGANIZATION"];
 
-    function _returnAsSummary(summary: string, lemmas?: Map<string, number>, candidateTerms?: Map<string, number>, namedEntities?: Map<string, number>): ISummary {
+    function _returnAsSummary(summary: Array<string>, lemmas?: Map<string, number>, candidateTerms?: Map<string, number>, namedEntities?: Map<string, number>): ISummary {
         return {
             method: "NounPhrase Chunks & Named Entities",
             summary,
@@ -93,7 +93,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
         // Early termination
         if (_.isEmpty(namedEntityKeys) && _.isEmpty(candidateTermKeys)) {
             logger.info(`No named Entities or Candidate terms. Returning early...`);
-            return _returnAsSummary(annotated.toString());
+            return _returnAsSummary(annotated.toString().split(", "));
         }
 
         // Custom Union - Remove Candidate Terms that are identical to Named Entities
@@ -131,7 +131,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
         // Early Exit Condition 2;
         if (termsToConsider.length < numberOfWords) {
             // TOTO
-            return _returnAsSummary(termsToConsider.map((ttc) => ttc.term).join(", "));
+            return _returnAsSummary(termsToConsider.map((ttc) => ttc.term));
         }
 
         logger.info(`Beginning to query DBpedia to remove vague Candidate Terms`);
@@ -140,7 +140,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
         // Early Exit Condition 3;
         if (specificTerms.length < numberOfWords) {
             // TODO
-            return _returnAsSummary(specificTerms.map((ttc) => ttc.term).join(", "));
+            return _returnAsSummary(specificTerms.map((ttc) => ttc.term));
         }
 
         logger.info(`Removed ${termsToConsider.length - specificTerms.length} terms`);
@@ -188,7 +188,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
         logger.info(`Candidate Term TFIDF Average: ${ectTFIDFAverage}`);
         logger.info(`Named Entity TFIDF Average: ${neTFIDFAverage}`);
         logger.info(`Reduced to ${finalFinalFinal.length} terms`);
-        return _returnAsSummary(finalFinalFinal.map((twt) => twt.term.term).join(", "));
+        return _returnAsSummary(finalFinalFinal.map((twt) => twt.term.term));
     }
     catch (error) {
         logger.error(error);

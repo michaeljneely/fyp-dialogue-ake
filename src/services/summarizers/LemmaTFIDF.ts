@@ -33,7 +33,7 @@ export async function corpusLemmaTFIDFSummary(lemmas: Map<string, number>, lengt
         }
         return {
             method: "CorpusLemmaTFIDFSummary",
-            summary: sortAndReturn(lemmasWithTFIDF, length).join(", "),
+            summary: sortAndReturn(lemmasWithTFIDF, length),
             lemmas
         };
     }
@@ -59,7 +59,7 @@ export async function userLemmaTFIDFSummary(userID: mongoose.Types.ObjectId, lem
         }
         return {
             method: "UserLemmaTFIDFSummary",
-            summary: sortAndReturn(lemmasWithTFIDF, length).join(", "),
+            summary: sortAndReturn(lemmasWithTFIDF, length),
             lemmas
         };
     }

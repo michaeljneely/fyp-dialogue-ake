@@ -34,7 +34,7 @@ export type SummaryTerm = {
 
 export interface ISummary {
     method: string;
-    summary: string;
+    summary: Array<string>;
     lemmas?: Map<string, number>;
     candidateTerms?: Map<string, number>;
     namedEntities?: Map<string, number>;

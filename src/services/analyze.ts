@@ -1,8 +1,10 @@
 import CoreNLP from "corenlp";
 import * as mongoose from "mongoose";
+import { CandidateTerm } from "../models/CandidateTerm";
 import { Conversation } from "../models/Conversation";
 import { CorpusDocumentModel } from "../models/Document";
 import { MetricTypes } from "../models/Metrics";
+import { NamedEntityTerm } from "../models/NamedEntityTerm";
 import { Reference } from "../models/Reference";
 import { FinalSummary, GeneratedSummary, SummaryTerm } from "../models/Summary";
 import { stripSpeakers } from "../utils/functions";
@@ -15,7 +17,7 @@ import { extractNamedEntitiesFromCoreNLPDocument } from "./processors/namedEntit
 import { candidateTermTFIDFSummary, candidateTermTFUIDFSummary } from "./summarizers/CandidateTermTFIDF";
 import { LDASummary } from "./summarizers/LatentDirichletAllocation";
 import { corpusLemmaTFIDFSummary, userLemmaTFIDFSummary } from "./summarizers/LemmaTFIDF";
-import { npAndNERSummary } from "./summarizers/NPandNER";
+import { npAndNERSummary } from "./summarizers/NounPhraseAndNamedEntity";
 
 /*
     Service to analyze a User-provided conversation, or one that already exists in the application corpus
@@ -90,37 +92,37 @@ export async function analyzeUserConversation(userId: mongoose.Types.ObjectId, r
         const longLDASummary = LDASummary(conversation.annotated, conversationCandidateTerms, longReferenceCandidateTerms.size, 1);
 
         // TODO - Pick number of terms
-        const shortBestSummary = await npAndNERSummary(conversation.annotated, conversationCandidateTerms, conversationNamedEntities, 10);
-        const mediumBestSummary = await npAndNERSummary(conversation.annotated, conversationCandidateTerms, conversationNamedEntities, 15);
-        const longBestSummary = await npAndNERSummary(conversation.annotated, conversationCandidateTerms, conversationNamedEntities, 20);
+        // const shortBestSummary = await npAndNERSummary(conversation.annotated, conversationCandidateTerms, conversationNamedEntities, 10);
+        // const mediumBestSummary = await npAndNERSummary(conversation.annotated, conversationCandidateTerms, conversationNamedEntities, 15);
+        // const longBestSummary = await npAndNERSummary(conversation.annotated, conversationCandidateTerms, conversationNamedEntities, 20);
 
         // Evaluate Summaries
         const summary1 = [
-            buildSummaryAnalysisResult(shortReference, "CandidateTermTFIDFSummary", shortCandidateTermTFIDFSummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
-            buildSummaryAnalysisResult(mediumReference, "CandidateTermTFIDFSummary", mediumCandidateTermTFIDFSummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
-            buildSummaryAnalysisResult(longReference, "CandidateTermTFIDFSummary", longCandidateTermTFIDFSummary.summary, ["Recall", "Precision", "Keyword-Compare"])
+            buildSummaryAnalysisResult(shortReference, "CandidateTermTFIDFSummary", shortCandidateTermTFIDFSummary.summary, candidateTermMapToStringArray(shortReferenceCandidateTerms), ["Recall", "Precision", "Keywords"]),
+            buildSummaryAnalysisResult(mediumReference, "CandidateTermTFIDFSummary", mediumCandidateTermTFIDFSummary.summary, candidateTermMapToStringArray(mediumReferenceCandidateTerms), ["Recall", "Precision", "Keywords"]),
+            buildSummaryAnalysisResult(longReference, "CandidateTermTFIDFSummary", longCandidateTermTFIDFSummary.summary, candidateTermMapToStringArray(longReferenceCandidateTerms), ["Recall", "Precision", "Keywords"])
         ];
 
         const summary2 = [
-            buildSummaryAnalysisResult(shortReference, "CorpusLemmaSummary", shortLemmaTFIDFSummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
-            buildSummaryAnalysisResult(mediumReference, "CorpusLemmaSummary", mediumLemmaTFIDFSummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
-            buildSummaryAnalysisResult(longReference, "CorpusLemmaSummary", longLemmaTFIDFSummary.summary, ["Recall", "Precision", "Keyword-Compare"])
+            buildSummaryAnalysisResult(shortReference, "CorpusLemmaSummary", shortLemmaTFIDFSummary.summary, lemmaMapToStringArray(shortReferenceLemmas), ["Recall", "Precision", "Keywords"]),
+            buildSummaryAnalysisResult(mediumReference, "CorpusLemmaSummary", mediumLemmaTFIDFSummary.summary, lemmaMapToStringArray(mediumReferenceLemmas), ["Recall", "Precision", "Keywords"]),
+            buildSummaryAnalysisResult(longReference, "CorpusLemmaSummary", longLemmaTFIDFSummary.summary, lemmaMapToStringArray(longReferenceLemmas), ["Recall", "Precision", "Keywords"])
         ];
 
         const summary3 = [
-            buildSummaryAnalysisResult(shortReference, "CorpusLDASummary", shortLDASummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
-            buildSummaryAnalysisResult(mediumReference, "CorpusLDASummary", mediumLDASummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
-            buildSummaryAnalysisResult(longReference, "CorpusLDASummary", longLDASummary.summary, ["Recall", "Precision", "Keyword-Compare"])
+            buildSummaryAnalysisResult(shortReference, "CorpusLDASummary", shortLDASummary.summary, candidateTermMapToStringArray(shortReferenceCandidateTerms), ["Recall", "Precision", "Keywords"]),
+            buildSummaryAnalysisResult(mediumReference, "CorpusLDASummary", mediumLDASummary.summary, candidateTermMapToStringArray(mediumReferenceCandidateTerms), ["Recall", "Precision", "Keywords"]),
+            buildSummaryAnalysisResult(longReference, "CorpusLDASummary", longLDASummary.summary, candidateTermMapToStringArray(longReferenceCandidateTerms), ["Recall", "Precision", "Keywords"])
         ];
 
-        const summary4 = [
-            buildSummaryAnalysisResult(shortReference, "NP Chunks and Named Entity", shortBestSummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
-            buildSummaryAnalysisResult(mediumReference, "NP Chunks and Named Entity", shortBestSummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
-            buildSummaryAnalysisResult(longReference, "NP Chunks and Named Entity", shortBestSummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
+        // const summary4 = [
+        //     buildSummaryAnalysisResult(shortReference, "NP Chunks and Named Entity", shortBestSummary.summary, ["Recall", "Precision", "Keywords"]),
+        //     buildSummaryAnalysisResult(mediumReference, "NP Chunks and Named Entity", shortBestSummary.summary, ["Recall", "Precision", "Keywords"]),
+        //     buildSummaryAnalysisResult(longReference, "NP Chunks and Named Entity", shortBestSummary.summary, ["Recall", "Precision", "Keywords"]),
 
-        ];
+        // ];
         // Return Summaries
-        return JSON.parse(JSON.stringify(combineSummaries(summary1.concat(summary2, summary3, summary4))));
+        return JSON.parse(JSON.stringify(combineSummaries(summary1.concat(summary2, summary3))));
     }
     catch (error) {
         logger.error(error);
@@ -198,12 +200,12 @@ function combineSummaries(summaries: Array<GeneratedSummary>): Array<FinalSummar
     });
 }
 
-function buildSummaryAnalysisResult(reference: Reference, method: string, summary: string, metrics: Array<MetricTypes>): GeneratedSummary {
+function buildSummaryAnalysisResult(reference: Reference, method: string, candidateSummary: Array<string>, referenceSummary: Array<string>, metrics: Array<MetricTypes>): GeneratedSummary {
     return {
         reference,
         method,
-        summary: buildSummaryTermArray(summary, reference.summary),
-        scores: calculateAllScores(summary, reference.summary, metrics)
+        summary: buildSummaryTermArray(candidateSummary.join(", "), reference.summary),
+        scores: calculateAllScores(candidateSummary, referenceSummary, metrics)
     };
 }
 
@@ -225,4 +227,16 @@ export function buildSummaryTermArray(generated: string, reference: string): Arr
     //         match
     //     };
     // });
+}
+
+function lemmaMapToStringArray(map: Map<string, number>): Array<string> {
+    return [...map.keys()];
+}
+
+function candidateTermMapToStringArray(map: Map<string, number>): Array<string> {
+    return [...map.keys()].map((termString) => CandidateTerm.fromString(termString).term);
+}
+
+function namedEntityMapToStringArray(map: Map<string, number>): Array<string> {
+    return [...map.keys()].map((termString) => NamedEntityTerm.fromString(termString).term);
 }

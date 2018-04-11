@@ -10,7 +10,7 @@ export function LDASummary(annotated: CoreNLP.simple.Document, candidateTermMap:
     const ldaTopics = topicise([...candidateTermMap.keys()].map((val) => CandidateTerm.fromString(val).term), numberOfTopics, numberOfWordsPerTopic);
     const summary = ldaTopics.map((topic) => {
         return topic[0]["0"];
-    }).join(", ");
+    });
     return {
         method: "Candidate Term LDA",
         summary,

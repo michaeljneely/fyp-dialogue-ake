@@ -9,7 +9,7 @@ import { extractMeaningfulLemmasFromCoreNLPDocument } from "./processors/lemma";
 import { extractNamedEntitiesFromCoreNLPDocument } from "./processors/namedEntities";
 import { candidateTermTFUIDFSummary } from "./summarizers/CandidateTermTFIDF";
 import { LDASummary } from "./summarizers/LatentDirichletAllocation";
-import { npAndNERSummary } from "./summarizers/NPandNER";
+import { npAndNERSummary } from "./summarizers/NounPhraseAndNamedEntity";
 
 /*
     Service that uses the best performing Summary Strategy to summarize a conversation
@@ -49,7 +49,7 @@ export async function summarizeConversation(text: string, userId: mongoose.Types
         // Return best summary - at the moment: NP/NER
         return Promise.resolve({
             speakers: formatSpeakers(speakers),
-            summary: summary.summary
+            summary: summary.summary.join(", ")
         } as Summary);
     }
     catch (error) {

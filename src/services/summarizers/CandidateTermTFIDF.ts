@@ -31,7 +31,7 @@ export async function candidateTermTFIDFSummary(candidateTerms: Map<string, numb
         }
         return {
             method: "CandidateTermTFIDFSummary",
-            summary: sortAndReturn(terms, length).join(", "),
+            summary: sortAndReturn(terms, length),
             candidateTerms: candidateTerms
         };
     }
@@ -58,7 +58,7 @@ export async function candidateTermTFUIDFSummary(userId: mongoose.Types.ObjectId
         }
         return {
             method: "CandidateTermTFUIDFSummary",
-            summary: sortAndReturn(terms, length).join(", "),
+            summary: sortAndReturn(terms, length),
             candidateTerms: candidateTerms
         };
     }
