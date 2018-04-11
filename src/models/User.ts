@@ -69,6 +69,7 @@ export type Profile = {
     website?: string,
     picture?: string
 };
+
 export const UserModel = new User().getModelForClass(User, {
     existingConnection: mongoose.connection,
     schemaOptions: {

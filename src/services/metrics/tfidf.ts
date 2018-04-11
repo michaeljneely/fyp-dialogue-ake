@@ -1,12 +1,8 @@
 import * as mongoose from "mongoose";
-import { ExtractedCandidateTerm } from "../../models/CandidateTerm";
-import { CorpusCandidateTermModel } from "../../models/corpusCandidateTerm";
-import { CorpusDocumentModel } from "../../models/CorpusDocument";
-import { CorpusLemmaModel } from "../../models/CorpusLemma";
-import { Term } from "../../models/NamedEntityTerm";
-import { UserCandidateTermModel } from "../../models/UserCandidateTerm";
-import { UserDocumentModel } from "../../models/UserDocument";
-import { UserLemmaModel } from "../../models/UserLemma";
+import { CandidateTerm, CorpusCandidateTerm, CorpusCandidateTermModel, UserCandidateTerm, UserCandidateTermModel } from "../../models/CandidateTerm";
+import { CorpusDocument, CorpusDocumentModel, UserDocument, UserDocumentModel } from "../../models/Document";
+import { CorpusLemma, CorpusLemmaModel, UserLemma, UserLemmaModel } from "../../models/Lemma";
+import { Term } from "../../models/Term";
 import { sleep } from "../../utils/functions";
 import { logger } from "../../utils/logger";
 
@@ -90,10 +86,10 @@ export async function lemmaIDFCorpus(lemma: string): Promise<number> {
  * @param candidateTerm Candidate Term
  * @param collectionSize Total Number of Document's in the User's corpus
  */
-export async function candidateTermIDFUser(userId: mongoose.Types.ObjectId, candidateTerm: ExtractedCandidateTerm): Promise<number> {
+export async function termIDFUser(userId: mongoose.Types.ObjectId, term: Term): Promise<number> {
     try {
         const collectionSize = await UserDocumentModel.find({owner: userId}).count();
-        const userCandidateTerm = await UserCandidateTermModel.findOne({owner: userId, term: candidateTerm.term, type: candidateTerm.type });
+        const userCandidateTerm = await UserCandidateTermModel.findOne({owner: userId, term: term.term, type: term.type });
         const docsContainingCandidateTerm = (userCandidateTerm) ? userCandidateTerm.frequencies.length : 1;
         return Promise.resolve(Math.log2(collectionSize / docsContainingCandidateTerm));
     }
@@ -107,26 +103,14 @@ export async function candidateTermIDFUser(userId: mongoose.Types.ObjectId, cand
  * @param candidateTerm Candidate Term
  * @param collectionSize Total Number of Document's in the Application's corpus
  */
-export async function candidateTermIDFCorpus(candidateTerm: ExtractedCandidateTerm) {
+export async function termIDFCorpus(term: Term): Promise<number> {
     try {
         const collectionSize = await CorpusDocumentModel.find({}).count();
-        const corpusCandidateTerm = await CorpusCandidateTermModel.findOne({term: candidateTerm.term, type: candidateTerm.type});
+        const corpusCandidateTerm = await CorpusCandidateTermModel.findOne({term: term.term, type: term.type});
         const docsContainingCorpusCandidateTerm = (corpusCandidateTerm) ? corpusCandidateTerm.frequencies.length : 1;
         return Promise.resolve(Math.log2(collectionSize / docsContainingCorpusCandidateTerm));
     }
     catch (error) {
-        return Promise.reject(error);
-    }
-}
-
-
-export async function termIDFCorpus(term: Term): Promise<number> {
-    try {
-        await sleep(100);
-        return 1;
-    }
-    catch (error) {
-        logger.error(error);
         return Promise.reject(error);
     }
 }

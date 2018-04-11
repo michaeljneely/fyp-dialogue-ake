@@ -2,11 +2,10 @@ import CoreNLP from "corenlp";
 import * as fs from "fs-extra";
 import * as mongoose from "mongoose";
 import * as path from "path";
-import { ExtractedCandidateTerm, ExtractedCandidateTermMap } from "../../models/CandidateTerm";
-import { CorpusCandidateTerm, CorpusCandidateTermModel } from "../../models/corpusCandidateTerm";
+import { CandidateTerm, CorpusCandidateTerm, CorpusCandidateTermModel } from "../../models/CandidateTerm";
 import { CorpusDocument, CorpusDocumentModel, referenceSummaries } from "../../models/CorpusDocument";
-import { CorpusLemma, CorpusLemmaModel } from "../../models/CorpusLemma";
 import { DocumentFrequencyModel } from "../../models/DocumentFrequency";
+import { CorpusLemma, CorpusLemmaModel } from "../../models/Lemma";
 import { IReference } from "../../models/Reference";
 import { replaceSmartQuotes, stripSpeakers } from "../../utils/functions";
 import { logger } from "../../utils/logger";
@@ -102,7 +101,7 @@ export async function buildCorpus(): Promise<number> {
  * @param candidateTerms Map of Unique candidate terms and their frequencies
  * @param referenceSummaries User provided reference summaries
  */
-export async function saveCorpusDocument(title: string, speakers: Array<string>, keywords: Array<string>, annotated: CoreNLP.simple.Document, rawText: string, lemmas: Map<string, number>, candidateTerms: ExtractedCandidateTermMap, referenceSummaries: referenceSummaries): Promise<CorpusDocument & mongoose.Document> {
+export async function saveCorpusDocument(title: string, speakers: Array<string>, keywords: Array<string>, annotated: CoreNLP.simple.Document, rawText: string, lemmas: Map<string, number>, candidateTerms: Map<string, number>, referenceSummaries: referenceSummaries): Promise<CorpusDocument & mongoose.Document> {
     try {
         const corpusDocument = await new CorpusDocumentModel({
             title: title,
@@ -118,7 +117,7 @@ export async function saveCorpusDocument(title: string, speakers: Array<string>,
                 await addCorpusLemma(corpusDocument._id, lemma, frequency);
             }
             for (const [candidateTerm, frequency] of candidateTerms) {
-                await addCorpusCandidateTerm(corpusDocument._id, candidateTerm, frequency);
+                await addCorpusCandidateTerm(corpusDocument._id, CandidateTerm.fromString(candidateTerm), frequency);
             }
             return Promise.resolve(corpusDocument);
         }
@@ -164,7 +163,7 @@ async function addCorpusLemma(documentID: mongoose.Types.ObjectId, lemma: string
  * @param candidateTerm  Candidate Term
  * @param frequency Total occurrences in conversation
  */
-async function addCorpusCandidateTerm(documentID: mongoose.Types.ObjectId, candidateTerm: ExtractedCandidateTerm, frequency: number): Promise<CorpusCandidateTerm > {
+async function addCorpusCandidateTerm(documentID: mongoose.Types.ObjectId, candidateTerm: CandidateTerm, frequency: number): Promise<CorpusCandidateTerm > {
     try {
         const documentFrequency = new DocumentFrequencyModel({ documentID, frequency });
         let corpusCandidateTerm = await CorpusCandidateTermModel.findOne({ term: candidateTerm.term, type: candidateTerm.type });

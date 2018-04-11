@@ -1,10 +1,9 @@
 import CoreNLP from "corenlp";
 import * as mongoose from "mongoose";
-import { ExtractedCandidateTerm, ExtractedCandidateTermMap } from "../../models/CandidateTerm";
+import { CandidateTerm, UserCandidateTerm, UserCandidateTermModel } from "../../models/CandidateTerm";
+import { UserDocument, UserDocumentModel } from "../../models/Document";
 import { DocumentFrequencyModel } from "../../models/DocumentFrequency";
-import { UserCandidateTerm, UserCandidateTermModel } from "../../models/UserCandidateTerm";
-import { UserDocument, UserDocumentModel } from "../../models/UserDocument";
-import { UserLemma, UserLemmaModel } from "../../models/UserLemma";
+import { UserLemma, UserLemmaModel } from "../../models/Lemma";
 import { logger } from "../../utils/logger";
 
 /**
@@ -16,7 +15,7 @@ import { logger } from "../../utils/logger";
  * @param lemmas Map of Unique lemmas and their frequencies
  * @param candidateTerms Map of Unique candidate terms and their frequencies
  */
-export async function saveUserDocument(userId: mongoose.Types.ObjectId, speakers: Array<string>, annotated: CoreNLP.simple.Document, rawText: string, lemmas: Map<string, number>, candidateTerms: ExtractedCandidateTermMap): Promise<UserDocument> {
+export async function saveUserDocument(userId: mongoose.Types.ObjectId, speakers: Array<string>, annotated: CoreNLP.simple.Document, rawText: string, lemmas: Map<string, number>, candidateTerms: Map<string, number>): Promise<UserDocument> {
     try {
         const userDocument = await new UserDocumentModel({
             owner: userId,
@@ -30,7 +29,7 @@ export async function saveUserDocument(userId: mongoose.Types.ObjectId, speakers
                 await addUserLemma(userId, userDocument._id, lemma, frequency);
             }
             for (const [candidateTerm, frequency] of candidateTerms) {
-                await addUserCandidateTerm(userId, userDocument._id, candidateTerm, frequency);
+                await addUserCandidateTerm(userId, userDocument._id, CandidateTerm.fromString(candidateTerm), frequency);
             }
             return Promise.resolve(userDocument);
         }
@@ -77,7 +76,7 @@ async function addUserLemma(userId: mongoose.Types.ObjectId, documentID: mongoos
  * @param candidateTerm Candidate Term
  * @param frequency Total occurrences in conversation
  */
-async function addUserCandidateTerm(userId: mongoose.Types.ObjectId, documentID: mongoose.Types.ObjectId, candidateTerm: ExtractedCandidateTerm, frequency: number): Promise<UserCandidateTerm > {
+async function addUserCandidateTerm(userId: mongoose.Types.ObjectId, documentID: mongoose.Types.ObjectId, candidateTerm: CandidateTerm, frequency: number): Promise<UserCandidateTerm > {
     try {
         const documentFrequency = new DocumentFrequencyModel({ documentID, frequency });
         let userCandidateTerm = await UserCandidateTermModel.findOne({ owner: userId, term: candidateTerm.term, type: candidateTerm.type });

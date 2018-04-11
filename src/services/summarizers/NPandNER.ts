@@ -23,7 +23,7 @@ interface TermWithScore {
 export async function npAndNERSummary(annotated: CoreNLP.simple.Document, numberOfWords: number): Promise<Array<string>> {
 
     const namedEntityFilter = ["PERSON", "LOCATION", "ORGANIZATION", "MISC", "NATIONALITY", "COUNTRY", "STATE_OR_PROVENCE", "TITLE", "IDEOLOGY", "RELIGION", "CRIMINAL_CHARGE", "CAUSE_OF_DEATH"];
-    const namedEntityDBpediaFilter = ["PERSON"];
+    const namedEntityDBpediaFilter = ["PERSON", "LOCATION", "ORGANIZATION"];
 
     function _namedEntityAndCandidateTermComparator(t1: Term, t2: Term): boolean {
         if (t1 instanceof NamedEntityTerm) {
@@ -48,18 +48,19 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
                     ret.push(term);
                 }
             }
-            else if (term instanceof NamedEntityTerm) {
-                if (namedEntityDBpediaFilter.indexOf(term.type) === -1) {
-                    const score = await getDBpediaScore(term.term);
-                    if (score > 0.5) {
-                        ret.push(term);
-                    }
-                }
-                else {
-                    logger.info(`${term.term} and ${term.type} is SAFE`);
-                    ret.push(term);
-                }
-            }
+            // else if (term instanceof NamedEntityTerm) {
+            //     if (namedEntityDBpediaFilter.indexOf(term.type) === -1) {
+            //         const score = await getDBpediaScore(term.term);
+            //         if (score > 0.5) {
+            //             ret.push(term);
+            //         }
+            //     }
+            //     else {
+            //         logger.info(`${term.term} and ${term.type} is SAFE`);
+            //         ret.push(term);
+            //     }
+            // }
+            else ret.push(term);
         }
         return ret;
     }
@@ -120,8 +121,6 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
         }
 
         logger.info(`Beginning to query DBpedia to remove vague Candidate Terms`);
-        const score = await getDBpediaScore("wefhouwefhuwefhu");
-        logger.info(`score: ${score}`);
         const specificTerms = await _processDBP(termsToConsider);
 
         // Early Exit Condition 3;
@@ -131,9 +130,10 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
 
         logger.info(`Removed ${termsToConsider.length - specificTerms.length} terms`);
         logger.info(`Proceeding with the remaining ${specificTerms.length} terms`);
+        return termsToConsider.map((term) => term.term);
 
         // Remove all CandidateTerms with below average TFIDF
-
+        /*
         let ectTFIDFTotal: number = 0;
         let ectCount: number = 0;
         let neTFIDFTotal: number = 0;
@@ -175,6 +175,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
         logger.info(`Named Entity TFIDF Average: ${neTFIDFAverage}`);
         logger.info(`Reduced to ${finalFinalFinal.length} terms`);
         return finalFinalFinal.map((twt) => twt.term.term);
+        */
     }
     catch (error) {
         logger.error(error);
