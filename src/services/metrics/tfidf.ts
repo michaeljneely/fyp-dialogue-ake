@@ -3,9 +3,11 @@ import { ExtractedCandidateTerm } from "../../models/CandidateTerm";
 import { CorpusCandidateTermModel } from "../../models/corpusCandidateTerm";
 import { CorpusDocumentModel } from "../../models/CorpusDocument";
 import { CorpusLemmaModel } from "../../models/CorpusLemma";
+import { Term } from "../../models/NamedEntityTerm";
 import { UserCandidateTermModel } from "../../models/UserCandidateTerm";
 import { UserDocumentModel } from "../../models/UserDocument";
 import { UserLemmaModel } from "../../models/UserLemma";
+import { sleep } from "../../utils/functions";
 import { logger } from "../../utils/logger";
 
 /*
@@ -113,6 +115,18 @@ export async function candidateTermIDFCorpus(candidateTerm: ExtractedCandidateTe
         return Promise.resolve(Math.log2(collectionSize / docsContainingCorpusCandidateTerm));
     }
     catch (error) {
+        return Promise.reject(error);
+    }
+}
+
+
+export async function termIDFCorpus(term: Term): Promise<number> {
+    try {
+        await sleep(100);
+        return 1;
+    }
+    catch (error) {
+        logger.error(error);
         return Promise.reject(error);
     }
 }

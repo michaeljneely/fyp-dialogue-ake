@@ -4,6 +4,7 @@ import _ = require("lodash");
 import { CandidateTerm, ExtractedCandidateTerm, ExtractedCandidateTermMap } from "../../models/CandidateTerm";
 import { NamedEntityTerm, Term } from "../../models/NamedEntityTerm";
 import { logger } from "../../utils/logger";
+import { calculateTFIDF, candidateTermIDFCorpus, termIDFCorpus } from "../metrics/tfidf";
 import { extractCandidateTermsFromCoreNLPDocument } from "../processors/candidateTerm";
 import { getDBpediaScore } from "../processors/dbpedia";
 import { extractNamedEntitiesFromCoreNLPDocument } from "../processors/namedEntities";
@@ -22,6 +23,7 @@ interface TermWithScore {
 export async function npAndNERSummary(annotated: CoreNLP.simple.Document, numberOfWords: number): Promise<Array<string>> {
 
     const namedEntityFilter = ["PERSON", "LOCATION", "ORGANIZATION", "MISC", "NATIONALITY", "COUNTRY", "STATE_OR_PROVENCE", "TITLE", "IDEOLOGY", "RELIGION", "CRIMINAL_CHARGE", "CAUSE_OF_DEATH"];
+    const namedEntityDBpediaFilter = ["PERSON"];
 
     function _namedEntityAndCandidateTermComparator(t1: Term, t2: Term): boolean {
         if (t1 instanceof NamedEntityTerm) {
@@ -39,16 +41,24 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
         logger.info(`processing dbpedia...`);
         const ret = new Array<Term>();
         for (let i = 0; i < arr.length; i++) {
-            if (arr[i] instanceof ExtractedCandidateTerm && arr[i].term.length > 1) {
-                // logger.info(`checking ct: ${arr[i].term}`);
-                const score = await getDBpediaScore(arr[i].term);
-                // logger.info(`Score for ${arr[i].term} is: ${score}`);
+            const term = arr[i];
+            if (term instanceof ExtractedCandidateTerm && term.term.length > 1) {
+                const score = await getDBpediaScore(term.term);
                 if (score > 0.5) {
-                    ret.push(arr[i]);
+                    ret.push(term);
                 }
             }
-            else if (arr[i] instanceof NamedEntityTerm) {
-                ret.push(arr[i]);
+            else if (term instanceof NamedEntityTerm) {
+                if (namedEntityDBpediaFilter.indexOf(term.type) === -1) {
+                    const score = await getDBpediaScore(term.term);
+                    if (score > 0.5) {
+                        ret.push(term);
+                    }
+                }
+                else {
+                    logger.info(`${term.term} and ${term.type} is SAFE`);
+                    ret.push(term);
+                }
             }
         }
         return ret;
@@ -100,15 +110,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
             }
             alreadyChecked.push(Term.toString(t1));
         }
-        // logger.info(`!!!!!${alreadyChecked.length === unifiedTerms.length}$$$$$$$`);
-        // logger.info(`${termsToRemove.length  < unifiedTerms.length}`);
         const termsToConsider = unifiedTerms.filter((term) => termsToRemove.indexOf(Term.toString(term)) === -1);
-        // termsToRemove.forEach((term) => {
-        //     logger.info(term);
-        // });
-        // termsToConsider.forEach((tcc) => {
-        //     logger.info(`${tcc.term} and ${tcc.type}`);
-        // });
         logger.info(`removed ${unifiedTerms.length - termsToConsider.length} terms.`);
         logger.info(`Examining the remaining: ${termsToConsider.length} unique terms`);
 
@@ -119,64 +121,58 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
 
         logger.info(`Beginning to query DBpedia to remove vague Candidate Terms`);
         const specificTerms = await _processDBP(termsToConsider);
+
+        // Early Exit Condition 3;
+        if (specificTerms.length < numberOfWords) {
+            return specificTerms.map((ttc) => ttc.term);
+        }
+
         logger.info(`Removed ${termsToConsider.length - specificTerms.length} terms`);
         logger.info(`Proceeding with the remaining ${specificTerms.length} terms`);
-        specificTerms.forEach((term) => {
-            logger.info(`${term.type} - ${term.term}`);
+
+        // Remove all CandidateTerms with below average TFIDF
+
+        let ectTFIDFTotal: number = 0;
+        let ectCount: number = 0;
+        let neTFIDFTotal: number = 0;
+        let neCount: number = 0;
+
+        const finalFinalTerms = await Promise.all(specificTerms.map(async (term: Term): Promise<TermWithTFIDF> => {
+            if (term instanceof ExtractedCandidateTerm) {
+                const tf = candidateTermMap.get(Term.toString(term));
+                const idf = await termIDFCorpus(term);
+                const tfidf = tf * idf;
+                ectTFIDFTotal += tfidf;
+                ectCount++;
+                return {term, tfidf};
+            }
+            else if (term instanceof NamedEntityTerm) {
+                const tf = namedEntityMap.get(Term.toString(term));
+                const idf = 1;
+                const tfidf = tf * idf;
+                neTFIDFTotal += tfidf;
+                neCount++;
+                return {term, tfidf};
+            }
+        }));
+
+        const ectTFIDFAverage = ectTFIDFTotal / ectCount;
+        const neTFIDFAverage = neTFIDFTotal / neCount;
+
+        const finalFinalFinal = finalFinalTerms.filter((twt: TermWithTFIDF) => {
+            if (twt.term instanceof ExtractedCandidateTerm) {
+                return twt.tfidf >= ectTFIDFAverage;
+            }
+            else {
+                return true;
+            }
         });
 
-        // logger.info(`done querying. Only ${chomp.length} items remaining`);
-        // const tfIdfTotal: number = 0;
-        // const ectCount: number = 0;
-        // TFIDF -> top half
-        // Named entity -> top half
-
-        // const finalFinalTerms = await Promise.all(tyrebf.map(async (term: Term): Promise<TermWithTFIDF> => {
-        //     if (term instanceof ExtractedCandidateTerm) {
-        //         const idf = await candidateTermIDFCorpus(term);
-        //         const tfidf = calculateTFIDF(candidateTerms.get(term)["1"], idf);
-        //         // tfIdfTotal += tfidf;
-        //         // ectCount += 1;
-        //         return {
-        //             term,
-        //             tfidf,
-        //         };
-        //     }
-        //     else if (term instanceof NamedEntityTerm) {
-        //         logger.info(`Named Entity: ${term.term}`);
-        //         const tfidf = 1;
-        //         return {
-        //             term,
-        //             tfidf
-        //         };
-        //     }
-        // }));
-        // const averageTFIDF = tfIdfTotal / ectCount;
-        // const QQQ = finalFinalTerms.filter((term: TermWithTFIDF) => {
-        //     if (term.term instanceof ExtractedCandidateTerm) {
-        //         logger.info(`WAAAAAAAAAA: ${term.term.term} - ${term.tfidf} - ${averageTFIDF}`);
-        //         return term.tfidf > averageTFIDF;
-        //     }
-        //     else return true;
-        // });
-
-        // const finalFinalFinal = finalFinalTerms.sort((t1, t2) => {
-        //     if (t1.tfidf > t2.tfidf) {
-        //         return -1;
-        //     }
-        //     else if (t1.tfidf < t2.tfidf) {
-        //         return 1;
-        //     }
-        //     else return 0;
-        // });
-
-        // finalFinalFinal.forEach((fff) => {
-        //     logger.info(fff.term.term);
-        //     logger.info(`${fff.tfidf}`);
-        // });
-
-        // logger.info(`${finalFinalFinal.length} terms left to consider`);
-        return ["hello"];
+        // Final Terms to Consider
+        logger.info(`Candidate Term TFIDF Average: ${ectTFIDFAverage}`);
+        logger.info(`Named Entity TFIDF Average: ${neTFIDFAverage}`);
+        logger.info(`Reduced to ${finalFinalFinal.length} terms`);
+        return finalFinalFinal.map((twt) => twt.term.term);
     }
     catch (error) {
         logger.error(error);
