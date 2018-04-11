@@ -2,7 +2,7 @@ import * as got from "got";
 import _ = require("lodash");
 import * as convert from "xml-js";
 import { KeywordSearch } from "../../models/DBpedia";
-import { DBpediaScoreModel } from "../../models/DBpediaScore";
+import { DBpediaScoreModel } from "../../models/DBpedia";
 import { sleep } from "../../utils/functions";
 import { logger } from "../../utils/logger";
 

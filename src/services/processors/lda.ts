@@ -1,7 +1,7 @@
 import CoreNLP from "corenlp";
 import * as _ from "lodash";
-import { CorpusCandidateTerm, CorpusCandidateTermModel } from "../../models/corpusCandidateTerm";
-import { CorpusDocument, CorpusDocumentModel } from "../../models/CorpusDocument";
+import { CorpusCandidateTerm, CorpusCandidateTermModel } from "../../models/CandidateTerm";
+import { CorpusDocument, CorpusDocumentModel } from "../../models/Document";
 import { make2DNumberArray } from "../../utils/functions";
 import { logger } from "../../utils/logger";
 import { extractCandidateTermsFromCoreNLPDocument } from "./candidateTerm";
@@ -54,8 +54,8 @@ async function buildCorpusVocab(terms: Array<string>): Promise<Vocab> {
             const docs = new Array<Array<number>>();
             documents.forEach((document: CorpusDocument) => {
                 const docVector = new Array<number>();
-                const dcts = extractCandidateTermsFromCoreNLPDocument(CoreNLP.simple.Document.fromJSON(document.processedText)).toStringArray();
-                dcts.forEach((dct: string) => {
+                const dcts = extractCandidateTermsFromCoreNLPDocument(CoreNLP.simple.Document.fromJSON(document.processedText));
+                [...dcts.keys()].forEach((dct: string) => {
                     if (candidateTermToIndex.get(dct) !== undefined ) {
                         docVector.push(candidateTermToIndex.get(dct));
                     }

@@ -1,7 +1,7 @@
 import CoreNLP from "corenlp";
 import { stopwords } from "../../constants/filters";
-import { CandidateTermTypes, ExtractedCandidateTerm, ExtractedCandidateTermMap } from "../../models/CandidateTerm";
-import { Term } from "../../models/NamedEntityTerm";
+import { CandidateTerm,  CandidateTermTypes } from "../../models/CandidateTerm";
+import { Term } from "../../models/Term";
 import { logger } from "../../utils/logger";
 import { Stack } from "../../utils/stack";
 
@@ -24,7 +24,7 @@ export function extractCandidateTermsFromCoreNLPDocument(document: CoreNLP.simpl
  * @param document CoreNLP documents
  * @returns {Array<ExtractedCandidateTerm>} All candidate terms found in the document
  */
-function findCandidateTerms(document: CoreNLP.simple.Document): Array<ExtractedCandidateTerm> {
+function findCandidateTerms(document: CoreNLP.simple.Document): Array<CandidateTerm> {
 
     logger.info(`findCandidateTerms() - finding Candidate Terms..`);
 
@@ -33,7 +33,7 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<ExtractedC
     // POS tags for Noun Phrase (singular and plural)
     const nounPhrase = ["NNP", "NNPS"];
 
-    const candidateTerms = new Array<ExtractedCandidateTerm>();
+    const candidateTerms = new Array<CandidateTerm>();
 
     // Stack to construct candidate terms
     const termStack = new Stack<CoreNLP.simple.Token>();
@@ -160,7 +160,7 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<ExtractedC
                 if (termStack.data().length > 0) {
                     const candidateTerm = buildStringFromTokenStack(termStack);
                     // Add to candidate terms
-                    candidateTerms.push(new ExtractedCandidateTerm(candidateTerm, termType));
+                    candidateTerms.push(new CandidateTerm(candidateTerm, termType));
                     // Clear the stack to accommodate the next candidate phrase
                     termStack.clear();
                 }
@@ -192,15 +192,15 @@ export function buildStringFromTokenStack(stack: Stack<CoreNLP.simple.Token>): s
  * @param {Array<ExtractedCandidateTerms>} candidateTerms
  * @returns {Map<ExtractedCandidateTerm, number>} ExtractedCandidateTerm -> Frequency Map
  */
-function mapCandidateTerms(candidateTerms: Array<ExtractedCandidateTerm>): Map<string, number> {
+function mapCandidateTerms(candidateTerms: Array<CandidateTerm>): Map<string, number> {
     const map = new Map<string, number>();
     candidateTerms.forEach((candidateTerm) => {
-        const existing = map.get(ExtractedCandidateTerm.toString(candidateTerm));
+        const existing = map.get(CandidateTerm.toString(candidateTerm));
         if (existing) {
-            map.set(ExtractedCandidateTerm.toString(candidateTerm), existing + 1);
+            map.set(CandidateTerm.toString(candidateTerm), existing + 1);
         }
         else {
-            map.set(ExtractedCandidateTerm.toString(candidateTerm), 1);
+            map.set(CandidateTerm.toString(candidateTerm), 1);
         }
     });
     return map;
