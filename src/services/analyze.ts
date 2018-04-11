@@ -10,7 +10,6 @@ import { annotate } from "./corenlp/corenlp";
 import { CorpusCandidateTermTFIDFSummary, UserCandidateTermTFIDFSummary } from "./summarizers/CandidateTermTFIDF";
 import { LatentDirichletAllocationSummary } from "./summarizers/LatentDirichletAllocation";
 import { CorpusLemmaTFIDFSummary, UserLemmaTFIDFSummary } from "./summarizers/LemmaTFIDF";
-import { semanticPowerAndSpecificitySummary, semanticPowerAndSpecificitySummaryWithScores } from "./summarizers/SemanticPowerAndSpecificity";
 
 /*
     Service to analyze a User-provided conversation, or one that already exists in the application corpus
@@ -55,13 +54,7 @@ export async function analyzeUserConversation(userId: mongoose.Types.ObjectId, r
         const summary2 = await new CorpusLemmaTFIDFSummary(conversation, [shortReference, mediumReference, longReference], keyWordArray).summarize();
         const summary3 = await new CorpusCandidateTermTFIDFSummary(conversation, [shortReference, mediumReference, longReference], keyWordArray).summarize();
         const summary4 = await new UserCandidateTermTFIDFSummary(conversation, [shortReference, mediumReference, longReference], keyWordArray, userId).summarize();
-        // Get SemanticPowerAndSpecificity Summary
-        const maxLengthSemanticSummary = await semanticPowerAndSpecificitySummary(conversation.annotated, longSummary.length, .75);
-        const semanticPowerAndSpecificityShort = semanticPowerAndSpecificitySummaryWithScores(maxLengthSemanticSummary, shortReference);
-        const semanticPowerAndSpecificityMedium = semanticPowerAndSpecificitySummaryWithScores(maxLengthSemanticSummary, mediumReference);
-        const semanticPowerAndSpecificityLong = semanticPowerAndSpecificitySummaryWithScores(maxLengthSemanticSummary, longReference);
-        const summary5 = [semanticPowerAndSpecificityShort, semanticPowerAndSpecificityMedium, semanticPowerAndSpecificityLong];
-        return JSON.parse(JSON.stringify(combineSummaries(summary1.concat(summary2, summary3, summary4, summary5))));
+        return JSON.parse(JSON.stringify(combineSummaries(summary1.concat(summary2, summary3, summary4))));
     }
     catch (error) {
         logger.error(error);
@@ -102,18 +95,7 @@ export async function analyzeCorpusConversation(documentId: string): Promise<JSO
         const summary1 = await new CorpusLemmaTFIDFSummary(conversation, [shortReference, mediumReference, longReference], document.keywords).summarize();
         const summary2 = await new CorpusCandidateTermTFIDFSummary(conversation, [shortReference, mediumReference, longReference], document.keywords).summarize();
         const summary3 = await new LatentDirichletAllocationSummary(conversation, [shortReference, mediumReference, longReference], document.keywords).summarize();
-        // Get SemanticPowerAndSpecificity Summary
-        logger.info(`Getting semantic summary...`);
-        const maxLengthSemanticSummary = await semanticPowerAndSpecificitySummary(annotated, document.referenceSummaries.long.length, .75);
-        if (maxLengthSemanticSummary) {
-            logger.info(`Calculating scores...`);
-            const semanticPowerAndSpecificityShort = semanticPowerAndSpecificitySummaryWithScores(maxLengthSemanticSummary, shortReference);
-            const semanticPowerAndSpecificityMedium = semanticPowerAndSpecificitySummaryWithScores(maxLengthSemanticSummary, mediumReference);
-            const semanticPowerAndSpecificityLong = semanticPowerAndSpecificitySummaryWithScores(maxLengthSemanticSummary, longReference);
-            const summary5 = [semanticPowerAndSpecificityShort, semanticPowerAndSpecificityMedium, semanticPowerAndSpecificityLong];
-            return JSON.parse(JSON.stringify(combineSummaries(summary1.concat(summary2, summary3, summary5))));
-        }
-        else throw "fuck";
+        return JSON.parse(JSON.stringify(combineSummaries(summary1.concat(summary2, summary3))));
     }
     catch (error) {
         logger.error(error);

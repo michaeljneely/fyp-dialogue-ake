@@ -8,7 +8,6 @@ import { extractCandidateTermsFromCoreNLPDocument } from "./processors/candidate
 import { extractMeaningfulLemmasFromCoreNLPDocument } from "./processors/lemma";
 import { candidateTermTFUIDFSummary } from "./summarizers/CandidateTermTFIDF";
 import { npAndNERSummary } from "./summarizers/NPandNER";
-import { semanticPowerAndSpecificitySummary } from "./summarizers/SemanticPowerAndSpecificity";
 
 /*
     Service that uses the best performing Summary Strategy to summarize a conversation
