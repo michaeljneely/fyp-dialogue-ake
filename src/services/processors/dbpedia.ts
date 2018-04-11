@@ -44,6 +44,7 @@ export async function queryDBpedia(input: string, queryClass: string = "", maxHi
  */
 export async function getDBpediaScore(input: string): Promise<number> {
     try {
+        logger.info(`Getting DBpedia Score for ${input}`);
         const term = input.toLowerCase().trim();
         const existingScore = await DBpediaScoreModel.findOne({term});
         if (!existingScore) {

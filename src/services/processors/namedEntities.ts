@@ -77,4 +77,4 @@ function mapNamedEntities(namedEntities: Array<NamedEntityTerm>): Map<string, nu
         }
     });
     return map;
- }
+}

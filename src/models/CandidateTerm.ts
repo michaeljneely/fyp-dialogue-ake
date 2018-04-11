@@ -3,11 +3,7 @@ import { arrayProp, InstanceType, ModelType, prop, Typegoose } from "typegoose";
 import { DocumentFrequency } from "./DocumentFrequency";
 import { Term } from "./NamedEntityTerm";
 
-export enum CandidateTermTypes {
-    Noun,
-    CompoundNoun,
-    Entity
-}
+export type CandidateTermTypes = "NOUN" | "COMPOUND NOUN" | "ENTITY";
 
 export class CandidateTerm extends Typegoose {
     @prop({ required: true })
@@ -39,6 +35,23 @@ export class ExtractedCandidateTerm extends Term {
 
     public equals(t: Term): boolean {
         return this._term === t.term;
+    }
+
+    public static toString(entity: ExtractedCandidateTerm): string {
+        return `${entity.term}//${entity.ctType}`;
+    }
+
+    public static fromString(entityString: string): ExtractedCandidateTerm {
+        const split = entityString.split("//");
+        if (split.length !== 2) {
+            throw "Incompatible string";
+        }
+        if (!split[0] || !split[1]) {
+            throw "Incompatible string";
+        }
+        const term = split[0];
+        const type = split[1] as CandidateTermTypes;
+        return new ExtractedCandidateTerm(term, type);
     }
 }
 
