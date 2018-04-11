@@ -10,8 +10,12 @@ import { logger } from "../utils/logger";
 import { annotate } from "./corenlp/corenlp";
 import { calculateAllScores } from "./metrics/scores";
 import { extractCandidateTermsFromCoreNLPDocument } from "./processors/candidateTerm";
+import { extractMeaningfulLemmasFromCoreNLPDocument } from "./processors/lemma";
+import { extractNamedEntitiesFromCoreNLPDocument } from "./processors/namedEntities";
 import { candidateTermTFIDFSummary, candidateTermTFUIDFSummary } from "./summarizers/CandidateTermTFIDF";
+import { LDASummary } from "./summarizers/LatentDirichletAllocation";
 import { corpusLemmaTFIDFSummary, userLemmaTFIDFSummary } from "./summarizers/LemmaTFIDF";
+import { npAndNERSummary } from "./summarizers/NPandNER";
 
 /*
     Service to analyze a User-provided conversation, or one that already exists in the application corpus
@@ -32,6 +36,7 @@ export async function analyzeUserConversation(userId: mongoose.Types.ObjectId, r
     try {
         const [speakers, text] = stripSpeakers(rawConversation);
         const keyWordArray = keywords.split(",");
+
         const conversation: Conversation  = {
             speakers: speakers,
             raw: rawConversation,
@@ -52,31 +57,70 @@ export async function analyzeUserConversation(userId: mongoose.Types.ObjectId, r
             summary: longSummary,
             annotated: await annotate(longSummary)
         };
+
+        // Extract Lemmas
+        const shortReferenceLemmas = extractMeaningfulLemmasFromCoreNLPDocument(shortReference.annotated);
+        const mediumReferenceLemmas = extractMeaningfulLemmasFromCoreNLPDocument(mediumReference.annotated);
+        const longReferenceLemmas = extractMeaningfulLemmasFromCoreNLPDocument(longReference.annotated);
+        const conversationLemmas = extractMeaningfulLemmasFromCoreNLPDocument(conversation.annotated);
+
+        // Extract Candidate Terms
         const shortReferenceCandidateTerms = extractCandidateTermsFromCoreNLPDocument(shortReference.annotated);
         const mediumReferenceCandidateTerms = extractCandidateTermsFromCoreNLPDocument(mediumReference.annotated);
         const longReferenceCandidateTerms = extractCandidateTermsFromCoreNLPDocument(longReference.annotated);
         const conversationCandidateTerms = extractCandidateTermsFromCoreNLPDocument(conversation.annotated);
 
+        // Extract Named Entities
+        const shortReferenceNamedEntities = extractNamedEntitiesFromCoreNLPDocument(shortReference.annotated);
+        const mediumReferenceNamedEntities = extractNamedEntitiesFromCoreNLPDocument(mediumReference.annotated);
+        const longReferenceNamedEntities = extractNamedEntitiesFromCoreNLPDocument(longReference.annotated);
+        const conversationNamedEntities = extractNamedEntitiesFromCoreNLPDocument(conversation.annotated);
+
+        // Build Summaries
         const shortCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, shortReferenceCandidateTerms.size);
         const mediumCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, mediumReferenceCandidateTerms.size);
         const longCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, longReferenceCandidateTerms.size);
 
+        const shortLemmaTFIDFSummary = await corpusLemmaTFIDFSummary(conversationLemmas, shortReferenceLemmas.size);
+        const mediumLemmaTFIDFSummary = await corpusLemmaTFIDFSummary(conversationLemmas, mediumReferenceLemmas.size);
+        const longLemmaTFIDFSummary = await corpusLemmaTFIDFSummary(conversationLemmas, longReferenceLemmas.size);
+
+        const shortLDASummary = LDASummary(conversation.annotated, conversationCandidateTerms, shortReferenceCandidateTerms.size, 1);
+        const mediumLDASummary = LDASummary(conversation.annotated, conversationCandidateTerms, mediumReferenceCandidateTerms.size, 1);
+        const longLDASummary = LDASummary(conversation.annotated, conversationCandidateTerms, longReferenceCandidateTerms.size, 1);
+
+        // TODO - Pick number of terms
+        const shortBestSummary = await npAndNERSummary(conversation.annotated, conversationCandidateTerms, conversationNamedEntities, 10);
+        const mediumBestSummary = await npAndNERSummary(conversation.annotated, conversationCandidateTerms, conversationNamedEntities, 15);
+        const longBestSummary = await npAndNERSummary(conversation.annotated, conversationCandidateTerms, conversationNamedEntities, 20);
+
+        // Evaluate Summaries
         const summary1 = [
-            buildSummaryAnalysisResult(shortReference, "CandidateTermTFIDFSummary", shortCandidateTermTFIDFSummary.summary, ["Recall", "Precision"]),
-            buildSummaryAnalysisResult(mediumReference, "CandidateTermTFIDFSummary", mediumCandidateTermTFIDFSummary.summary, ["Recall", "Precision"]),
-            buildSummaryAnalysisResult(longReference, "CandidateTermTFIDFSummary", longCandidateTermTFIDFSummary.summary, ["Recall", "Precision"]),
+            buildSummaryAnalysisResult(shortReference, "CandidateTermTFIDFSummary", shortCandidateTermTFIDFSummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
+            buildSummaryAnalysisResult(mediumReference, "CandidateTermTFIDFSummary", mediumCandidateTermTFIDFSummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
+            buildSummaryAnalysisResult(longReference, "CandidateTermTFIDFSummary", longCandidateTermTFIDFSummary.summary, ["Recall", "Precision", "Keyword-Compare"])
         ];
 
-        // const summary1 = calculateSummaryR;
-        // logger.info(`Short Summary: ${shortCandidateTermTFIDFSummary.summary}`);
-        // logger.info(`Medium Summary: ${mediumCandidateTermTFIDFSummary.summary}`);
-        // logger.info(`Long Summary: ${longCandidateTermTFIDFSummary.summary}`);
-        // const summary1 = await new UserLemmaTFIDFSummary(conversation, [shortReference, mediumReference, longReference], keyWordArray, userId).summarize();
-        // const summary2 = await new CorpusLemmaTFIDFSummary(conversation, [shortReference, mediumReference, longReference], keyWordArray).summarize();
-        // const summary3 = await new CorpusCandidateTermTFIDFSummary(conversation, [shortReference, mediumReference, longReference], keyWordArray).summarize();
-        // const summary4 = await new UserCandidateTermTFIDFSummary(conversation, [shortReference, mediumReference, longReference], keyWordArray, userId).summarize();
-        // return JSON.parse(JSON.stringify(combineSummaries(summary1.concat(summary2, summary3, summary4))));
-        return JSON.parse(JSON.stringify(combineSummaries(summary1)));
+        const summary2 = [
+            buildSummaryAnalysisResult(shortReference, "CorpusLemmaSummary", shortLemmaTFIDFSummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
+            buildSummaryAnalysisResult(mediumReference, "CorpusLemmaSummary", mediumLemmaTFIDFSummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
+            buildSummaryAnalysisResult(longReference, "CorpusLemmaSummary", longLemmaTFIDFSummary.summary, ["Recall", "Precision", "Keyword-Compare"])
+        ];
+
+        const summary3 = [
+            buildSummaryAnalysisResult(shortReference, "CorpusLDASummary", shortLDASummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
+            buildSummaryAnalysisResult(mediumReference, "CorpusLDASummary", mediumLDASummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
+            buildSummaryAnalysisResult(longReference, "CorpusLDASummary", longLDASummary.summary, ["Recall", "Precision", "Keyword-Compare"])
+        ];
+
+        const summary4 = [
+            buildSummaryAnalysisResult(shortReference, "NP Chunks and Named Entity", shortBestSummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
+            buildSummaryAnalysisResult(mediumReference, "NP Chunks and Named Entity", shortBestSummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
+            buildSummaryAnalysisResult(longReference, "NP Chunks and Named Entity", shortBestSummary.summary, ["Recall", "Precision", "Keyword-Compare"]),
+
+        ];
+        // Return Summaries
+        return JSON.parse(JSON.stringify(combineSummaries(summary1.concat(summary2, summary3, summary4))));
     }
     catch (error) {
         logger.error(error);
