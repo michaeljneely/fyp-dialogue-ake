@@ -1,5 +1,6 @@
 import * as express from "express";
 import { Request, Response } from "express";
+import * as fs from "fs-extra";
 import { accessControl } from "../app";
 import * as passportConfig from "../config/passport";
 import * as analysisService from "../services/analyze";
@@ -46,7 +47,8 @@ async function postAnalyze(req: Request, res: Response) {
         const results = await analysisService.analyzeUserConversation(req.user.id, req.body.text, req.body.keywords, req.body.shortSummary, req.body.mediumSummary, req.body.longSummary);
         res.render("results", {
             title: "Results",
-            results
+            results: JSON.parse(JSON.stringify(results.results)),
+            keywords: JSON.parse(JSON.stringify(results.keywords))
         });
     }
     catch (error) {

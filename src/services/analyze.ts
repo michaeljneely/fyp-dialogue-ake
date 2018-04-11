@@ -19,6 +19,11 @@ import { LDASummary } from "./summarizers/LatentDirichletAllocation";
 import { corpusLemmaTFIDFSummary, userLemmaTFIDFSummary } from "./summarizers/LemmaTFIDF";
 import { npAndNERSummary } from "./summarizers/NounPhraseAndNamedEntity";
 
+export type FinalResult = {
+    results: Array<FinalSummary>
+    keywords: string;
+};
+
 /*
     Service to analyze a User-provided conversation, or one that already exists in the application corpus
     Returns JSON that is formatted by the 'results' template
@@ -34,11 +39,9 @@ import { npAndNERSummary } from "./summarizers/NounPhraseAndNamedEntity";
  * @param {string} longSummary User-provided long summary of the conversation
  * @returns {JSON} JSON to display results
  */
-export async function analyzeUserConversation(userId: mongoose.Types.ObjectId, rawConversation: string, keywords: string, shortSummary: string, mediumSummary: string, longSummary: string): Promise<JSON> {
+export async function analyzeUserConversation(userId: mongoose.Types.ObjectId, rawConversation: string, keywords: string, shortSummary: string, mediumSummary: string, longSummary: string): Promise<FinalResult> {
     try {
         const [speakers, text] = stripSpeakers(rawConversation);
-        const keyWordArray = keywords.split(",");
-
         const conversation: Conversation  = {
             speakers: speakers,
             raw: rawConversation,
@@ -121,8 +124,12 @@ export async function analyzeUserConversation(userId: mongoose.Types.ObjectId, r
         //     buildSummaryAnalysisResult(longReference, "NP Chunks and Named Entity", shortBestSummary.summary, ["Recall", "Precision", "Keywords"]),
 
         // ];
+
         // Return Summaries
-        return JSON.parse(JSON.stringify(combineSummaries(summary1.concat(summary2, summary3))));
+        return {
+            results: combineSummaries(summary1.concat(summary2, summary3)),
+            keywords: keywords
+        };
     }
     catch (error) {
         logger.error(error);
@@ -204,29 +211,19 @@ function buildSummaryAnalysisResult(reference: Reference, method: string, candid
     return {
         reference,
         method,
-        summary: buildSummaryTermArray(candidateSummary.join(", "), reference.summary),
+        summary: buildSummaryTermArray(candidateSummary, reference.summary),
         scores: calculateAllScores(candidateSummary, referenceSummary, metrics)
     };
 }
 
-/*
-export type  GeneratedSummary = {
-    reference: Reference,
-    method: string,
-    summary: Array<SummaryTerm>,
-    scores: Array<SummaryMetric>
-};
-*/
-
-export function buildSummaryTermArray(generated: string, reference: string): Array<SummaryTerm> {
-    return new Array<SummaryTerm>();
-    // return generated.map((term) => {
-    //     const match = new RegExp("\\b" + term + "\\b", "i").test(reference);
-    //     return {
-    //         term,
-    //         match
-    //     };
-    // });
+export function buildSummaryTermArray(generated: Array<string>, reference: string): Array<SummaryTerm> {
+    return generated.map((term) => {
+        const match = new RegExp("\\b" + term + "\\b", "i").test(reference);
+        return {
+            term,
+            match
+        };
+    });
 }
 
 function lemmaMapToStringArray(map: Map<string, number>): Array<string> {

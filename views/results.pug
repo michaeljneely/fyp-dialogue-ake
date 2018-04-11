@@ -4,6 +4,7 @@ block content
     .main-content
         h3.main-title Results
         hr
+        h6.mb-2 Keywords: #{keywords}
         for summary in results
             div.card.mb-3
                 div.card-body
@@ -28,9 +29,9 @@ block content
                                                     if index > 0
                                                         span 
                                                     if word.match
-                                                        span.text-match #{word.term}
+                                                        span.text-match #{word.term},
                                                     else
-                                                        span.text-no-match #{word.term}
+                                                        span.text-no-match #{word.term},
                                         td.w-25
                                             ul
                                                 for score in generated.scores
