@@ -6,6 +6,7 @@ import { CandidateTerm, CorpusCandidateTerm, CorpusCandidateTermModel } from "..
 import { CorpusDocument, CorpusDocumentModel } from "../../models/Document";
 import { DocumentFrequencyModel } from "../../models/DocumentFrequency";
 import { CorpusLemma, CorpusLemmaModel } from "../../models/Lemma";
+import { CorpusNamedEntityTerm, CorpusNamedEntityTermModel, NamedEntityTerm } from "../../models/NamedEntityTerm";
 import { IReference, ReferenceSummaries } from "../../models/Reference";
 import { replaceSmartQuotes, stripSpeakers } from "../../utils/functions";
 import { logger } from "../../utils/logger";
@@ -174,6 +175,28 @@ async function addCorpusCandidateTerm(documentID: mongoose.Types.ObjectId, candi
             corpusCandidateTerm = new CorpusCandidateTermModel({term: candidateTerm.term, type: candidateTerm.type, frequencies: [documentFrequency]});
         }
         const saved = await corpusCandidateTerm.save();
+        if (saved) {
+            return Promise.resolve(saved);
+        }
+        else throw "Candidate term could not be saved";
+    }
+    catch (error) {
+        logger.error(error);
+        return Promise.reject(error);
+    }
+}
+
+async function addCorpusNamedEntity(documentID: mongoose.Types.ObjectId, namedEntity: NamedEntityTerm, frequency: number): Promise<CorpusNamedEntityTerm > {
+    try {
+        const documentFrequency = new DocumentFrequencyModel({ documentID, frequency });
+        let corpusNamedEntity = await CorpusNamedEntityTermModel.findOne({ term: namedEntity.term, type: namedEntity.type });
+        if (corpusNamedEntity) {
+            corpusNamedEntity.frequencies.push(documentFrequency);
+        }
+        else {
+            corpusNamedEntity = new CorpusNamedEntityTermModel({term: namedEntity.term, type: namedEntity.type, frequencies: [documentFrequency]});
+        }
+        const saved = await corpusNamedEntity.save();
         if (saved) {
             return Promise.resolve(saved);
         }

@@ -159,8 +159,10 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<CandidateT
                 // Build string from stack (if populated)
                 if (termStack.data().length > 0) {
                     const candidateTerm = buildStringFromTokenStack(termStack);
-                    // Add to candidate terms
-                    candidateTerms.push(new CandidateTerm(candidateTerm, termType));
+                    if (candidateTerm && termType) {
+                        // Add to candidate terms
+                        candidateTerms.push(new CandidateTerm(candidateTerm, termType));
+                    }
                     // Clear the stack to accommodate the next candidate phrase
                     termStack.clear();
                 }

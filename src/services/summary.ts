@@ -6,6 +6,7 @@ import * as coreNLPService from "./corenlp/corenlp";
 import { saveUserDocument } from "./documents/user";
 import { extractCandidateTermsFromCoreNLPDocument } from "./processors/candidateTerm";
 import { extractMeaningfulLemmasFromCoreNLPDocument } from "./processors/lemma";
+import { extractNamedEntitiesFromCoreNLPDocument } from "./processors/namedEntities";
 import { candidateTermTFUIDFSummary } from "./summarizers/CandidateTermTFIDF";
 import { npAndNERSummary } from "./summarizers/NPandNER";
 
@@ -33,22 +34,21 @@ export async function summarizeConversation(text: string, userId: mongoose.Types
 
         const annotated = await coreNLPService.annotate(conversation);
 
-        // Extract lemmas and candidate terms
-        // const lemmas = extractMeaningfulLemmasFromCoreNLPDocument(annotated);
-       //  const candidateTerms = extractCandidateTermsFromCoreNLPDocument(annotated);
+        // Extract lemmas and terms
+        const lemmas = extractMeaningfulLemmasFromCoreNLPDocument(annotated);
+        const candidateTerms = extractCandidateTermsFromCoreNLPDocument(annotated);
+        const namedEntities = extractNamedEntitiesFromCoreNLPDocument(annotated);
 
-        logger.info(`awaiting summary`);
         // Build Summary
-        const summary = await npAndNERSummary(annotated, wordLength);
-        logger.info(`got summary: ${summary}`);
+        const summary = await npAndNERSummary(annotated, candidateTerms, namedEntities, wordLength);
 
         // Save document, lemmas, and candidate terms
-        // const saved = await saveUserDocument(userId, speakers, annotated, text, lemmas, candidateTerms);
+        const saved = await saveUserDocument(userId, speakers, annotated, text, lemmas, candidateTerms, namedEntities);
 
-        // Return best summary - at the moment: basicSemCluster
+        // Return best summary - at the moment: NP/NER
         return Promise.resolve({
             speakers: formatSpeakers(speakers),
-            summary: summary.join(", ")
+            summary: summary.summary
         } as Summary);
     }
     catch (error) {

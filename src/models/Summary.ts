@@ -32,6 +32,13 @@ export type SummaryTerm = {
     term: string
 };
 
+export interface ISummary {
+    summary: string;
+    lemmas?: Map<string, number>;
+    candidateTerms?: Map<string, number>;
+    namedEntities?: Map<string, number>;
+}
+
 export abstract class Summary {
 
     // Conversation object
@@ -46,13 +53,22 @@ export abstract class Summary {
     // User defined keywords in conversation
     protected keywords: Array<string>;
 
+    protected lemmas: Map<string, number>;
+
+    protected candidateTerms: Map<string, number>;
+
+    protected namedEntities: Map<string, number>;
+
     // Name of method used to generate summaries
     protected summaryMethod: string;
 
-    constructor(conversation: Conversation, references: Array<Reference>, keywords: Array<string>, userId?: mongoose.Types.ObjectId) {
+    constructor(conversation: Conversation, references: Array<Reference>, keywords: Array<string>, userId?: mongoose.Types.ObjectId, lemmas?: Map<string, number>, candidateTerms?: Map<string, number>, namedEntities?: Map<string, number>) {
         this.conversation = conversation;
         this.references = references;
         this.keywords = keywords;
+        this.lemmas = lemmas || undefined;
+        this.candidateTerms = candidateTerms || undefined;
+        this.namedEntities = namedEntities || undefined;
         this.userId = userId || undefined;
     }
 

@@ -4,6 +4,7 @@ import { CandidateTerm, UserCandidateTerm, UserCandidateTermModel } from "../../
 import { UserDocument, UserDocumentModel } from "../../models/Document";
 import { DocumentFrequencyModel } from "../../models/DocumentFrequency";
 import { UserLemma, UserLemmaModel } from "../../models/Lemma";
+import { NamedEntityTerm, UserNamedEntityTerm, UserNamedEntityTermModel } from "../../models/NamedEntityTerm";
 import { logger } from "../../utils/logger";
 
 /**
@@ -15,7 +16,7 @@ import { logger } from "../../utils/logger";
  * @param lemmas Map of Unique lemmas and their frequencies
  * @param candidateTerms Map of Unique candidate terms and their frequencies
  */
-export async function saveUserDocument(userId: mongoose.Types.ObjectId, speakers: Array<string>, annotated: CoreNLP.simple.Document, rawText: string, lemmas: Map<string, number>, candidateTerms: Map<string, number>): Promise<UserDocument> {
+export async function saveUserDocument(userId: mongoose.Types.ObjectId, speakers: Array<string>, annotated: CoreNLP.simple.Document, rawText: string, lemmas: Map<string, number>, candidateTerms: Map<string, number>, namedEntities: Map<string, number>): Promise<UserDocument> {
     try {
         const userDocument = await new UserDocumentModel({
             owner: userId,
@@ -30,6 +31,9 @@ export async function saveUserDocument(userId: mongoose.Types.ObjectId, speakers
             }
             for (const [candidateTerm, frequency] of candidateTerms) {
                 await addUserCandidateTerm(userId, userDocument._id, CandidateTerm.fromString(candidateTerm), frequency);
+            }
+            for (const [namedEntity, frequency] of namedEntities) {
+                await addUserNamedEntity(userId, userDocument._id, NamedEntityTerm.fromString(namedEntity), frequency);
             }
             return Promise.resolve(userDocument);
         }
@@ -91,6 +95,34 @@ async function addUserCandidateTerm(userId: mongoose.Types.ObjectId, documentID:
             return Promise.resolve(saved);
         }
         else throw "Candidate term could not be saved";
+    } catch (error) {
+        logger.error(error);
+        return Promise.reject(error);
+    }
+}
+
+/**
+ * Add a Candidate Term to the User's Corpus
+ * @param userId User ID
+ * @param documentID Parent Document ID
+ * @param candidateTerm Candidate Term
+ * @param frequency Total occurrences in conversation
+ */
+async function addUserNamedEntity(userId: mongoose.Types.ObjectId, documentID: mongoose.Types.ObjectId, namedEntity: NamedEntityTerm, frequency: number): Promise<UserNamedEntityTerm > {
+    try {
+        const documentFrequency = new DocumentFrequencyModel({ documentID, frequency });
+        let userNamedEntity = await UserNamedEntityTermModel.findOne({ owner: userId, term: namedEntity.term, type: namedEntity.type });
+        if (userNamedEntity) {
+            userNamedEntity.frequencies.push(documentFrequency);
+        }
+        else {
+            userNamedEntity = new UserNamedEntityTermModel({owner: userId, term: namedEntity.term, type: namedEntity.type, frequencies: [documentFrequency]});
+        }
+        const saved = await userNamedEntity.save();
+        if (saved) {
+            return Promise.resolve(saved);
+        }
+        else throw "Named Entity could not be saved";
     } catch (error) {
         logger.error(error);
         return Promise.reject(error);

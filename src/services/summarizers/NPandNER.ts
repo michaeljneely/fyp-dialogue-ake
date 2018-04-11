@@ -3,6 +3,7 @@ import CoreNLP from "corenlp";
 import _ = require("lodash");
 import { CandidateTerm } from "../../models/CandidateTerm";
 import { NamedEntityTerm } from "../../models/NamedEntityTerm";
+import { ISummary } from "../../models/Summary";
 import { Term } from "../../models/Term";
 import { logger } from "../../utils/logger";
 import { calculateTFIDF, termIDFCorpus, termIDFUser } from "../metrics/tfidf";
@@ -10,6 +11,7 @@ import { extractCandidateTermsFromCoreNLPDocument } from "../processors/candidat
 import { getDBpediaScore, queryDBpedia } from "../processors/dbpedia";
 import { extractNamedEntitiesFromCoreNLPDocument } from "../processors/namedEntities";
 const stringSimilarity = require("string-similarity");
+import * as mongoose from "mongoose";
 
 interface TermWithTFIDF {
     term: Term;
@@ -21,10 +23,19 @@ interface TermWithScore {
     score: number;
 }
 
-export async function npAndNERSummary(annotated: CoreNLP.simple.Document, numberOfWords: number): Promise<Array<string>> {
+export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candidateTermMap: Map<string, number>, namedEntityMap: Map<string, number>, numberOfWords: number, userId?: mongoose.Types.ObjectId): Promise<ISummary> {
 
     const namedEntityFilter = ["PERSON", "LOCATION", "ORGANIZATION", "MISC", "NATIONALITY", "COUNTRY", "STATE_OR_PROVENCE", "TITLE", "IDEOLOGY", "RELIGION", "CRIMINAL_CHARGE", "CAUSE_OF_DEATH"];
     const namedEntityDBpediaFilter = ["PERSON", "LOCATION", "ORGANIZATION"];
+
+    function _returnAsSummary(summary: string, lemmas?: Map<string, number>, candidateTerms?: Map<string, number>, namedEntities?: Map<string, number>): ISummary {
+        return {
+            summary,
+            lemmas: lemmas || undefined,
+            candidateTerms: candidateTerms || undefined,
+            namedEntities: namedEntities || undefined,
+        };
+    }
 
     function _namedEntityAndCandidateTermComparator(t1: Term, t2: Term): boolean {
         if (t1 instanceof NamedEntityTerm) {
@@ -67,13 +78,13 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
     }
 
     try {
+
         logger.info(`npAndNERSummary() called with request to return ${numberOfWords} words...`);
+
         // Extract Candidate Terms
-        const candidateTermMap =  extractCandidateTermsFromCoreNLPDocument(annotated);
         const candidateTermKeys = [...candidateTermMap.keys()].map((key) => CandidateTerm.fromString(key));
 
         // Extract Named Entities
-        const namedEntityMap = extractNamedEntitiesFromCoreNLPDocument(annotated);
         const namedEntityKeys = [...namedEntityMap.keys()].map((key) => NamedEntityTerm.fromString(key));
 
         logger.info(`Candidate Terms and Named Entities Extracted: ${candidateTermKeys.length + namedEntityKeys.length} total terms to consider`);
@@ -81,7 +92,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
         // Early termination
         if (_.isEmpty(namedEntityKeys) && _.isEmpty(candidateTermKeys)) {
             logger.info(`No named Entities or Candidate terms. Returning early...`);
-            return [annotated.toString()];
+            return _returnAsSummary(annotated.toString());
         }
 
         // Custom Union - Remove Candidate Terms that are identical to Named Entities
@@ -118,7 +129,8 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
 
         // Early Exit Condition 2;
         if (termsToConsider.length < numberOfWords) {
-            return termsToConsider.map((ttc) => ttc.term);
+            // TOTO
+            return _returnAsSummary(termsToConsider.map((ttc) => ttc.term).join(", "));
         }
 
         logger.info(`Beginning to query DBpedia to remove vague Candidate Terms`);
@@ -126,15 +138,15 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
 
         // Early Exit Condition 3;
         if (specificTerms.length < numberOfWords) {
-            return specificTerms.map((ttc) => ttc.term);
+            // TODO
+            return _returnAsSummary(specificTerms.map((ttc) => ttc.term).join(", "));
         }
 
         logger.info(`Removed ${termsToConsider.length - specificTerms.length} terms`);
         logger.info(`Proceeding with the remaining ${specificTerms.length} terms`);
-        return termsToConsider.map((term) => term.term);
 
         // Remove all CandidateTerms with below average TFIDF
-        /*
+
         let ectTFIDFTotal: number = 0;
         let ectCount: number = 0;
         let neTFIDFTotal: number = 0;
@@ -175,8 +187,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, number
         logger.info(`Candidate Term TFIDF Average: ${ectTFIDFAverage}`);
         logger.info(`Named Entity TFIDF Average: ${neTFIDFAverage}`);
         logger.info(`Reduced to ${finalFinalFinal.length} terms`);
-        return finalFinalFinal.map((twt) => twt.term.term);
-        */
+        return _returnAsSummary(finalFinalFinal.map((twt) => twt.term.term).join(", "));
     }
     catch (error) {
         logger.error(error);

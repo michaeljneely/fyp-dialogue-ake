@@ -7,7 +7,7 @@ import { logger } from "./logger";
  * @param {Array<any>} array Array of any type
  * @returns {Array<any>} Shuffled Array
  */
-export function shuffle(array: Array<any>) {
+export function shuffle(array: Array<any>): Array<any> {
     let currentIndex = array.length;
     let temporaryValue, randomIndex;
     while (currentIndex !== 0) {
@@ -25,7 +25,7 @@ export function shuffle(array: Array<any>) {
  * @param x
  * @param y
  */
-export function make2DNumberArray(x: number, y: number) {
+export function make2DNumberArray(x: number, y: number): Array<Array<number>> {
     const arr = new Array<Array<number>>();
     for (let i = 0; i < x; i++) {
         arr[i] = new Array<number>();
@@ -42,11 +42,13 @@ export function make2DNumberArray(x: number, y: number) {
  * @returns {[Array<string>, string]} Speaker and Speaker-Removed Conversation Tuple
  */
 export function stripSpeakers(conversation: string): [Array<string>, string] {
+    logger.info(`stripSpeakers() called - Extracting speakers`);
     const speakers: Array<string> = [];
     const text =  conversation.replace(filters.speakerRegex, ((speaker: string) => {
         speakers.push(speaker.trim().replace(":", ""));
         return "";
     }));
+    logger.info(`Returning ${uniq(speakers).length} speaker(s)`);
     return [uniq(speakers), text];
 }
 
@@ -96,34 +98,6 @@ export function reduceNumberInRange(num: number, min: number, max: number): numb
 
 /**
  * Sleep for X ms
- * @param ms Milliseconds
+ * @param {number} ms Milliseconds
  */
 export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-
-export function permute(input: Array<any>): Array<Array<any>> {
-    const ret = new Array<any>();
-
-    const permute = (arr: Array<any>, m: Array<any> = []) => {
-        if (arr.length === 0) {
-            ret.push(m);
-        }
-        else {
-            for (let i = 0; i < arr.length; i++) {
-                const current = arr.slice();
-                const next = current.splice(i, 1);
-                permute(current.slice(), m.concat(next));
-            }
-        }
-   };
-
-   permute(input);
-
-   return ret;
-}
-
-export async function asyncFilter(arr: Array<any>, callback: Function) {
-    return (await Promise.all(arr.map(async item => {
-         return (await callback(item)) ? item : undefined;
-    }))).filter((i: any) => i !== undefined);
-}
