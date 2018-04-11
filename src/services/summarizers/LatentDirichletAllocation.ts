@@ -1,63 +1,19 @@
+import CoreNLP from "corenlp";
 import _ = require("lodash");
-import * as mongoose from "mongoose";
 import { CandidateTerm } from "../../models/CandidateTerm";
-import { Conversation } from "../../models/Conversation";
-import { CorpusDocumentModel, UserDocumentModel } from "../../models/Document";
-import { Reference } from "../../models/Reference";
-import { buildSummaryTermArray, GeneratedSummary, Summary } from "../../models/Summary";
-import { normalizeStringArray, reduceNumberInRange, shuffle } from "../../utils/functions";
+import { ISummary } from "../../models/Summary";
 import { logger } from "../../utils/logger";
-import { calculateAllScores } from "../metrics/scores";
-import { calculateTFIDF, calculateWeightedTFUIDF } from "../metrics/tfidf";
-import { termIDFCorpus, termIDFUser } from "../metrics/tfidf";
-import { extractCandidateTermsFromCoreNLPDocument } from "../processors/candidateTerm";
 import { topicise } from "../processors/lda";
-import { extractMeaningfulLemmasFromCoreNLPDocument } from "../processors/lemma";
-import { candidateTermTFIDFSummary, CorpusCandidateTermTFIDFSummary } from "./CandidateTermTFIDF";
 
-interface TermWithTFIDF {
-    term: string;
-    tfidf: number;
-}
-
-export class LatentDirichletAllocationSummary extends Summary {
-
-    constructor(conversation: Conversation, references: Array<Reference>, keywords: Array<string>) {
-        super(conversation, references, keywords);
-        this.summaryMethod = "LatentDirichletAllocationSummary";
-    }
-
-    public async summarize(): Promise<GeneratedSummary[]> {
-        try {
-            const candidateTerms = extractCandidateTermsFromCoreNLPDocument(this.conversation.annotated);
-            const generatedSummaries = this.references.map(async (reference, index) => {
-                const referenceCandidateTerms = extractCandidateTermsFromCoreNLPDocument(reference.annotated);
-                const topicCount = Math.ceil(candidateTerms.size / 10);
-                const wordsPerTopic = Math.ceil(referenceCandidateTerms.size / topicCount);
-                const ldaTopics = await topicise([...candidateTerms.keys()], topicCount);
-                let candidateLDASummary: Array<string> = [];
-                ldaTopics.forEach((topic) => {
-                    candidateLDASummary = candidateLDASummary.concat(topic.slice(0, wordsPerTopic));
-                });
-                if (candidateLDASummary.length > referenceCandidateTerms.size) {
-                    candidateLDASummary = shuffle(candidateLDASummary).slice(0, referenceCandidateTerms.size - candidateLDASummary.length);
-                }
-                const corpusTFIDFSummary = await candidateTermTFIDFSummary(candidateTerms, referenceCandidateTerms.size);
-                const referenceSummaryArray = [...referenceCandidateTerms.keys()];
-                const referenceSummaryLowerCase = reference.summary.toLowerCase();
-                const candidateSummary = corpusTFIDFSummary.slice(0, Math.floor(candidateLDASummary.length / 2)).concat(candidateLDASummary.slice(0, Math.floor(candidateLDASummary.length / 2))).slice(0, referenceSummaryArray.length);
-                return {
-                    reference,
-                    method: this.summaryMethod,
-                    summary: buildSummaryTermArray(candidateSummary, referenceSummaryLowerCase),
-                    scores: calculateAllScores(candidateSummary, referenceSummaryArray, 2),
-                } as GeneratedSummary;
-            });
-            return Promise.all(generatedSummaries);
-        }
-        catch (error) {
-            logger.error(error);
-            return Promise.reject(error);
-        }
-    }
+export function LDASummary(annotated: CoreNLP.simple.Document, candidateTermMap: Map<string, number>, numberOfTopics: number): ISummary {
+    logger.info(`LDASummary called()...`);
+    const ldaTopics = topicise([...candidateTermMap.keys()].map((val) => CandidateTerm.fromString(val).term), numberOfTopics, 1);
+    const summary = ldaTopics.map((topic) => {
+        return topic[0]["0"];
+    }).join(", ");
+    return {
+        method: "Candidate Term LDA",
+        summary,
+        candidateTerms: candidateTermMap
+    };
 }

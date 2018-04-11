@@ -8,7 +8,6 @@ import { stripSpeakers } from "../utils/functions";
 import { logger } from "../utils/logger";
 import { annotate } from "./corenlp/corenlp";
 import { CorpusCandidateTermTFIDFSummary, UserCandidateTermTFIDFSummary } from "./summarizers/CandidateTermTFIDF";
-import { LatentDirichletAllocationSummary } from "./summarizers/LatentDirichletAllocation";
 import { CorpusLemmaTFIDFSummary, UserLemmaTFIDFSummary } from "./summarizers/LemmaTFIDF";
 
 /*
@@ -94,8 +93,8 @@ export async function analyzeCorpusConversation(documentId: string): Promise<JSO
         };
         const summary1 = await new CorpusLemmaTFIDFSummary(conversation, [shortReference, mediumReference, longReference], document.keywords).summarize();
         const summary2 = await new CorpusCandidateTermTFIDFSummary(conversation, [shortReference, mediumReference, longReference], document.keywords).summarize();
-        const summary3 = await new LatentDirichletAllocationSummary(conversation, [shortReference, mediumReference, longReference], document.keywords).summarize();
-        return JSON.parse(JSON.stringify(combineSummaries(summary1.concat(summary2, summary3))));
+        // const summary3 = await new LatentDirichletAllocationSummary(conversation, [shortReference, mediumReference, longReference], document.keywords).summarize();
+        return JSON.parse(JSON.stringify(combineSummaries(summary1.concat(summary2))));
     }
     catch (error) {
         logger.error(error);

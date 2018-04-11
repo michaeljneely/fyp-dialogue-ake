@@ -33,6 +33,7 @@ export type SummaryTerm = {
 };
 
 export interface ISummary {
+    method: string;
     summary: string;
     lemmas?: Map<string, number>;
     candidateTerms?: Map<string, number>;

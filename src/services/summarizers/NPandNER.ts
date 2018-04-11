@@ -30,6 +30,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
 
     function _returnAsSummary(summary: string, lemmas?: Map<string, number>, candidateTerms?: Map<string, number>, namedEntities?: Map<string, number>): ISummary {
         return {
+            method: "NounPhrase Chunks & Named Entities",
             summary,
             lemmas: lemmas || undefined,
             candidateTerms: candidateTerms || undefined,
