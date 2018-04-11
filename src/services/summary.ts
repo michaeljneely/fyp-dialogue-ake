@@ -30,16 +30,13 @@ export type Summary = {
 export async function summarizeConversation(text: string, userId: mongoose.Types.ObjectId, wordLength: number): Promise<Summary> {
     try {
         // Annotate conversation
-        logger.info(text);
         const [speakers, conversation] = stripSpeakers(text);
-        logger.info(`HERERERERERERERER: ${conversation}`);
-        logger.info(replaceSmartQuotes(conversation));
 
         const annotated = await coreNLPService.annotate(conversation);
 
         // Extract lemmas and candidate terms
-        const lemmas = extractMeaningfulLemmasFromCoreNLPDocument(annotated);
-        const candidateTerms = extractCandidateTermsFromCoreNLPDocument(annotated);
+        // const lemmas = extractMeaningfulLemmasFromCoreNLPDocument(annotated);
+       //  const candidateTerms = extractCandidateTermsFromCoreNLPDocument(annotated);
 
         logger.info(`awaiting summary`);
         // Build Summary

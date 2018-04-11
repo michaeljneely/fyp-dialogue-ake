@@ -27,15 +27,16 @@ export const CandidateTermModel = new CandidateTerm().getModelForClass(Candidate
 
 
 export class ExtractedCandidateTerm extends Term {
-    private _type: CandidateTermTypes;
+    private _ctType: CandidateTermTypes;
     constructor(term: string, type: CandidateTermTypes) {
-        super(term);
-        this._type = type;
+        super(term, type.toString());
+        this._ctType = type;
     }
 
-    public get type() {
-        return this._type;
+    public get ctType() {
+        return this._ctType;
     }
+
     public equals(t: Term): boolean {
         return this._term === t.term;
     }

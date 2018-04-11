@@ -43,12 +43,10 @@ export function make2DNumberArray(x: number, y: number) {
  */
 export function stripSpeakers(conversation: string): [Array<string>, string] {
     const speakers: Array<string> = [];
-    logger.info(`conversation before${conversation}`);
     const text =  conversation.replace(filters.speakerRegex, ((speaker: string) => {
         speakers.push(speaker.trim().replace(":", ""));
         return "";
     }));
-    logger.info(`conversation after${text}`);
     return [uniq(speakers), text];
 }
 

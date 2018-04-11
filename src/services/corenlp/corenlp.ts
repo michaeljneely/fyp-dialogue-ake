@@ -14,7 +14,7 @@ import { logger } from "../../utils/logger";
  */
 export async function annotate(text: string): Promise<CoreNLP.simple.Document> {
     try {
-        logger.info(text);
+        logger.info(`CoreNLP annotate() text of length ${text.length}`);
         const pipeline = new Pipeline(annotators, process.env.LANGUAGE, connector);
         const document = new CoreNLP.simple.Document(text);
         const result: CoreNLP.simple.Document = await pipeline.annotate(document) as CoreNLP.simple.Document;

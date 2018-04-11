@@ -1,7 +1,7 @@
 import CoreNLP from "corenlp";
 import { EntityType, NamedEntityTerm } from "../../models/NamedEntityTerm";
-import { Stack } from "../../utils/stack";
 import { logger } from "../../utils/logger";
+import { Stack } from "../../utils/stack";
 
 /*
     Service to abstract processing of Named Entities
@@ -11,13 +11,20 @@ import { logger } from "../../utils/logger";
  * Extract all Named Entities from a CoreNLP Document
  * @param {CoreNLP.simple.Document} annotated CoreNLP Document
  */
-export function extractNamedEntitiesFromCoreNLPDocument(annotated: CoreNLP.simple.Document): Array<NamedEntityTerm> {
+
+export function extractNamedEntitiesFromCoreNLPDocument(document: CoreNLP.simple.Document): Map<string, number> {
+    return mapNamedEntities(findNamedEntities(document));
+}
+
+export function findNamedEntities(annotated: CoreNLP.simple.Document): Array<NamedEntityTerm> {
+    logger.info(`findNameEntities() - finding named entities...`);
     const entities = new Array<NamedEntityTerm>();
     const entityStack = new Stack<NamedEntityTerm>();
+    let tokenCount = 0;
     annotated.sentences().forEach((sentence) => {
         const tokens = sentence.tokens();
+        tokenCount += tokens.length;
         for (let i = 0; i < tokens.length; i++) {
-            logger.info(tokens[i].word());
             const ner = tokens[i].ner() as EntityType;
             if (ner !== "O") {
                 const top = entityStack.peek();
@@ -39,6 +46,7 @@ export function extractNamedEntitiesFromCoreNLPDocument(annotated: CoreNLP.simpl
         // flush at end of sentence
         entityStack.clear();
     });
+    logger.info(`Extracted ${entities.length} non-unique Named Entities out of ${tokenCount} tokens`);
     return entities;
 }
 
@@ -51,8 +59,22 @@ function flushEntityStack(stack: Stack<NamedEntityTerm>): NamedEntityTerm {
     let type: EntityType;
     stack.data().forEach((net: NamedEntityTerm) => {
         term = term.concat(" " + net.term.toLowerCase());
-        type = (type === net.type) ? type : net.type;
+        type = (type === net.entityType) ? type : net.entityType;
     });
     term = term.trim();
     return new NamedEntityTerm(term, type);
 }
+
+function mapNamedEntities(namedEntities: Array<NamedEntityTerm>): Map<string, number> {
+    const map = new Map<string, number>();
+    namedEntities.forEach((entity) => {
+        const existing = map.get(NamedEntityTerm.toString(entity));
+        if (existing) {
+            map.set(NamedEntityTerm.toString(entity), existing + 1);
+        }
+        else {
+            map.set(NamedEntityTerm.toString(entity), 1);
+        }
+    });
+    return map;
+ }

@@ -24,6 +24,9 @@ export function extractCandidateTermsFromCoreNLPDocument(document: CoreNLP.simpl
  * @returns {Array<ExtractedCandidateTerm>} All candidate terms found in the document
  */
 function findCandidateTerms(document: CoreNLP.simple.Document): Array<ExtractedCandidateTerm> {
+
+    logger.info(`findCandidateTerms() - finding Candidate Terms..`);
+
     // POS tags for Noun (singular and plural)
     const noun = ["NN", "NNS"];
     // POS tags for Noun Phrase (singular and plural)
@@ -34,8 +37,11 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<ExtractedC
     // Stack to construct candidate terms
     const termStack = new Stack<CoreNLP.simple.Token>();
 
+    let tokenCount: number = 0;
+
     for (const sentence of document.sentences()) {
         sentence.tokens().forEach((token, index) => {
+            tokenCount++;
             // Early exit condition
             let done = false;
             // Type of Extracted Term (N,C,E)
@@ -162,6 +168,7 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<ExtractedC
         // Clear the stack after processing a sentence
         termStack.clear();
     }
+    logger.info(`Extracted ${candidateTerms.length} non-unique Candidate Terms out of ${tokenCount} tokens`);
     // Return unique candidate terms only
     return candidateTerms;
 }
