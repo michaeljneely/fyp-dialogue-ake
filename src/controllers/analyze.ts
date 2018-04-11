@@ -73,7 +73,8 @@ async function postAnalyzeDocument(req: Request, res: Response) {
             const results = await analysisService.analyzeCorpusConversation(documentId);
             res.render("results", {
                 title: "Results",
-                results
+                results: JSON.parse(JSON.stringify(results.results)),
+                keywords: JSON.parse(JSON.stringify(results.keywords))
             });
         }
         catch (error) {

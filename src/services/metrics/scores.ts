@@ -2,6 +2,7 @@ import _ = require("lodash");
 import { MetricTypes } from "../../models/Metrics";
 import { SummaryMetric } from "../../models/Summary";
 import { normalizeStringArray } from "../../utils/functions";
+import { logger } from "../../utils/logger";
 export function calculateAllScores(candidate: Array<string>, reference: Array<string>, metrics: Array<MetricTypes>, decimalPlaces: number = 2, keywords?: Array<string>): Array<SummaryMetric> {
     const results = new Array<SummaryMetric>();
 
@@ -32,7 +33,7 @@ export function calculateAllScores(candidate: Array<string>, reference: Array<st
     if (metrics.indexOf("Keywords") !== -1) {
         results.push({
             method: "Keywords",
-            score: compareKeywords(candidate, reference).toPrecision(decimalPlaces)
+            score: compareKeywords(candidate, keywords).toPrecision(decimalPlaces)
         });
     }
     return results;
@@ -83,5 +84,5 @@ export function rougeN(candidate: Array<string>, reference: Array<string>, n: nu
 }
 
 export function compareKeywords(candidate: Array<string>, reference: Array<string>): number {
-    return 1;
+    return _.intersection(candidate, reference).length;
 }

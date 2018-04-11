@@ -22,6 +22,10 @@ export class Term {
         return ( (t1.term === t2.term) && (t1.type === t2.type));
     }
 
+    public static weakEquals(t1: Term, t2: Term) {
+        return (t1.term === t2.term);
+    }
+
     public static toString(term: Term): string {
         return `${term.term}//${term.type}`;
     }

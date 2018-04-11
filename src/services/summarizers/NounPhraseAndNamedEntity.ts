@@ -69,7 +69,6 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
             //         }
             //     }
             //     else {
-            //         logger.info(`${term.term} and ${term.type} is SAFE`);
             //         ret.push(term);
             //     }
             // }
@@ -182,7 +181,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
             else {
                 return true;
             }
-        });
+        }).slice(0, numberOfWords);
 
         // Final Terms to Consider
         logger.info(`Candidate Term TFIDF Average: ${ectTFIDFAverage}`);
