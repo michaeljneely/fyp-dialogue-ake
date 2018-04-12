@@ -197,12 +197,14 @@ export function buildStringFromTokenStack(stack: Stack<CoreNLP.simple.Token>): s
 function mapCandidateTerms(candidateTerms: Array<CandidateTerm>): Map<string, number> {
     const map = new Map<string, number>();
     candidateTerms.forEach((candidateTerm) => {
-        const existing = map.get(CandidateTerm.toString(candidateTerm));
-        if (existing) {
-            map.set(CandidateTerm.toString(candidateTerm), existing + 1);
-        }
-        else {
-            map.set(CandidateTerm.toString(candidateTerm), 1);
+        if (candidateTerm.term !== "%") {
+            const existing = map.get(CandidateTerm.toString(candidateTerm));
+            if (existing) {
+                map.set(CandidateTerm.toString(candidateTerm), existing + 1);
+            }
+            else {
+                map.set(CandidateTerm.toString(candidateTerm), 1);
+            }
         }
     });
     return map;

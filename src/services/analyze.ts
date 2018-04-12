@@ -197,19 +197,19 @@ export async function analyzeCorpusConversation(documentId: string): Promise<Fin
         const longNamedEntityAndCandidateTerms = _.union(namedEntityMapToStringArray(longReferenceNamedEntities), candidateTermMapToStringArray(longReferenceCandidateTerms));
 
         // Build Summaries
-        const shortCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, shortReferenceCandidateTerms.size);
-        const mediumCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, mediumReferenceCandidateTerms.size);
-        const longCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, longReferenceCandidateTerms.size);
+        const shortCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, 5);
+        const mediumCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, 10);
+        const longCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, 15);
 
-        const shortLemmaTFIDFSummary = await corpusLemmaTFIDFSummary(conversationLemmas, shortReferenceLemmas.size);
-        const mediumLemmaTFIDFSummary = await corpusLemmaTFIDFSummary(conversationLemmas, mediumReferenceLemmas.size);
-        const longLemmaTFIDFSummary = await corpusLemmaTFIDFSummary(conversationLemmas, longReferenceLemmas.size);
+        const shortLemmaTFIDFSummary = await corpusLemmaTFIDFSummary(conversationLemmas, 5);
+        const mediumLemmaTFIDFSummary = await corpusLemmaTFIDFSummary(conversationLemmas, 10);
+        const longLemmaTFIDFSummary = await corpusLemmaTFIDFSummary(conversationLemmas, 15);
 
-        const shortLDASummary = LDASummary(conversation.annotated, conversationCandidateTerms, shortReferenceCandidateTerms.size, 1);
-        const mediumLDASummary = LDASummary(conversation.annotated, conversationCandidateTerms, mediumReferenceCandidateTerms.size, 1);
-        const longLDASummary = LDASummary(conversation.annotated, conversationCandidateTerms, longReferenceCandidateTerms.size, 1);
+        const shortLDASummary = LDASummary(conversation.annotated, conversationCandidateTerms, 5, 1);
+        const mediumLDASummary = LDASummary(conversation.annotated, conversationCandidateTerms, 10, 1);
+        const longLDASummary = LDASummary(conversation.annotated, conversationCandidateTerms, 15, 1);
 
-        const longBestSummary = await npAndNERSummary(conversation.annotated, conversationCandidateTerms, conversationNamedEntities, longNamedEntityAndCandidateTerms.length);
+        const longBestSummary = await npAndNERSummary(conversation.annotated, conversationCandidateTerms, conversationNamedEntities, 15);
 
         // Evaluate Summaries
         const summary1 = [
@@ -231,8 +231,8 @@ export async function analyzeCorpusConversation(documentId: string): Promise<Fin
         ];
 
         const summary4 = [
-            buildSummaryAnalysisResult(shortReference, "NP Chunks and Named Entity", longBestSummary.summary.slice(0, shortNamedEntityAndCandidateTerms.length), shortNamedEntityAndCandidateTerms, ["Recall", "Precision", "Rouge-1", "Keywords"], keywords),
-            buildSummaryAnalysisResult(mediumReference, "NP Chunks and Named Entity", longBestSummary.summary.slice(0, mediumNamedEntityAndCandidateTerms.length), mediumNamedEntityAndCandidateTerms, ["Recall", "Precision", "Rouge-1", "Keywords"], keywords),
+            buildSummaryAnalysisResult(shortReference, "NP Chunks and Named Entity", longBestSummary.summary.slice(0, 5), shortNamedEntityAndCandidateTerms, ["Recall", "Precision", "Rouge-1", "Keywords"], keywords),
+            buildSummaryAnalysisResult(mediumReference, "NP Chunks and Named Entity", longBestSummary.summary.slice(0, 10), mediumNamedEntityAndCandidateTerms, ["Recall", "Precision", "Rouge-1", "Keywords"], keywords),
             buildSummaryAnalysisResult(longReference, "NP Chunks and Named Entity", longBestSummary.summary, longNamedEntityAndCandidateTerms, ["Recall", "Precision", "Rouge-1", "Keywords"], keywords),
         ];
 
