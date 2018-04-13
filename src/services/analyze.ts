@@ -197,13 +197,13 @@ export async function analyzeCorpusConversation(documentId: string): Promise<Fin
         const longNamedEntityAndCandidateTerms = _.union(namedEntityMapToStringArray(longReferenceNamedEntities), candidateTermMapToStringArray(longReferenceCandidateTerms));
 
         // Build Summaries
-        const shortCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, 5);
-        const mediumCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, 10);
-        const longCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, 15);
+        const shortCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, 5, true);
+        const mediumCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, 10, true);
+        const longCandidateTermTFIDFSummary = await candidateTermTFIDFSummary(conversationCandidateTerms, 15, true);
 
-        const shortLemmaTFIDFSummary = await corpusLemmaTFIDFSummary(conversationLemmas, 5);
-        const mediumLemmaTFIDFSummary = await corpusLemmaTFIDFSummary(conversationLemmas, 10);
-        const longLemmaTFIDFSummary = await corpusLemmaTFIDFSummary(conversationLemmas, 15);
+        const shortLemmaTFIDFSummary = await corpusLemmaTFIDFSummary(conversationLemmas, 5, true);
+        const mediumLemmaTFIDFSummary = await corpusLemmaTFIDFSummary(conversationLemmas, 10, true);
+        const longLemmaTFIDFSummary = await corpusLemmaTFIDFSummary(conversationLemmas, 15, true);
 
         const shortLDASummary = LDASummary(conversation.annotated, conversationCandidateTerms, 5, 1);
         const mediumLDASummary = LDASummary(conversation.annotated, conversationCandidateTerms, 10, 1);

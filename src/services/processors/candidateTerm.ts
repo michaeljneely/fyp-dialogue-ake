@@ -1,5 +1,5 @@
 import CoreNLP from "corenlp";
-import { stopwords } from "../../constants/filters";
+import { AlphaNumericRegex, stopwords } from "../../constants/filters";
 import { CandidateTerm,  CandidateTermTypes } from "../../models/CandidateTerm";
 import { Term } from "../../models/Term";
 import { logger } from "../../utils/logger";
@@ -49,6 +49,7 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<CandidateT
             let termType: CandidateTermTypes;
             // Peek at the top of the stack.
             const top = termStack.peek();
+            if (AlphaNumericRegex.test(token.lemma())) {
             // If there are currently items in the stack
             if (top) {
                 // If top is stopword - Attempt to continue building Entity
@@ -167,6 +168,7 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<CandidateT
                     termStack.clear();
                 }
             }
+        }
         });
         // Clear the stack after processing a sentence
         termStack.clear();
@@ -197,7 +199,7 @@ export function buildStringFromTokenStack(stack: Stack<CoreNLP.simple.Token>): s
 function mapCandidateTerms(candidateTerms: Array<CandidateTerm>): Map<string, number> {
     const map = new Map<string, number>();
     candidateTerms.forEach((candidateTerm) => {
-        if (candidateTerm.term !== "%") {
+        if (stopwords.indexOf(candidateTerm.term) === -1) {
             const existing = map.get(CandidateTerm.toString(candidateTerm));
             if (existing) {
                 map.set(CandidateTerm.toString(candidateTerm), existing + 1);

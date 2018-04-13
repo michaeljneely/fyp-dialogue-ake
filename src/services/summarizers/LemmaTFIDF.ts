@@ -21,11 +21,14 @@ type LemmaWithTFIDF = {
 /**
  * This summary method calculates the top lemmas as ranked by TFIDF (application corpus only)
  */
-export async function corpusLemmaTFIDFSummary(lemmas: Map<string, number>, length: number): Promise<ISummary> {
+export async function corpusLemmaTFIDFSummary(lemmas: Map<string, number>, length: number, docFromCorpus: boolean = false): Promise<ISummary> {
     try {
         const lemmasWithTFIDF = new Array<LemmaWithTFIDF>();
         for (const tuple of lemmas) {
-            const idf = await lemmaIDFCorpus(tuple["0"]);
+            let idf = await lemmaIDFCorpus(tuple["0"]);
+            if (idf > 1 && docFromCorpus) {
+                idf -= 1;
+            }
             lemmasWithTFIDF.push({
                 lemma: tuple["0"],
                 tfidf: calculateTFIDF(tuple["1"], idf)

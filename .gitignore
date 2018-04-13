@@ -40,7 +40,3 @@ coverage/
 
 # Ignore built ts files
 dist/**/*
-
-# Corpus
-corpus/**/*.txt
-corpus/**/*.json

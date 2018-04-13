@@ -1,6 +1,7 @@
 import CoreNLP from "corenlp";
 import _ = require("lodash");
 import * as mongoose from "mongoose";
+import { stopwords } from "../../constants/filters";
 import { CandidateTerm } from "../../models/CandidateTerm";
 import { NamedEntityTerm } from "../../models/NamedEntityTerm";
 import { ISummary } from "../../models/Summary";
@@ -44,9 +45,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
         else if (t2 instanceof NamedEntityTerm) {
             return namedEntityFilter.indexOf(t2.type) === -1;
         }
-        else {
-            return t1.term === t2.term;
-        }
+        return t1.term === t2.term;
     }
 
     async function _processDBP(arr: Array<Term>): Promise<Array<Term>> {
@@ -73,10 +72,12 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
         logger.info(`npAndNERSummary() called with request to return ${numberOfWords} words...`);
 
         // Extract Candidate Terms
-        const candidateTermKeys = [...candidateTermMap.keys()].map((key) => CandidateTerm.fromString(key));
+        // Check for undefined?
+        const candidateTermKeys = [...candidateTermMap.keys()].map((key) => CandidateTerm.fromString(key)).filter((ct) => (stopwords.indexOf(ct.term) === -1));
 
         // Extract Named Entities
-        const namedEntityKeys = [...namedEntityMap.keys()].map((key) => NamedEntityTerm.fromString(key));
+        // Check for undefined?
+        const namedEntityKeys = [...namedEntityMap.keys()].map((key) => NamedEntityTerm.fromString(key)).filter((nek) => (namedEntityFilter.indexOf(nek.entityType) !== -1) && (stopwords.indexOf(nek.term) === -1));
 
         logger.info(`Candidate Terms and Named Entities Extracted: ${candidateTermKeys.length + namedEntityKeys.length} total terms to consider`);
 
@@ -120,7 +121,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
 
         // Early Exit Condition 2;
         if (termsToConsider.length < numberOfWords) {
-            // TOTO
+            // TODO
             return _returnAsSummary(termsToConsider.map((ttc) => ttc.term));
         }
 
@@ -178,7 +179,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
                 };
             }
             else if (tws.term instanceof NamedEntityTerm) {
-                const finalScore = (importNamedEntityFilter.indexOf(tws.term.type) !== -1) ? 1 : ((k * reduceNumberInRange(tws.tfidf, ectTFIDFMax, ectTFIDFMin)) + ((1 - k) * tws.score));
+                const finalScore = ((k * reduceNumberInRange(tws.tfidf, ectTFIDFMax, ectTFIDFMin)) + ((1 - k) * tws.score));
                 scoreTotal += finalScore;
                 return {
                     term: tws.term,

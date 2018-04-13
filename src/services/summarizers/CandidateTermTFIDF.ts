@@ -22,11 +22,14 @@ type candidateTermWithTFIDF = {
  * @param {number} length Number of terms to return
  * @returns {Array<string>} Top N terms based on TFIDF ranking (application corpus only)
  */
-export async function candidateTermTFIDFSummary(candidateTerms: Map<string, number>, length: number): Promise<ISummary> {
+export async function candidateTermTFIDFSummary(candidateTerms: Map<string, number>, length: number, docFromCorpus: boolean = false): Promise<ISummary> {
     try {
         const terms = new Array<candidateTermWithTFIDF>();
         for (const candidateTerm of candidateTerms) {
-            const idf = await termIDFCorpus(CandidateTerm.fromString(candidateTerm["0"]));
+            let idf = await termIDFCorpus(CandidateTerm.fromString(candidateTerm["0"]));
+            if (idf > 1 && docFromCorpus) {
+                idf -= 1;
+            }
             terms.push({ct: CandidateTerm.fromString(candidateTerm["0"]), tfidf: calculateTFIDF(candidateTerm["1"], idf)});
         }
         return {

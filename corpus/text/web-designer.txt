@@ -1,0 +1,292 @@
+Catherine: Hello
+
+Tim: Hi there.
+
+Catherine: I just wondered if you could introduce yourself and
+just say a little bit about where you’re from in the UK.
+
+Tim: Sure. I’m Tim and I’ve been asked to come and talk about
+web design. I’m from Portsmouth which is on the south coast of
+the UK. It’s a naval town near some islands, ’bout an hour’s
+drive from London.
+
+Catherine: Thank you. And could you — You said you were involved
+in web design. Could you say a little bit about how you got
+involved in web design and what you do for a living?
+
+Tim: Sure. I s’pose it goes back a long way to my time at
+university when I studied computer science. I worked for a web
+design company then in one of my summers, worked on some quite
+big websites at the time. Then I had quite a few years in my
+career of working for some quite big companies doing contract
+work. Some of it was web-based, some of it other
+programming-type work. And then more recently I decided that I
+wanted to start my own company and the thing I really felt that
+I wanted to do was web design.
+
+Catherine: And what made you decide to set up your own company
+as opposed to going and working for another big company, say,
+or having a more hassle-free lifestyle with a bigger company?
+
+Tim: I suppose it’s the power to control everything myself and
+to take things in the direction I want to take them in. There’s
+lots of reasons for running your own company, I think: more
+flexibility, being able to target the type of customers and the
+projects that you want to do, but also just the extra sort of
+skills and challenges of running a company for me just present
+something more challenging and interesting to do.
+
+Catherine: You mentioned there about the challenges of running a
+company. Could you talk a little bit about the challenges of
+starting a company and perhaps your, — you know, any
+difficulties that you encountered when you were doing that?
+
+Tim: Sure. I s’pose the initial thing that’s quite difficult, I
+think, for many companies, and it was for me, is actually
+choosing a company name. It’s something I found really
+difficult. You have to, of course, you have to find a name
+that’s not been used before, so when you start a company you
+need to register it with Companies House in the UK and they’ve
+got a website; you can go on there and check which names have
+been used before but probably even more important than that,
+you need a — especially with a web design company, you need a
+name that’s not been used on the web before, you need a unique
+domain name. So it was playing around with names that had not
+been taken as limited companies and also the domain name was
+free and also I think at the time when I actually crea —
+registered my company I wasn’t even sure exactly what it was
+going to be. I actually started it for my contracting
+originally and then the web design thing came later. So it was
+choosing something which could be sort of used going forward.
+Other things that are challenging, I s’pose , getting your head
+round all the accounting and tax requirements which are somewhat
+complicated and I mean, I’ve got an accountant which helps me
+with those, that side of things.
+
+Catherine: And what about finding clients to start with? How did
+you go about starting out?
+
+Tim: I started out mainly through friends and existing contacts,
+so other people I’d worked with before, previous colleagues,
+contacting them and seeing if they needed anyone that needed
+the type of work that I do and that, things just went from
+there really. Pretty much all of my work has been through
+referrals from previous clients, or people I have worked with
+or known in the past.
+
+Catherine: And what exactly does your company offer clients,
+then?
+
+Tim: So, the primary focus is web design, on various levels:
+there’s basic, several page websites through to — right through
+to e-commerce, online shops. I’ve recently done a website which
+was an online jewellery store, for example. Additionally to
+that, we offer printing, so business card printing, stationery
+such as letterheads and compliments slips. We also do kind of
+brochures, that kind of thing as well. So it’s the whole
+branding package really.
+
+Catherine: So, how much input do the clients have in your design
+process?
+
+Tim: As much as they want. I think it depends on the client.
+Some clients will have a very strong idea of what they want,
+others don’t really know what they want, they just know they
+need something and will need much more guidance. So normally
+the first stage of the process is to find out as much as we can
+about the client, about their business and what they need. For
+example, they may already have a logo and a colour scheme in
+which case that will dictate a lot of what we do. If they don’t
+have those, then the first thing to start with is the logo and
+the colour scheme really, and then we kinda take things from
+there. So normally there’ll be a design process where they’re
+shown revisions of what we’ve thought of so far, of what we’ve
+done so far. And they’ll say what they like about those, we’ll
+get into more discussion and we’ll do further revisions as
+required. So very open-ended in terms of how much client input,
+I would say.
+
+Catherine: So it actually is quite a creative job. You think it
+might just be a techie job, but actually there’s quite a large
+amount of creative input from you.
+
+Tim: Yes, I’d say more creative than technical. In fact, yeah ,
+I mean, if you want a website that’s all about your company
+brand, so if your logo’s coming with that and the stationery as
+well, then it’s all about creating a whole brand really which is
+entirely creative. It’s once that design side is done that then
+we do the technical side of actually preparing any work for
+print and actually implementing the website.
+
+Catherine: And how has your company grown since you started it?
+
+Tim: Well, I’m still the only full-time employee, but I use a
+couple of graphic designers on a freelance basis mainly for the
+logo design and the print design, those kinds of sides for it.
+One designer I have, in particular, has a whole career
+background in graphical design and brand management so she
+would be heavily responsible for the logos and the print work.
+
+Catherine: It’s obviously quite a fast moving business and an
+area that you’re working in, how do you keep your own skills
+and knowledge up to date so that you can give your clients the
+best possible product?
+
+Tim: It’s as needed really. I mean, I’m following kind of online
+journals and magazines on web design so I’m following kind of
+the latest of what’s going on in terms of design trends and
+technically as well. But normally I will learn new things or
+take on new things based on the needs of the particular
+project. So if there’s a new project which — Here’s an example.
+Recently I’ve been working on a e-commerce site based on, an
+existing one, based on some older software. So that’s some
+piece of software which I didn’t know before so obviously I’ve
+had to get up to speed on using that. And then that knowledge
+can then be used for future clients who happen to use the same
+software.
+
+Catherine: And that’s very much on a ‘teach yourself’ basis?
+
+Tim: Absolutely, yes. I think I guess I’m used to doing that
+from having contracted for a number of years before so I’ve
+already been very much responsible for my own training and kind
+of career development for many years really.
+
+Catherine: And so as well as keeping your own knowledge up to
+date, what kind of follow-up care and client support do you
+give your clients once you’ve launched a website?
+
+Tim: Well, the clients get 20 days kind of evaluation period,
+and during that period they can ask any question, any support
+request basically or any problem will be fixed. So that’s their
+kind of real opportunity to make sure they’re happy with
+everything they’ve got. For a simple website with basic content
+management –so that means they can edit their own content –
+that’s plenty. I mean the solutions we do are very easy to
+use and that’s all they need. For an e-commerce website they
+might need a bit more helping hand as they go forward. So for
+those they typically take out a support contract which would be
+— would get them a couple of hours per month of support.
+
+Catherine: I’m also interested – it perhaps might not apply just
+yet to you if you’re doing new companies particularly – but with
+the way that brands often change names and change their designs
+and market themselves, I guess that might mean more work for
+you if existing companies are changing as well. Have you come
+across that in anything that you’ve read or experienced? Or
+something that you might envisage in the future?
+
+Tim:  Yeah , of course, of course companies change and brands
+change and companies develop in different directions. For
+example, this e-commerce site I was talking about, they — they
+actually — it’s actually a shop that has bought a website from
+someone else and they’re now actually currently running both
+brands alongside each other, so the website’s branded as the
+shop, the online store name owned by the real shop name. And
+they’ve kind of two logos and two kind of colour identities. So
+this is a kind of a temporary measure really that they wanted.
+So that does create quite a challenge obviously technically to
+make that work. And they — it’s up to them to decide kind of
+where they want the brand to go, kind of go long term.
+
+Sabine: And also it all becomes more sophisticated. If I look at
+web shops now, and say 5 years ago, or even, well, 10 years ago
+there weren’t any web shops I suppose, so how does that come in
+your — learning something new every day, or?
+
+Tim: Sure, I mean, I think with anything in information
+technology I think that the pace of change is very quick and
+that you’re always learning something new. I mean, for example,
+an online shop is out of date technically within a couple of
+years in terms of things that have moved on since then. So it
+is very much, I mean particularly with the e-commerce side, it
+is very much an ongoing process to keep them up to date. It
+only takes the details of how credit cards are verified, for
+example, to change. That’s just a change a credit card company
+might make and then there’s potentially more work to do to
+update that.
+
+Catherine: So it’s outside influences as much as the client
+themselves wanting to change but there’s other factors like
+credit card companies.
+
+Tim: Absolutely. Especially with e-commerce, yep .
+
+Sabine: Is there a sort of a certain fashion? If I look at
+university websites and how they have changed over the years,
+and they always often try to follow the — , or seem to follow
+the same trend, now they all look like, I don’t know, like
+
+Catherine: Corporate.
+
+Sabine: Corporate, yes.
+
+Tim:  Yeah .
+
+Sabine: Is there such a thing as a typical of each and every
+branch? Or how does that work?
+
+Tim: There are definitely design trends for different styles of
+websites, so the university website that you mentioned, I guess
+the reason — one reason they might have followed more of a
+corporate style is just to get more information over. And just
+to look professional as well. I think there’s been a strong
+trend in web design towards websites that are very easy to
+understand and follow. Obviously it’s very important to be able
+to navigate clearly and to get to the information that the user
+wants. I think in the early days of web design there was a lot
+more designing for design’s sake. So designing because
+something looks pretty. And, I mean, it is important that
+things look good but it’s more important that the user can get
+to the information they want because that’s what the website’s
+there for at the end of the day.
+
+Sabine: That’s interesting to know. OK.
+
+Catherine: Definitely. Could you talk a little bit about how
+with a — when you run your own company there is a danger I
+think that you end up working 24 hours a day so how do you sort
+of say to yourself "OK, that’s it for one day. I’ve had enough,
+I’m not gonna do any more"? How do you sort of get that balance
+in your life?
+
+Tim:  Yeah , I do think that’s a real danger. I’m not working 24
+hours a day thankfully at the moment! I thought — I think I
+thought when I started, I think I thought I would end up
+working more than I have in terms of hours. I — it’s almost
+surprised me a bit that actually the hours I work are roughly
+based around normal office hours which may seem — yeah , it’s a
+surprise in a way. But I mean I do have flexibility. For
+example, if I want to take an afternoon off to do something,
+I’ll then work, you know, I’ll catch up in the evenings or at
+the weekend. So it’s good to have that flexibility but my
+default is to work roughly normal office hours. There’s a few
+reasons for that. Obviously customers are working those hours
+typically and expect me to be available those kind of hours, so
+that works well. Secondly, just the routine and I think having
+that routine of working roughly normal office hours is probably
+the reason I don’t end up working a ridiculous number of extra
+hours. I mean, I will — I maybe do a bit more than a normal
+office week but not that much more. Work-life balance, I think
+in the week I can tend — it tends to get quite intense. When I
+am actually working, I’m sat at my computer designing or
+programming or speaking to a customer or whatever, and
+sometimes I might start at 8 in the morning and then it’s 4
+o’clock in the afternoon and I realise that’s the first time
+I’ve looked out of the window. So it can be very, very intense,
+and I can be very, very focused on what I’m doing. And I think I
+know when to stop because if I’ve been working that intensely
+until end of the office day, then I kind of have to stop anyway
+because you break then.
+
+Catherine: You have to.
+
+Tim:  Yeah .
+
+Sabine: OK, you need to stop.
+
+Catherine: OK, that’s lovely. Thank you very much.
+
+Tim: All right.
+
+Catherine: Thank you.
