@@ -19,6 +19,7 @@
         "Sacodeyl",
         "Stopword",
         "Summarizer",
+        "Sørensen",
         "TFIDFS",
         "TFUIDF",
         "Tokenizes",

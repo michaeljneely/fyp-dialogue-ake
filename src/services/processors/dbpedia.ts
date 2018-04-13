@@ -2,7 +2,7 @@ import * as got from "got";
 import _ = require("lodash");
 import * as convert from "xml-js";
 import { KeywordSearch } from "../../models/DBpedia";
-import { DBpediaScoreModel } from "../../models/DBpediaScore";
+import { DBpediaScoreModel } from "../../models/DBpedia";
 import { sleep } from "../../utils/functions";
 import { logger } from "../../utils/logger";
 
@@ -18,17 +18,17 @@ import { logger } from "../../utils/logger";
  */
 export async function queryDBpedia(input: string, queryClass: string = "", maxHits: number = 50): Promise<KeywordSearch> {
     try {
+        logger.info(`queryDBpedia() called. Querying for '${input}'`);
         const queryString = encodeURIComponent(input.trim());
+        await sleep(2000);
         const res = await got(`http://lookup.dbpedia.org/api/search/KeywordSearch?QueryString=${queryString}&QueryClass=${queryClass}&MaxHits=${maxHits}`);
-        if (res !== undefined && res.body !== undefined) {
-            try {
-                const ks: KeywordSearch = JSON.parse(convert.xml2json(res.body, {compact: true, spaces: 4}));
-                return Promise.resolve(ks);
-            } catch (err) {
-                // No body returned -> 0 results
-            }
+        if (res && res.body) {
+            const ks: KeywordSearch = JSON.parse(convert.xml2json(res.body, {compact: true, spaces: 4}));
+            return ks;
         }
-        return Promise.resolve(undefined);
+        else {
+            return undefined;
+        }
     }
     catch (error) {
         logger.error(error);
@@ -43,25 +43,40 @@ export async function queryDBpedia(input: string, queryClass: string = "", maxHi
  */
 export async function getDBpediaScore(input: string): Promise<number> {
     try {
+        logger.info(`Getting DBpedia Score for ${input}`);
         const term = input.toLowerCase().trim();
         const existingScore = await DBpediaScoreModel.findOne({term});
-        if (_.isUndefined(existingScore) || _.isNull(existingScore)) {
-            // DBpedia gets angry if you query to fast
-            await sleep(1000);
+        if (!existingScore) {
             const ks = await queryDBpedia(input);
-            if (ks && ks.ArrayOfResult.Result) {
-                const scoreModel = await new DBpediaScoreModel({
-                    term,
-                    numResults: ks.ArrayOfResult.Result.length || 0
-                }).save();
-                const score = scoreModel.numResults;
-                return ((score === 0)) ? 0 : ((51 - score) / 50);
+            if (ks && ks.ArrayOfResult) {
+                // For Scores with no Results, ArrayOfResult has information, but no items. Need to catch.
+                try {
+                    const score = ks.ArrayOfResult.Result.length || 1;
+                    const scoreModel = await new DBpediaScoreModel({
+                        term,
+                        numResults: score
+                    }).save();
+                    return ( (51 - scoreModel.numResults) / 50);
+                }
+                catch (error) {
+                    const scoreModel = await new DBpediaScoreModel({
+                        term,
+                        numResults: 0
+                    }).save();
+                    return 0;
+                }
             }
             else {
+                const scoreModel = await new DBpediaScoreModel({
+                    term,
+                    numResults: 0
+                }).save();
                 return 0;
             }
         }
-        return (existingScore.numResults === 0) ? 0 : ((51 - existingScore.numResults) / 50);
+        else {
+            return (existingScore.numResults === 0) ? 0 : ((51 - existingScore.numResults) / 50);
+        }
     }
     catch (error) {
         logger.error(error);

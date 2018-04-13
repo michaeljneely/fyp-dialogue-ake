@@ -1,44 +1,44 @@
 import CoreNLP from "corenlp";
+import { EntityType, NamedEntityTerm } from "../../models/NamedEntityTerm";
+import { logger } from "../../utils/logger";
 import { Stack } from "../../utils/stack";
 
 /*
     Service to abstract processing of Named Entities
 */
 
-export type entityNamed = "PERSON" | "LOCATION" | "ORGANIZATION" | "MISC";
-export type entityNumerical = "MONEY" | "NUMBER" | "ORDINAL" | "PERCENT";
-export type entityTemporal = "DATE" | "TIME" | "DURATION" | "SET";
-export type entityNone = "O";
-export type NamedEntity = entityNamed | entityNumerical | entityTemporal | entityNone;
-
-
-export interface NamedEntityTerm {
-    term: string;
-    entityType: NamedEntity;
-}
-
 /**
  * Extract all Named Entities from a CoreNLP Document
  * @param {CoreNLP.simple.Document} annotated CoreNLP Document
  */
-export function extractNamedEntitiesFromCoreNLPDocument(annotated: CoreNLP.simple.Document): Array<NamedEntityTerm> {
+
+export function extractNamedEntitiesFromCoreNLPDocument(document: CoreNLP.simple.Document): Map<string, number> {
+    return mapNamedEntities(findNamedEntities(document));
+}
+
+export function findNamedEntities(annotated: CoreNLP.simple.Document): Array<NamedEntityTerm> {
+    logger.info(`findNameEntities() - finding named entities...`);
     const entities = new Array<NamedEntityTerm>();
     const entityStack = new Stack<NamedEntityTerm>();
+    let tokenCount = 0;
     annotated.sentences().forEach((sentence) => {
-        sentence.tokens().forEach((token) => {
-            const ner = token.ner() as NamedEntity;
+        const tokens = sentence.tokens();
+        tokenCount += tokens.length;
+        for (let i = 0; i < tokens.length; i++) {
+            const ner = tokens[i].ner() as EntityType;
             if (ner !== "O") {
                 const top = entityStack.peek();
-                if (top && top.entityType !== ner) {
+                if (top && top.type !== ner) {
                     entities.push(flushEntityStack(entityStack));
                     entityStack.clear();
                 }
-                entityStack.push({
-                    term: token.word(),
-                    entityType: ner,
-                });
+                entityStack.push(new NamedEntityTerm(tokens[i].word().toLowerCase(), ner));
             }
-        });
+            else if (i > 0 && tokens[i - 1].ner() !== ner) {
+                entities.push(flushEntityStack(entityStack));
+                entityStack.clear();
+            }
+        }
         const top = entityStack.peek();
         if (top) {
             entities.push(flushEntityStack(entityStack));
@@ -46,6 +46,7 @@ export function extractNamedEntitiesFromCoreNLPDocument(annotated: CoreNLP.simpl
         // flush at end of sentence
         entityStack.clear();
     });
+    logger.info(`Extracted ${entities.length} non-unique Named Entities out of ${tokenCount} tokens`);
     return entities;
 }
 
@@ -54,14 +55,26 @@ export function extractNamedEntitiesFromCoreNLPDocument(annotated: CoreNLP.simpl
  * @param {Stack<NamedEntityTerm>} stack
  */
 function flushEntityStack(stack: Stack<NamedEntityTerm>): NamedEntityTerm {
-    const ret: NamedEntityTerm = {
-        term: "",
-        entityType: undefined
-    };
+    let term: string = "";
+    let type: EntityType;
     stack.data().forEach((net: NamedEntityTerm) => {
-        ret.term = ret.term.concat(" " + net.term.toLowerCase());
-        ret.entityType = (ret.entityType === net.entityType) ? ret.entityType : net.entityType;
+        term = term.concat(" " + net.term.toLowerCase());
+        type = (type === net.entityType) ? type : net.entityType;
     });
-    ret.term = ret.term.trim();
-    return ret;
+    term = term.trim();
+    return new NamedEntityTerm(term, type);
+}
+
+function mapNamedEntities(namedEntities: Array<NamedEntityTerm>): Map<string, number> {
+    const map = new Map<string, number>();
+    namedEntities.forEach((entity) => {
+        const existing = map.get(NamedEntityTerm.toString(entity));
+        if (existing) {
+            map.set(NamedEntityTerm.toString(entity), existing + 1);
+        }
+        else {
+            map.set(NamedEntityTerm.toString(entity), 1);
+        }
+    });
+    return map;
 }
