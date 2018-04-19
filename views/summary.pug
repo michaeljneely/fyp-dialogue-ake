@@ -2,37 +2,41 @@ extends layout
 
 block content
     .main-content
-        h3.main-title Summary
-        hr
         if summary
+            h3.main-title Candidate Term TFIDF Summary
             if summary.speakers
-                h2.main-title Candidate Term TFIDF Summary
                 p #{summary.speakers} discussed #{summary.ctTFUIDFSummary}
             else
                 p #{summary.ctTFUIDFSummary}
-            table.table.table-striped.table-hover
-                tr
-                    th Keyphrase
-                    th Type
-                    th Score
-                for term in summary.ctTFUIDFRankedTerms
+            if summary.ctTFUIDFRankedTerms && summary.ctTFUIDFRankedTerms.length
+                table.table.table-striped.table-hover
                     tr
-                        td #{term.term.term}
-                        td #{term.term.type}
-                        td #{term.finalScore.toPrecision(2)}
+                        th Keyphrase
+                        th Type
+                        th Score
+                    for term in summary.ctTFUIDFRankedTerms
+                        tr
+                            td #{term.term.term}
+                            td #{term.term.type}
+                            td #{term.finalScore.toPrecision(2)}
+            else
+                p There was nothing important in the conversation!
             hr
-            if summary.speakers
-                h2.main-title Candidate Term and Named Entity Weighted Semantic Evaluation
+            h3.main-title Candidate Term and Named Entity Weighted Semantic Evaluation
+            if summary.speakers       
                 p #{summary.speakers} discussed #{summary.npAndNERSummary}
             else
                 p #{summary.npAndNERSummary}
-            table.table.table-striped.table-hover
-                tr
-                    th Keyphrase
-                    th Type
-                    th Score
-                for term in summary.npAndNERRankedTerms
+            if summary.npAndNerRankedTerms
+                table.table.table-striped.table-hover
                     tr
-                        td #{term.term.term}
-                        td #{term.term.type}
-                        td #{term.finalScore.toPrecision(2)}
+                        th Keyphrase
+                        th Type
+                        th Score
+                    for term in summary.npAndNERRankedTerms
+                        tr
+                            td #{term.term.term}
+                            td #{term.term.type}
+                            td #{term.finalScore.toPrecision(2)}
+        else
+            p.lead Not enough to summarize 😥
