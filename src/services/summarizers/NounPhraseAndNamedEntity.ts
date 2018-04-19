@@ -8,7 +8,7 @@ import { ISummary } from "../../models/Summary";
 import { Term, TermWithFinalScore } from "../../models/Term";
 import { reduceNumberInRange } from "../../utils/functions";
 import { logger } from "../../utils/logger";
-import { termIDFCorpus } from "../metrics/tfidf";
+import { calculateWeightedTFUIDF, termIDFCorpus, termIDFUser } from "../metrics/tfidf";
 import { getDBpediaScore } from "../processors/dbpedia";
 const stringSimilarity = require("string-similarity");
 import * as fs from "fs-extra";
@@ -67,7 +67,8 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
     }
 
     try {
-        const k = 0.5;
+        const gamma = 0.5;
+        const delta = 0.5;
 
         logger.info(`npAndNERSummary() called with request to return ${numberOfWords} words...`);
 
@@ -138,8 +139,9 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
             const term = ttcWithScores[i];
             if (term.term instanceof CandidateTerm) {
                 const tf = candidateTermMap.get(Term.toString(term.term));
-                const idf = await termIDFCorpus(term.term);
-                const tfidf = tf * idf;
+                const cIdf = await termIDFCorpus(term.term);
+                const uIdf = await termIDFUser(userId, term.term);
+                const tfidf = calculateWeightedTFUIDF(tf, cIdf, uIdf, delta);
                 if (tfidf > ectTFIDFMax) {
                     ectTFIDFMax = tfidf;
                 }
@@ -152,8 +154,9 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
             }
             else if (term.term instanceof NamedEntityTerm) {
                 const tf = namedEntityMap.get(Term.toString(term.term));
-                const idf = await termIDFCorpus(term.term);
-                const tfidf = tf * idf;
+                const cIdf = await termIDFCorpus(term.term);
+                const uIdf = await termIDFUser(userId, term.term);
+                const tfidf = calculateWeightedTFUIDF(tf, cIdf, uIdf, delta);
                 if (tfidf > neTFIDFMax) {
                     neTFIDFMax = tfidf;
                 }
@@ -168,7 +171,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
         let scoreTotal: number = 0;
         const rankedList: Array<TermWithFinalScore> = termScores.map((tws) => {
             if (tws.term instanceof CandidateTerm) {
-                const finalScore = ((k * reduceNumberInRange(tws.tfidf, ectTFIDFMax, ectTFIDFMin)) + ((1 - k) * tws.dbpediaScore));
+                const finalScore = ((gamma * reduceNumberInRange(tws.tfidf, ectTFIDFMax, ectTFIDFMin)) + ((1 - gamma) * tws.dbpediaScore));
                 scoreTotal += finalScore;
                 return {
                     term: tws.term,
@@ -176,7 +179,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
                 };
             }
             else if (tws.term instanceof NamedEntityTerm) {
-                const finalScore = ((k * reduceNumberInRange(tws.tfidf, ectTFIDFMax, ectTFIDFMin)) + ((1 - k) * tws.dbpediaScore));
+                const finalScore = ((gamma * reduceNumberInRange(tws.tfidf, ectTFIDFMax, ectTFIDFMin)) + ((1 - gamma) * tws.dbpediaScore));
                 scoreTotal += finalScore;
                 return {
                     term: tws.term,
