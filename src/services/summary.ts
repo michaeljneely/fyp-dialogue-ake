@@ -17,10 +17,12 @@ import { npAndNERSummary } from "./summarizers/NounPhraseAndNamedEntity";
 */
 
 // Contract with Controller
-export type Summary = {
+export type ComparisonSummary = {
     speakers: string,
-    summary: string,
-    rankedTerms: Array<TermWithFinalScore>
+    npAndNERSummary: string,
+    npAndNERRankedTerms: Array<TermWithFinalScore>,
+    ctTFUIDFSummary: string,
+    ctTFUIDFRankedTerms: Array<TermWithFinalScore>
 };
 
 /**
@@ -30,7 +32,7 @@ export type Summary = {
  * @param wordLength Length of summary
  * @returns {Summary} the summarized conversation and its formatted speakers
  */
-export async function summarizeConversation(text: string, userId: mongoose.Types.ObjectId, wordLength: number): Promise<Summary> {
+export async function summarizeConversation(text: string, userId: mongoose.Types.ObjectId, wordLength: number): Promise<ComparisonSummary> {
     try {
         // Annotate conversation
         const [speakers, conversation] = stripSpeakers(text);
@@ -42,16 +44,19 @@ export async function summarizeConversation(text: string, userId: mongoose.Types
         const candidateTerms = extractCandidateTermsFromCoreNLPDocument(annotated);
         const namedEntities = extractNamedEntitiesFromCoreNLPDocument(annotated);
         // Build Summary
-        const summary = await npAndNERSummary(annotated, candidateTerms, namedEntities, wordLength, userId);
+        const npNerSummary = await npAndNERSummary(annotated, candidateTerms, namedEntities, wordLength, userId);
+        const ctTFUIDFSummary = await candidateTermTFUIDFSummary(userId, candidateTerms, wordLength);
         // Save document, lemmas, and candidate terms
         const saved = await saveUserDocument(userId, speakers, annotated, text, lemmas, candidateTerms, namedEntities);
 
-        // Return best summary - at the moment: NP/NER
+        // Return 2 best summaries
         return Promise.resolve({
             speakers: formatSpeakers(speakers),
-            summary: summary.summary.join(", "),
-            rankedTerms: summary.rankedKeyphrases
-        } as Summary);
+            npAndNERSummary: npNerSummary.summary.join(", "),
+            npAndNERRankedTerms: npNerSummary.rankedKeyphrases,
+            ctTFUIDFSummary: ctTFUIDFSummary.summary.join(", "),
+            ctTFUIDFRankedTerms: ctTFUIDFSummary.rankedKeyphrases
+        });
     }
     catch (error) {
         logger.error(error);

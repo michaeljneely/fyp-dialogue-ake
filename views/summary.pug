@@ -4,21 +4,35 @@ block content
     .main-content
         h3.main-title Summary
         hr
-        if summary.summary
+        if summary
             if summary.speakers
-                p #{summary.speakers} discussed #{summary.summary}
+                h2.main-title Candidate Term TFIDF Summary
+                p #{summary.speakers} discussed #{summary.ctTFUIDFSummary}
             else
-                p #{summary.summary}
-        hr
-        if summary.rankedTerms
+                p #{summary.ctTFUIDFSummary}
             table.table.table-striped.table-hover
                 tr
                     th Keyphrase
                     th Type
                     th Score
-                for term in summary.rankedTerms
+                for term in summary.ctTFUIDFRankedTerms
                     tr
                         td #{term.term.term}
                         td #{term.term.type}
                         td #{term.finalScore.toPrecision(2)}
-
+            hr
+            if summary.speakers
+                h2.main-title Candidate Term and Named Entity Weighted Semantic Evaluation
+                p #{summary.speakers} discussed #{summary.npAndNERSummary}
+            else
+                p #{summary.npAndNERSummary}
+            table.table.table-striped.table-hover
+                tr
+                    th Keyphrase
+                    th Type
+                    th Score
+                for term in summary.npAndNERRankedTerms
+                    tr
+                        td #{term.term.term}
+                        td #{term.term.type}
+                        td #{term.finalScore.toPrecision(2)}

@@ -4,6 +4,7 @@ import { Conversation } from "../../models/Conversation";
 import { CorpusDocumentModel, UserDocumentModel } from "../../models/Document";
 import { Reference } from "../../models/Reference";
 import { GeneratedSummary, ISummary } from "../../models/Summary";
+import { Term, TermWithFinalScore } from "../../models/Term";
 import { logger } from "../../utils/logger";
 import { calculateAllScores } from "../metrics/scores";
 import { calculateTFIDF, calculateWeightedTFUIDF } from "../metrics/tfidf";
@@ -62,7 +63,8 @@ export async function candidateTermTFUIDFSummary(userId: mongoose.Types.ObjectId
         return {
             method: "CandidateTermTFUIDFSummary",
             summary: sortAndReturn(terms, length),
-            candidateTerms: candidateTerms
+            candidateTerms: candidateTerms,
+            rankedKeyphrases: sortAndReturnTermsWithScores(terms)
         };
     }
     catch (error) {
@@ -94,4 +96,21 @@ function sortAndReturn(ctWithTFIDF: Array<candidateTermWithTFIDF>, length: numbe
         }).slice(0, length);
     }
     return returned.map((term) => term.ct.term);
+}
+
+function sortAndReturnTermsWithScores(ctWithTFIDF: Array<candidateTermWithTFIDF>): Array<TermWithFinalScore> {
+    return ctWithTFIDF.sort((term1, term2) => {
+        if (term1.tfidf > term2.tfidf) {
+            return -1;
+        }
+        else if (term1.tfidf < term2.tfidf) {
+            return 1;
+        }
+        else return 0;
+    }).map((ct) => {
+        return {
+            term: ct.ct as Term,
+            finalScore: ct.tfidf
+        } as TermWithFinalScore;
+    });
 }
