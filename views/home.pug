@@ -2,4 +2,17 @@ extends layout
 
 block content
     .main-content
-        include:markdown-it home.md
+        h3.main-title Personalized Automatic Keyphrase Extraction (AKE)
+        hr
+        p.lead(style='padding-bottom: 20px') Summarization and keyword extraction of text documents is a common Natural Language Processing task 
+            | with increasingly relevant applications to computing, academic, and social domains.
+            | The majority of previous work is focused on structured textual sources, such as articles, books,
+            | and scientific papers. This project introduces the motivation for a focus on the more complex effort
+            | of summarizing unstructured multi-party dialogue.
+        h4.main-title 2 Best Algorithms
+        hr
+        h4.main-title Personalized Candidate Term TFIDF
+        img.w-100(src='images/ctTFUIDFeqn.png', alt='Personalized Candidate Term TFIDF')
+        hr
+        h4.main-title Personalized Candidate Term and Named Entity Weighted Semantic Evaluation
+        img.w-100(src='images/ctNEWSEeqn.png', alt='Personalized Candidate Term and Named Entity Weighted Semantic Evaluation')
