@@ -7,10 +7,8 @@ import * as fs from "fs-extra";
  * @param res - Express Response
  */
 function index(req: express.Request, res: express.Response) {
-    const md = "#Hello\n";
     res.render("home", {
-        title: "Home",
-        md: md
+        title: "Home"
     });
 }
 

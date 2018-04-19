@@ -52,9 +52,14 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
 
     async function _processDBP(arr: Array<Term>): Promise<Array<TermWithDBpediaScore>> {
         logger.info(`processing dbpedia...`);
+        const start = Date.now();
         const ret = new Array<TermWithDBpediaScore>();
         for (let i = 0; i < arr.length; i++) {
             const term = arr[i];
+            logger.info(`Time is ${Date.now() - start}`);
+            if (Date.now() - start > 80000) {
+                return Promise.reject("timeout");
+            }
             if (term && term.term && term.term.length > 1) {
                 const dbpediaScore = await getDBpediaScore(term.term);
                 ret.push({
@@ -139,9 +144,15 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
             const term = ttcWithScores[i];
             if (term.term instanceof CandidateTerm) {
                 const tf = candidateTermMap.get(Term.toString(term.term));
+                let tfidf = 0;
                 const cIdf = await termIDFCorpus(term.term);
-                const uIdf = await termIDFUser(userId, term.term);
-                const tfidf = calculateWeightedTFUIDF(tf, cIdf, uIdf, delta);
+                if (userId) {
+                    const uIdf = await termIDFUser(userId, term.term);
+                    tfidf = calculateWeightedTFUIDF(tf, cIdf, uIdf, delta);
+                }
+                else {
+                    tfidf = tf * cIdf;
+                }
                 if (tfidf > ectTFIDFMax) {
                     ectTFIDFMax = tfidf;
                 }
@@ -155,8 +166,14 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
             else if (term.term instanceof NamedEntityTerm) {
                 const tf = namedEntityMap.get(Term.toString(term.term));
                 const cIdf = await termIDFCorpus(term.term);
-                const uIdf = await termIDFUser(userId, term.term);
-                const tfidf = calculateWeightedTFUIDF(tf, cIdf, uIdf, delta);
+                let tfidf = 0;
+                if (userId) {
+                    const uIdf = await termIDFUser(userId, term.term);
+                    const tfidf = calculateWeightedTFUIDF(tf, cIdf, uIdf, delta);
+                }
+                else {
+                    tfidf = tf * cIdf;
+                }
                 if (tfidf > neTFIDFMax) {
                     neTFIDFMax = tfidf;
                 }

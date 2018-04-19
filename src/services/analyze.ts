@@ -190,7 +190,6 @@ export async function analyzeCorpusConversation(documentId: string): Promise<Fin
         const longReferenceNamedEntities = extractNamedEntitiesFromCoreNLPDocument(longReference.annotated);
         const conversationNamedEntities = extractNamedEntitiesFromCoreNLPDocument(conversation.annotated);
 
-
         // Get union of combination
         const shortNamedEntityAndCandidateTerms = _.union(namedEntityMapToStringArray(shortReferenceNamedEntities), candidateTermMapToStringArray(shortReferenceCandidateTerms));
         const mediumNamedEntityAndCandidateTerms = _.union(namedEntityMapToStringArray(mediumReferenceNamedEntities), candidateTermMapToStringArray(mediumReferenceCandidateTerms));
@@ -231,9 +230,9 @@ export async function analyzeCorpusConversation(documentId: string): Promise<Fin
         ];
 
         const summary4 = [
-            buildSummaryAnalysisResult(shortReference, "NP Chunks and Named Entity", longBestSummary.summary.slice(0, 5), shortNamedEntityAndCandidateTerms, ["Recall", "Precision", "Rouge-1", "Keywords"], keywords),
-            buildSummaryAnalysisResult(mediumReference, "NP Chunks and Named Entity", longBestSummary.summary.slice(0, 10), mediumNamedEntityAndCandidateTerms, ["Recall", "Precision", "Rouge-1", "Keywords"], keywords),
-            buildSummaryAnalysisResult(longReference, "NP Chunks and Named Entity", longBestSummary.summary, longNamedEntityAndCandidateTerms, ["Recall", "Precision", "Rouge-1", "Keywords"], keywords),
+            buildSummaryAnalysisResult(shortReference, "NP Chunks and Named Entity", longBestSummary.summary.slice(0, 5), shortNamedEntityAndCandidateTerms, ["Recall", "Precision", "Keywords"], keywords),
+            buildSummaryAnalysisResult(mediumReference, "NP Chunks and Named Entity", longBestSummary.summary.slice(0, 10), mediumNamedEntityAndCandidateTerms, ["Recall", "Precision", "Keywords"], keywords),
+            buildSummaryAnalysisResult(longReference, "NP Chunks and Named Entity", longBestSummary.summary, longNamedEntityAndCandidateTerms, ["Recall", "Precision", "Keywords"], keywords),
         ];
 
         // Return Summaries

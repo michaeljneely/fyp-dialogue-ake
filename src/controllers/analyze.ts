@@ -79,7 +79,12 @@ async function postAnalyzeDocument(req: Request, res: Response) {
         }
         catch (error) {
             logger.error(error);
-            return Promise.reject(error);
+            if (error === "timeout") {
+                req.flash("errors", {msg: "Requests to Dbpedia have timed out. Please try again."});
+                res.redirect("/corpus");
+            } else {
+                return Promise.reject(error);
+            }
         }
     }
     else {
