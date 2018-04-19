@@ -9,3 +9,16 @@ block content
                 p #{summary.speakers} discussed #{summary.summary}
             else
                 p #{summary.summary}
+        hr
+        if summary.rankedTerms
+            table.table.table-striped.table-hover
+                tr
+                    th Keyphrase
+                    th Type
+                    th Score
+                for term in summary.rankedTerms
+                    tr
+                        td #{term.term.term}
+                        td #{term.term.type}
+                        td #{term.finalScore.toPrecision(2)}
+

@@ -5,36 +5,38 @@ import { stopwords } from "../../constants/filters";
 import { CandidateTerm } from "../../models/CandidateTerm";
 import { NamedEntityTerm } from "../../models/NamedEntityTerm";
 import { ISummary } from "../../models/Summary";
-import { Term } from "../../models/Term";
+import { Term, TermWithFinalScore } from "../../models/Term";
 import { reduceNumberInRange } from "../../utils/functions";
 import { logger } from "../../utils/logger";
 import { termIDFCorpus } from "../metrics/tfidf";
 import { getDBpediaScore } from "../processors/dbpedia";
 const stringSimilarity = require("string-similarity");
+import * as fs from "fs-extra";
 
-interface TermWithFinalScore {
+interface TermWithDBpediaScore {
     term: Term;
-    finalScore: number;
+    dbpediaScore: number;
 }
 
 interface TermWithScoreAndTFIDF {
     term: Term;
-    score: number;
+    dbpediaScore: number;
     tfidf: number;
 }
 
 export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candidateTermMap: Map<string, number>, namedEntityMap: Map<string, number>, numberOfWords: number, userId?: mongoose.Types.ObjectId): Promise<ISummary> {
 
-    const namedEntityFilter = ["PERSON", "LOCATION", "ORGANIZATION", "NATIONALITY", "COUNTRY", "STATE_OR_PROVENCE", "TITLE", "IDEOLOGY", "RELIGION", "CRIMINAL_CHARGE", "CAUSE_OF_DEATH"];
+    const namedEntityFilter = ["PERSON", "LOCATION", "ORGANIZATION", "NATIONALITY", "COUNTRY", "STATE_OR_PROVENCE", "TITLE", "IDEOLOGY", "RELIGION", "CRIMINAL_CHARGE", "CAUSE_OF_DEATH", "MISC"];
     const importNamedEntityFilter = ["PERSON"];
 
-    function _returnAsSummary(summary: Array<string>, lemmas?: Map<string, number>, candidateTerms?: Map<string, number>, namedEntities?: Map<string, number>): ISummary {
+    function _returnAsSummary(summary: Array<string>, lemmas?: Map<string, number>, candidateTerms?: Map<string, number>, namedEntities?: Map<string, number>, rankedKeyphrases?: Array<TermWithFinalScore>): ISummary {
         return {
             method: "NounPhrase Chunks & Named Entities",
             summary,
             lemmas: lemmas || undefined,
             candidateTerms: candidateTerms || undefined,
             namedEntities: namedEntities || undefined,
+            rankedKeyphrases
         };
     }
 
@@ -48,26 +50,24 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
         return t1.term === t2.term;
     }
 
-    async function _processDBP(arr: Array<Term>): Promise<Array<Term>> {
+    async function _processDBP(arr: Array<Term>): Promise<Array<TermWithDBpediaScore>> {
         logger.info(`processing dbpedia...`);
-        const ret = new Array<Term>();
+        const ret = new Array<TermWithDBpediaScore>();
         for (let i = 0; i < arr.length; i++) {
             const term = arr[i];
-            if (term instanceof CandidateTerm && term.term.length > 1) {
-                const score = await getDBpediaScore(term.term);
-                if (score > 0.5) {
-                    ret.push(term);
-                }
-            }
-            else if (term instanceof NamedEntityTerm) {
-                ret.push(term);
+            if (term && term.term && term.term.length > 1) {
+                const dbpediaScore = await getDBpediaScore(term.term);
+                ret.push({
+                    term,
+                    dbpediaScore
+                });
             }
         }
         return ret;
     }
 
     try {
-        const k = 0.75;
+        const k = 0.5;
 
         logger.info(`npAndNERSummary() called with request to return ${numberOfWords} words...`);
 
@@ -121,11 +121,10 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
 
         // Early Exit Condition 2;
         if (termsToConsider.length < numberOfWords) {
-            // TODO
             return _returnAsSummary(termsToConsider.map((ttc) => ttc.term));
         }
-
         logger.info(`Beginning to query DBpedia to remove vague Candidate Terms`);
+        const ttcWithScores = await _processDBP(termsToConsider);
         const termScores = new Array<TermWithScoreAndTFIDF>();
         let ectTFIDFTotal: number = 0;
         let ectCount: number = 0;
@@ -135,12 +134,11 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
         let ectTFIDFMax: number = 0;
         let neTFIDFMin: number = 0;
         let ectTFIDFMin: number = 0;
-        for (let i = 0; i < termsToConsider.length; i++) {
-            const term = termsToConsider[i];
-            if (term instanceof CandidateTerm && term.term.length > 1) {
-                const score = await getDBpediaScore(term.term);
-                const tf = candidateTermMap.get(Term.toString(term));
-                const idf = await termIDFCorpus(term);
+        for (let i = 0; i < ttcWithScores.length; i++) {
+            const term = ttcWithScores[i];
+            if (term.term instanceof CandidateTerm) {
+                const tf = candidateTermMap.get(Term.toString(term.term));
+                const idf = await termIDFCorpus(term.term);
                 const tfidf = tf * idf;
                 if (tfidf > ectTFIDFMax) {
                     ectTFIDFMax = tfidf;
@@ -150,12 +148,11 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
                 }
                 ectTFIDFTotal += tfidf;
                 ectCount++;
-                termScores.push({term, tfidf, score});
+                termScores.push({term: term.term, tfidf, dbpediaScore: term.dbpediaScore});
             }
-            else if (term instanceof NamedEntityTerm) {
-                const score = await getDBpediaScore(term.term);
-                const tf = namedEntityMap.get(Term.toString(term));
-                const idf = await termIDFCorpus(term);
+            else if (term.term instanceof NamedEntityTerm) {
+                const tf = namedEntityMap.get(Term.toString(term.term));
+                const idf = await termIDFCorpus(term.term);
                 const tfidf = tf * idf;
                 if (tfidf > neTFIDFMax) {
                     neTFIDFMax = tfidf;
@@ -165,13 +162,13 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
                 }
                 neTFIDFTotal += tfidf;
                 neCount++;
-                termScores.push({term, tfidf, score});
+                termScores.push({term: term.term, tfidf, dbpediaScore: term.dbpediaScore});
             }
         }
         let scoreTotal: number = 0;
         const rankedList: Array<TermWithFinalScore> = termScores.map((tws) => {
             if (tws.term instanceof CandidateTerm) {
-                const finalScore = ((k * reduceNumberInRange(tws.tfidf, ectTFIDFMax, ectTFIDFMin)) + ((1 - k) * tws.score));
+                const finalScore = ((k * reduceNumberInRange(tws.tfidf, ectTFIDFMax, ectTFIDFMin)) + ((1 - k) * tws.dbpediaScore));
                 scoreTotal += finalScore;
                 return {
                     term: tws.term,
@@ -179,7 +176,7 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
                 };
             }
             else if (tws.term instanceof NamedEntityTerm) {
-                const finalScore = ((k * reduceNumberInRange(tws.tfidf, ectTFIDFMax, ectTFIDFMin)) + ((1 - k) * tws.score));
+                const finalScore = ((k * reduceNumberInRange(tws.tfidf, ectTFIDFMax, ectTFIDFMin)) + ((1 - k) * tws.dbpediaScore));
                 scoreTotal += finalScore;
                 return {
                     term: tws.term,
@@ -199,26 +196,15 @@ export async function npAndNERSummary(annotated: CoreNLP.simple.Document, candid
             }
             else return 0;
         });
-        const termsToRemove2 = new Array<string>();
-        const alreadyChecked2 = new Array<string>();
-        for (let i = 0; i < finalTermsToConsider.length; i++) {
-            const rest = finalTermsToConsider.slice(0, i).concat((finalTermsToConsider.slice(i + 1, finalTermsToConsider.length)));
-            const t1 = finalTermsToConsider[i];
-            for (let j = 0; j < rest.length; j++) {
-                const t2 = rest[j];
-                if (alreadyChecked2.indexOf(t1.term.term) === -1 && termsToRemove2.indexOf(t2.term.term) === -1 && termsToRemove2.indexOf(t1.term.term) === -1) {
-                    if (stringSimilarity.compareTwoStrings(t1.term.term, t2.term.term) > 0.60) {
-                        (t1.finalScore > t2.finalScore) ? termsToRemove2.push(t2.term.term) : termsToRemove2.push(t1.term.term);
-                    }
-                }
-            }
-            alreadyChecked2.push(t1.term.term);
-        }
-        const okayReallyFinalThisTime = finalTermsToConsider.filter((term) => termsToRemove2.indexOf(term.term.term) === -1);
-        return _returnAsSummary(okayReallyFinalThisTime.slice(0, numberOfWords).map((twt) => {
-            logger.info(twt.term.term);
-            return twt.term.term;
-        }));
+        return _returnAsSummary(
+            finalTermsToConsider.slice(0, numberOfWords).map((twt) => {
+                return twt.term.term;
+            }),
+            new Map<string, number>(),
+            new Map<string, number>(),
+            new Map<string, number>(),
+            finalTermsToConsider
+        );
     }
     catch (error) {
         logger.error(error);

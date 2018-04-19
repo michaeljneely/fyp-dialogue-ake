@@ -1,6 +1,7 @@
 import * as mongoose from "mongoose";
 import { Conversation } from "../models/Conversation";
 import { Reference } from "../models/Reference";
+import { TermWithFinalScore } from "./Term";
 
 // An array of these objects is formatted by the 'results' template
 export type FinalSummary = {
@@ -38,6 +39,7 @@ export interface ISummary {
     lemmas?: Map<string, number>;
     candidateTerms?: Map<string, number>;
     namedEntities?: Map<string, number>;
+    rankedKeyphrases?: Array<TermWithFinalScore>;
 }
 
 /**

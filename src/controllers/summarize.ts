@@ -45,7 +45,7 @@ async function summarize(req: Request, res: Response) {
     }
     catch (err) {
         logger.error(err);
-        return Promise.reject(err);
+        return Promise.reject("A summary could not be provided at this time");
     }
 }
 

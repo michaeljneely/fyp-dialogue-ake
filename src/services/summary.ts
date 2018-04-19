@@ -1,5 +1,6 @@
 import _ = require("lodash");
 import * as mongoose from "mongoose";
+import { TermWithFinalScore } from "../models/Term";
 import { replaceSmartQuotes, stripSpeakers } from "../utils/functions";
 import { logger } from "../utils/logger";
 import * as coreNLPService from "./corenlp/corenlp";
@@ -18,7 +19,8 @@ import { npAndNERSummary } from "./summarizers/NounPhraseAndNamedEntity";
 // Contract with Controller
 export type Summary = {
     speakers: string,
-    summary: string
+    summary: string,
+    rankedTerms: Array<TermWithFinalScore>
 };
 
 /**
@@ -39,16 +41,16 @@ export async function summarizeConversation(text: string, userId: mongoose.Types
         const lemmas = extractMeaningfulLemmasFromCoreNLPDocument(annotated);
         const candidateTerms = extractCandidateTermsFromCoreNLPDocument(annotated);
         const namedEntities = extractNamedEntitiesFromCoreNLPDocument(annotated);
-
         // Build Summary
-        const summary = await npAndNERSummary(annotated, candidateTerms, namedEntities, wordLength);
+        const summary = await npAndNERSummary(annotated, candidateTerms, namedEntities, wordLength, userId);
         // Save document, lemmas, and candidate terms
         const saved = await saveUserDocument(userId, speakers, annotated, text, lemmas, candidateTerms, namedEntities);
 
         // Return best summary - at the moment: NP/NER
         return Promise.resolve({
             speakers: formatSpeakers(speakers),
-            summary: summary.summary.join(", ")
+            summary: summary.summary.join(", "),
+            rankedTerms: summary.rankedKeyphrases
         } as Summary);
     }
     catch (error) {

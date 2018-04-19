@@ -49,15 +49,14 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<CandidateT
             let termType: CandidateTermTypes;
             // Peek at the top of the stack.
             const top = termStack.peek();
-            if (AlphaNumericRegex.test(token.lemma())) {
             // If there are currently items in the stack
             if (top) {
-                // If top is stopword - Attempt to continue building Entity
+                // If top is stopword
                 if ((stopwords.indexOf(top.word().toLowerCase()) !== -1) || (stopwords.indexOf(top.lemma().toLowerCase()) !== -1)) {
                     // Continue building Entity - Add token if it is a noun phrase
                     if (nounPhrase.indexOf(token.pos()) !== -1) {
                         termStack.push(token);
-                        // If next toke is not a noun phrase, terminate construction as Entity
+                        // If next token is not a noun phrase, terminate construction as Entity
                         if ((index + 1 >= sentence.tokens().length) || nounPhrase.indexOf(sentence.tokens()[index + 1].pos()) === -1) {
                             termType = "ENTITY";
                             done = true;
@@ -65,15 +64,16 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<CandidateT
                     }
                     // Otherwise attempt to return existing Entity already in the stack
                     else {
-                        const nounPhrases = termStack.data().filter((token) => {
-                            return nounPhrase.indexOf(token.pos()) !== -1;
-                        });
-                        termStack.clear();
-                        for (const nounPhrase of nounPhrases) {
-                            termStack.push(nounPhrase);
+                        const entityString = termStack.data().reduce((str, _token) => {
+                            return str.concat((nounPhrase.indexOf(_token.pos()) !== -1) ? _token.word() : "");
+                        }, "");
+                        if (entityString) {
+                            candidateTerms.push(new CandidateTerm(entityString.toLowerCase(), "ENTITY"));
                         }
-                        termType = "ENTITY";
-                        done = true;
+                        termStack.clear();
+                        if (noun.indexOf(token.pos()) !== -1 || nounPhrase.indexOf(token.pos()) !== -1 || token.pos() === "JJ") {
+                            termStack.push(token);
+                        }
                     }
                 }
                 // If top is adjective - Attempt to build Compound Noun
@@ -83,8 +83,11 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<CandidateT
                         termStack.push(token);
                         // If next token is not a noun, terminate construction of Compound Noun
                         if ((index + 1 >= sentence.tokens().length) || noun.indexOf(sentence.tokens()[index + 1].pos()) === -1) {
-                            termType = "COMPOUND NOUN";
-                            done = true;
+                            const candidateTerm = buildStringFromTokenStack(termStack);
+                            if (candidateTerm) {
+                                candidateTerms.push(new CandidateTerm(candidateTerm, "COMPOUND NOUN"));
+                            }
+                            termStack.clear();
                         }
                     }
                     // Otherwise this is not a candidate phrase - clear the stack
@@ -117,19 +120,14 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<CandidateT
                     }
                 }
                 // Else top is noun phrase - Attempt to continue building Entity
-                else {
-                    // If token is stopword, add if stack only contains 1 noun phrase
+                else if (nounPhrase.indexOf(top.pos()) !== -1) {
+                    // Push if stopword and only one noun phrase so far
                     if (((stopwords.indexOf(token.lemma()) !== -1) && (termStack.data().length === 1))) {
                         termStack.push(token);
                     }
                     // If token is noun phrase, add
                     else if (nounPhrase.indexOf(token.pos()) !== -1) {
                         termStack.push(token);
-                        // If next token is not a noun phrase, terminate construction of Entity
-                        if ((index + 1 >= sentence.tokens().length) || nounPhrase.indexOf(sentence.tokens()[index + 1].pos()) === -1) {
-                            termType = "ENTITY";
-                            done = true;
-                        }
                     }
                     // Otherwise attempt to return existing entity already in the stack
                     else {
@@ -145,7 +143,7 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<CandidateT
                     }
                 }
             }
-            // Otherwise the stack is empty - Begin attempt at building candidate phrase
+            // Otherwise the stack is empty - Begin attempt at building candidate phrase or skip down
             else {
                 // Candidate phrase cannot begin with a stopword
                 if (stopwords.indexOf(token.lemma()) === -1 || stopwords.indexOf(token.word()) === -1) {
@@ -168,7 +166,6 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<CandidateT
                     termStack.clear();
                 }
             }
-        }
         });
         // Clear the stack after processing a sentence
         termStack.clear();

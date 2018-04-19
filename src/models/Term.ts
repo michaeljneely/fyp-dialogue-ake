@@ -78,3 +78,8 @@ export const UserTermModel = new UserTerm().getModelForClass(UserTerm, {
         timestamps: true
     }
 });
+
+export interface TermWithFinalScore {
+    term: Term;
+    finalScore: number;
+}

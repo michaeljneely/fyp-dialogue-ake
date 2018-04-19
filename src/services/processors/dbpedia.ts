@@ -20,7 +20,7 @@ export async function queryDBpedia(input: string, queryClass: string = "", maxHi
     try {
         logger.info(`queryDBpedia() called. Querying for '${input}'`);
         const queryString = encodeURIComponent(input.trim());
-        await sleep(2000);
+        await sleep(500);
         const res = await got(`http://lookup.dbpedia.org/api/search/KeywordSearch?QueryString=${queryString}&QueryClass=${queryClass}&MaxHits=${maxHits}`);
         if (res && res.body) {
             const ks: KeywordSearch = JSON.parse(convert.xml2json(res.body, {compact: true, spaces: 4}));
@@ -75,7 +75,7 @@ export async function getDBpediaScore(input: string): Promise<number> {
             }
         }
         else {
-            return (existingScore.numResults === 0) ? 0 : ((51 - existingScore.numResults) / 50);
+            return (existingScore.numResults === 0) ? 0 : ((50 - existingScore.numResults) / 50);
         }
     }
     catch (error) {
