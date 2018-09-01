@@ -44,13 +44,20 @@ function postLogin(req: Request, res: Response, next: NextFunction) {
     }
 
     passport.authenticate("local", (err: Error, user: any, info: IVerifyOptions) => {
-        if (err) { return next(err); }
+        if (err) {
+            logger.error(err.message);
+            return next(err);
+        }
         if (!user) {
-            req.flash("errors", info.message);
+            logger.error(`Incorrect login attempt for ${req.body.email}`);
+            req.flash("errors", [{msg: "That username and password combination wasn't found on the server."}]);
             return res.redirect("/login");
         }
         req.logIn(user, (err) => {
-            if (err) { return next(err); }
+            if (err) {
+                logger.error(err);
+                return next(err);
+            }
             req.flash("success", { msg: "Success! You are logged in." });
             res.redirect(req.session.returnTo || "/");
         });

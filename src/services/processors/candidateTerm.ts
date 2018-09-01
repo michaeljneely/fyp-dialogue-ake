@@ -1,6 +1,7 @@
 import CoreNLP from "corenlp";
-import { stopwords } from "../../constants/filters";
-import { CandidateTermTypes, ExtractedCandidateTerm, ExtractedCandidateTermMap } from "../../models/CandidateTerm";
+import { AlphaNumericRegex, stopwords } from "../../constants/filters";
+import { CandidateTerm,  CandidateTermTypes } from "../../models/CandidateTerm";
+import { Term } from "../../models/Term";
 import { logger } from "../../utils/logger";
 import { Stack } from "../../utils/stack";
 
@@ -14,7 +15,7 @@ import { Stack } from "../../utils/stack";
  * @param {CoreNLP.simple.Document} document CoreNLP document
  * @returns {ExtractedCandidateTermMap>} (ExtractedCandidateTerm -> Frequency) Map
  */
-export function extractCandidateTermsFromCoreNLPDocument(document: CoreNLP.simple.Document): ExtractedCandidateTermMap {
+export function extractCandidateTermsFromCoreNLPDocument(document: CoreNLP.simple.Document): Map<string, number> {
     return mapCandidateTerms(findCandidateTerms(document));
 }
 
@@ -23,19 +24,25 @@ export function extractCandidateTermsFromCoreNLPDocument(document: CoreNLP.simpl
  * @param document CoreNLP documents
  * @returns {Array<ExtractedCandidateTerm>} All candidate terms found in the document
  */
-function findCandidateTerms(document: CoreNLP.simple.Document): Array<ExtractedCandidateTerm> {
+function findCandidateTerms(document: CoreNLP.simple.Document): Array<CandidateTerm> {
+
+    logger.info(`findCandidateTerms() - finding Candidate Terms..`);
+
     // POS tags for Noun (singular and plural)
     const noun = ["NN", "NNS"];
     // POS tags for Noun Phrase (singular and plural)
     const nounPhrase = ["NNP", "NNPS"];
 
-    const candidateTerms = new Array<ExtractedCandidateTerm>();
+    const candidateTerms = new Array<CandidateTerm>();
 
     // Stack to construct candidate terms
     const termStack = new Stack<CoreNLP.simple.Token>();
 
+    let tokenCount: number = 0;
+
     for (const sentence of document.sentences()) {
         sentence.tokens().forEach((token, index) => {
+            tokenCount++;
             // Early exit condition
             let done = false;
             // Type of Extracted Term (N,C,E)
@@ -44,28 +51,29 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<ExtractedC
             const top = termStack.peek();
             // If there are currently items in the stack
             if (top) {
-                // If top is stopword - Attempt to continue building Entity
+                // If top is stopword
                 if ((stopwords.indexOf(top.word().toLowerCase()) !== -1) || (stopwords.indexOf(top.lemma().toLowerCase()) !== -1)) {
                     // Continue building Entity - Add token if it is a noun phrase
                     if (nounPhrase.indexOf(token.pos()) !== -1) {
                         termStack.push(token);
-                        // If next toke is not a noun phrase, terminate construction as Entity
+                        // If next token is not a noun phrase, terminate construction as Entity
                         if ((index + 1 >= sentence.tokens().length) || nounPhrase.indexOf(sentence.tokens()[index + 1].pos()) === -1) {
-                            termType = CandidateTermTypes.Entity;
+                            termType = "ENTITY";
                             done = true;
                         }
                     }
                     // Otherwise attempt to return existing Entity already in the stack
                     else {
-                        const nounPhrases = termStack.data().filter((token) => {
-                            return nounPhrase.indexOf(token.pos()) !== -1;
-                        });
-                        termStack.clear();
-                        for (const nounPhrase of nounPhrases) {
-                            termStack.push(nounPhrase);
+                        const entityString = termStack.data().reduce((str, _token) => {
+                            return str.concat((nounPhrase.indexOf(_token.pos()) !== -1) ? _token.word() : "");
+                        }, "");
+                        if (entityString) {
+                            candidateTerms.push(new CandidateTerm(entityString.toLowerCase(), "ENTITY"));
                         }
-                        termType = CandidateTermTypes.Entity;
-                        done = true;
+                        termStack.clear();
+                        if (noun.indexOf(token.pos()) !== -1 || nounPhrase.indexOf(token.pos()) !== -1 || token.pos() === "JJ") {
+                            termStack.push(token);
+                        }
                     }
                 }
                 // If top is adjective - Attempt to build Compound Noun
@@ -75,8 +83,11 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<ExtractedC
                         termStack.push(token);
                         // If next token is not a noun, terminate construction of Compound Noun
                         if ((index + 1 >= sentence.tokens().length) || noun.indexOf(sentence.tokens()[index + 1].pos()) === -1) {
-                            termType = CandidateTermTypes.CompoundNoun;
-                            done = true;
+                            const candidateTerm = buildStringFromTokenStack(termStack);
+                            if (candidateTerm) {
+                                candidateTerms.push(new CandidateTerm(candidateTerm, "COMPOUND NOUN"));
+                            }
+                            termStack.clear();
                         }
                     }
                     // Otherwise this is not a candidate phrase - clear the stack
@@ -91,7 +102,7 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<ExtractedC
                         termStack.push(token);
                         // If next token is not a noun, terminate construction of Compound Noun
                         if ((index + 1 >= sentence.tokens().length) || noun.indexOf(sentence.tokens()[index + 1].pos()) === -1) {
-                            termType = CandidateTermTypes.CompoundNoun;
+                            termType = "COMPOUND NOUN";
                             done = true;
                         }
                     }
@@ -104,24 +115,19 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<ExtractedC
                         for (const noun of nouns) {
                             termStack.push(noun);
                         }
-                        termType = (nouns.length === 1) ? CandidateTermTypes.Noun : CandidateTermTypes.CompoundNoun;
+                        termType = (nouns.length === 1) ? "NOUN" : "COMPOUND NOUN";
                         done = true;
                     }
                 }
                 // Else top is noun phrase - Attempt to continue building Entity
-                else {
-                    // If token is stopword, add if stack only contains 1 noun phrase
+                else if (nounPhrase.indexOf(top.pos()) !== -1) {
+                    // Push if stopword and only one noun phrase so far
                     if (((stopwords.indexOf(token.lemma()) !== -1) && (termStack.data().length === 1))) {
                         termStack.push(token);
                     }
                     // If token is noun phrase, add
                     else if (nounPhrase.indexOf(token.pos()) !== -1) {
                         termStack.push(token);
-                        // If next token is not a noun phrase, terminate construction of Entity
-                        if ((index + 1 >= sentence.tokens().length) || nounPhrase.indexOf(sentence.tokens()[index + 1].pos()) === -1) {
-                            termType = CandidateTermTypes.Entity;
-                            done = true;
-                        }
                     }
                     // Otherwise attempt to return existing entity already in the stack
                     else {
@@ -132,12 +138,12 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<ExtractedC
                         for (const nounPhrase of nounPhrases) {
                             termStack.push(nounPhrase);
                         }
-                        termType = CandidateTermTypes.Entity;
+                        termType = "ENTITY";
                         done = true;
                     }
                 }
             }
-            // Otherwise the stack is empty - Begin attempt at building candidate phrase
+            // Otherwise the stack is empty - Begin attempt at building candidate phrase or skip down
             else {
                 // Candidate phrase cannot begin with a stopword
                 if (stopwords.indexOf(token.lemma()) === -1 || stopwords.indexOf(token.word()) === -1) {
@@ -152,8 +158,10 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<ExtractedC
                 // Build string from stack (if populated)
                 if (termStack.data().length > 0) {
                     const candidateTerm = buildStringFromTokenStack(termStack);
-                    // Add to candidate terms
-                    candidateTerms.push(new ExtractedCandidateTerm(candidateTerm, termType));
+                    if (candidateTerm && termType) {
+                        // Add to candidate terms
+                        candidateTerms.push(new CandidateTerm(candidateTerm, termType));
+                    }
                     // Clear the stack to accommodate the next candidate phrase
                     termStack.clear();
                 }
@@ -162,6 +170,7 @@ function findCandidateTerms(document: CoreNLP.simple.Document): Array<ExtractedC
         // Clear the stack after processing a sentence
         termStack.clear();
     }
+    logger.info(`Extracted ${candidateTerms.length} non-unique Candidate Terms out of ${tokenCount} tokens`);
     // Return unique candidate terms only
     return candidateTerms;
 }
@@ -184,16 +193,18 @@ export function buildStringFromTokenStack(stack: Stack<CoreNLP.simple.Token>): s
  * @param {Array<ExtractedCandidateTerms>} candidateTerms
  * @returns {Map<ExtractedCandidateTerm, number>} ExtractedCandidateTerm -> Frequency Map
  */
-function mapCandidateTerms(candidateTerms: Array<ExtractedCandidateTerm>): ExtractedCandidateTermMap {
-   const map = new ExtractedCandidateTermMap();
-   candidateTerms.forEach((term) => {
-       const existing = map.get(term);
-       if (existing) {
-           map.set(existing["0"], existing["1"] + 1);
-       }
-       else {
-           map.set(term, 1);
-       }
-   });
-   return map;
+function mapCandidateTerms(candidateTerms: Array<CandidateTerm>): Map<string, number> {
+    const map = new Map<string, number>();
+    candidateTerms.forEach((candidateTerm) => {
+        if (stopwords.indexOf(candidateTerm.term) === -1) {
+            const existing = map.get(CandidateTerm.toString(candidateTerm));
+            if (existing) {
+                map.set(CandidateTerm.toString(candidateTerm), existing + 1);
+            }
+            else {
+                map.set(CandidateTerm.toString(candidateTerm), 1);
+            }
+        }
+    });
+    return map;
 }

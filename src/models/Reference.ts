@@ -15,3 +15,9 @@ export type Reference = {
     summary: string;
     annotated: CoreNLP.simple.Document;
 };
+
+export type ReferenceSummaries = {
+    short: string,
+    medium: string,
+    long: string
+};

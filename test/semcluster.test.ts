@@ -27,12 +27,8 @@ describe("TEST SemCluster Service", () => {
         // Stub parseDocument
         const simpleSentence = await fs.readJSON(path.join(__dirname, "mocks/simple.json"));
         const simpleDocument = CoreNLP.simple.Document.fromJSON(simpleSentence);
-        coreNLPStub.returns({
-            document: simpleDocument,
-            speakers: new Array<string>()
-        });
-        const result = await corenlpService.annotate(testString, false);
-        const document = result.document;
+        coreNLPStub.returns(simpleDocument);
+        const document = await corenlpService.annotate(testString);
         // Build token stack
         const tokenStack = new Stack<CoreNLP.simple.Token>();
         for (const sentence of document.sentences()) {
@@ -50,14 +46,11 @@ describe("TEST SemCluster Service", () => {
         // Stub parseDocument
         const complexSentences = await fs.readJSON(path.join(__dirname, "mocks/complex.json"));
         const complexDocument = CoreNLP.simple.Document.fromJSON(complexSentences);
-        coreNLPStub.returns({
-            document: complexDocument,
-            speakers: new Array<string>()
-        });
-        const result = await corenlpService.annotate(cteText, false);
+        coreNLPStub.returns(complexDocument);
+        const document = await corenlpService.annotate(cteText);
         // Extract candidate terms and verify
-        const candidateTerms = candidateTermService.extractCandidateTermsFromCoreNLPDocument(result.document).toStringArray();
-        expect(candidateTerms.length).toBe(18);
+        const candidateTerms = candidateTermService.extractCandidateTermsFromCoreNLPDocument(document).toStringArray();
+        expect(candidateTerms.size()).toBe(18);
         expect(candidateTerms).toContain("cat");
         expect(candidateTerms).toContain("cats");
         expect(candidateTerms).toContain("americas");

@@ -1,5 +1,6 @@
 import * as express from "express";
 import { Request, Response } from "express";
+import * as fs from "fs-extra";
 import { accessControl } from "../app";
 import * as passportConfig from "../config/passport";
 import * as analysisService from "../services/analyze";
@@ -46,7 +47,8 @@ async function postAnalyze(req: Request, res: Response) {
         const results = await analysisService.analyzeUserConversation(req.user.id, req.body.text, req.body.keywords, req.body.shortSummary, req.body.mediumSummary, req.body.longSummary);
         res.render("results", {
             title: "Results",
-            results
+            results: JSON.parse(JSON.stringify(results.results)),
+            keywords: JSON.parse(JSON.stringify(results.keywords))
         });
     }
     catch (error) {
@@ -66,16 +68,23 @@ async function postAnalyzeDocument(req: Request, res: Response) {
     const permission = accessControl.can(req.user.role).readAny("corpus");
     if (permission.granted) {
         try {
+            logger.info(`analyzing corpus document`);
             const documentId: string = req.params.documentId;
             const results = await analysisService.analyzeCorpusConversation(documentId);
             res.render("results", {
                 title: "Results",
-                results
+                results: JSON.parse(JSON.stringify(results.results)),
+                keywords: JSON.parse(JSON.stringify(results.keywords))
             });
         }
         catch (error) {
             logger.error(error);
-            return Promise.reject(error);
+            if (error === "timeout") {
+                req.flash("errors", {msg: "Requests to Dbpedia have timed out. Please try again."});
+                res.redirect("/corpus");
+            } else {
+                return Promise.reject(error);
+            }
         }
     }
     else {

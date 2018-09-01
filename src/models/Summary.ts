@@ -1,6 +1,7 @@
 import * as mongoose from "mongoose";
 import { Conversation } from "../models/Conversation";
 import { Reference } from "../models/Reference";
+import { TermWithFinalScore } from "./Term";
 
 // An array of these objects is formatted by the 'results' template
 export type FinalSummary = {
@@ -32,33 +33,13 @@ export type SummaryTerm = {
     term: string
 };
 
-export abstract class Summary {
-
-    // Conversation object
-    protected conversation: Conversation;
-
-    // If the summary implementation requires a User Id
-    protected userId: mongoose.Types.ObjectId;
-
-    // Reference summaries used to score generated ones
-    protected references: Array<Reference>;
-
-    // User defined keywords in conversation
-    protected keywords: Array<string>;
-
-    // Name of method used to generate summaries
-    protected summaryMethod: string;
-
-    constructor(conversation: Conversation, references: Array<Reference>, keywords: Array<string>, userId?: mongoose.Types.ObjectId) {
-        this.conversation = conversation;
-        this.references = references;
-        this.keywords = keywords;
-        this.userId = userId || undefined;
-    }
-
-    // Generate and Score Summaries
-    public async abstract summarize(): Promise<Array<GeneratedSummary>>;
-
+export interface ISummary {
+    method: string;
+    summary: Array<string>;
+    lemmas?: Map<string, number>;
+    candidateTerms?: Map<string, number>;
+    namedEntities?: Map<string, number>;
+    rankedKeyphrases?: Array<TermWithFinalScore>;
 }
 
 /**
@@ -66,12 +47,3 @@ export abstract class Summary {
  * @param {Array<string>} generated Generated Summary terms
  * @param {string} reference User-provided reference summaries
  */
-export function buildSummaryTermArray(generated: Array<string>, reference: string): Array<SummaryTerm> {
-    return generated.map((term) => {
-        const match = reference.indexOf(term.toLowerCase()) !== -1;
-        return {
-            term,
-            match
-        };
-    });
-}

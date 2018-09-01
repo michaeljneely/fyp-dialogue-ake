@@ -1,21 +1,28 @@
+import _ = require("lodash");
 import * as mongoose from "mongoose";
+import { TermWithFinalScore } from "../models/Term";
 import { replaceSmartQuotes, stripSpeakers } from "../utils/functions";
 import { logger } from "../utils/logger";
 import * as coreNLPService from "./corenlp/corenlp";
 import { saveUserDocument } from "./documents/user";
 import { extractCandidateTermsFromCoreNLPDocument } from "./processors/candidateTerm";
 import { extractMeaningfulLemmasFromCoreNLPDocument } from "./processors/lemma";
+import { extractNamedEntitiesFromCoreNLPDocument } from "./processors/namedEntities";
 import { candidateTermTFUIDFSummary } from "./summarizers/CandidateTermTFIDF";
-import { semanticPowerAndSpecificitySummary } from "./summarizers/SemanticPowerAndSpecificity";
+import { LDASummary } from "./summarizers/LatentDirichletAllocation";
+import { npAndNERSummary } from "./summarizers/NounPhraseAndNamedEntity";
 
 /*
     Service that uses the best performing Summary Strategy to summarize a conversation
 */
 
 // Contract with Controller
-export type Summary = {
+export type ComparisonSummary = {
     speakers: string,
-    summary: string
+    npAndNERSummary: string,
+    npAndNERRankedTerms: Array<TermWithFinalScore>,
+    ctTFUIDFSummary: string,
+    ctTFUIDFRankedTerms: Array<TermWithFinalScore>
 };
 
 /**
@@ -25,27 +32,31 @@ export type Summary = {
  * @param wordLength Length of summary
  * @returns {Summary} the summarized conversation and its formatted speakers
  */
-export async function summarizeConversation(text: string, userId: mongoose.Types.ObjectId, wordLength: number): Promise<Summary> {
+export async function summarizeConversation(text: string, userId: mongoose.Types.ObjectId, wordLength: number): Promise<ComparisonSummary> {
     try {
         // Annotate conversation
         const [speakers, conversation] = stripSpeakers(text);
-        const annotated = await coreNLPService.annotate(replaceSmartQuotes(conversation));
 
-        // Extract lemmas and candidate terms
+        const annotated = await coreNLPService.annotate(conversation);
+
+        // Extract lemmas and terms
         const lemmas = extractMeaningfulLemmasFromCoreNLPDocument(annotated);
         const candidateTerms = extractCandidateTermsFromCoreNLPDocument(annotated);
-
+        const namedEntities = extractNamedEntitiesFromCoreNLPDocument(annotated);
         // Build Summary
-        const summary = await semanticPowerAndSpecificitySummary(annotated, wordLength, .75);
-
+        const npNerSummary = await npAndNERSummary(annotated, candidateTerms, namedEntities, wordLength, userId);
+        const ctTFUIDFSummary = await candidateTermTFUIDFSummary(userId, candidateTerms, wordLength);
         // Save document, lemmas, and candidate terms
-        const saved = await saveUserDocument(userId, speakers, annotated, text, lemmas, candidateTerms);
+        const saved = await saveUserDocument(userId, speakers, annotated, text, lemmas, candidateTerms, namedEntities);
 
-        // Return best summary - at the moment: basicSemCluster
+        // Return 2 best summaries
         return Promise.resolve({
             speakers: formatSpeakers(speakers),
-            summary: summary.join(", ")
-        } as Summary);
+            npAndNERSummary: npNerSummary.summary.join(", "),
+            npAndNERRankedTerms: npNerSummary.rankedKeyphrases,
+            ctTFUIDFSummary: ctTFUIDFSummary.summary.join(", "),
+            ctTFUIDFRankedTerms: ctTFUIDFSummary.rankedKeyphrases
+        });
     }
     catch (error) {
         logger.error(error);

@@ -1,14 +1,11 @@
 import * as mongoose from "mongoose";
 import { arrayProp, InstanceType, ModelType, prop, Typegoose } from "typegoose";
 import { DocumentFrequency } from "./DocumentFrequency";
+import { Term } from "./Term";
 
-export enum CandidateTermTypes {
-    Noun,
-    CompoundNoun,
-    Entity
-}
+export type CandidateTermTypes = "NOUN" | "COMPOUND NOUN" | "ENTITY";
 
-export class CandidateTerm extends Typegoose {
+export class CorpusCandidateTerm extends Typegoose {
     @prop({ required: true })
     term: string;
     @prop()
@@ -17,78 +14,60 @@ export class CandidateTerm extends Typegoose {
     frequencies: Array<DocumentFrequency>;
 }
 
-export const CandidateTermModel = new CandidateTerm().getModelForClass(CandidateTerm);
-
-
-export class ExtractedCandidateTerm {
-    private _term: string;
-    private _type: CandidateTermTypes;
-    constructor(term: string, type: CandidateTermTypes) {
-        this._term = term;
-        this._type = type;
+export const CorpusCandidateTermModel = new CorpusCandidateTerm().getModelForClass(CorpusCandidateTerm, {
+    existingConnection: mongoose.connection,
+    schemaOptions : {
+        timestamps: true
     }
+});
 
-    public get term() {
-        return this._term;
-    }
-
-    public get type() {
-        return this._type;
-    }
-    public equals(ect: ExtractedCandidateTerm): boolean {
-        return ((this._term === ect.term) && (this._type === ect.type));
-    }
+export class UserCandidateTerm extends Typegoose {
+    @prop({ required: true, index: true })
+    owner: mongoose.Types.ObjectId;
+    @prop({ required: true, index: true })
+    term: string;
+    @prop({ required: true })
+    type: CandidateTermTypes;
+    @arrayProp({ items: DocumentFrequency })
+    frequencies: Array<DocumentFrequency>;
 }
 
-interface ECTIterable {
-    [Symbol.iterator](): IterableIterator<[ExtractedCandidateTerm, number]>;
-  }
-export class ExtractedCandidateTermMap implements ECTIterable {
-    *[Symbol.iterator]() {
-        for (const i of this._store) {
-            yield i;
+export const UserCandidateTermModel = new UserCandidateTerm().getModelForClass(UserCandidateTerm, {
+    existingConnection: mongoose.connection,
+    schemaOptions: {
+        timestamps: true
+    }
+});
+
+export class CandidateTerm extends Term {
+    private _ctType: CandidateTermTypes;
+    constructor(term: string, type: CandidateTermTypes) {
+        super(term, type.toString());
+        this._ctType = type;
+    }
+
+    public get ctType() {
+        return this._ctType;
+    }
+
+    public equals(t: Term): boolean {
+        return this._term === t.term;
+    }
+
+    public static toString(entity: CandidateTerm): string {
+        return `${entity.term}//${entity.ctType}`;
+    }
+
+    public static fromString(entityString: string): CandidateTerm {
+        const split = entityString.split("//");
+        if (split.length !== 2) {
+            throw "Incompatible string";
         }
-    }
-
-    private _store: Array<[ExtractedCandidateTerm, number]>;
-    private _pointer: number;
-
-    constructor() {
-        this._store = new Array<[ExtractedCandidateTerm, number]>();
-    }
-
-    public set (ect: ExtractedCandidateTerm, frequency: number): void {
-        const yo = this._store.find((term) => term["0"].equals(ect));
-        if (yo) {
-            yo["1"] = frequency;
+        if (!split[0] || !split[1]) {
+            throw "Incompatible string";
         }
-        else {
-            this._store.push([ect, frequency]);
-        }
-    }
-
-    public get (ect: ExtractedCandidateTerm): [ExtractedCandidateTerm, number] {
-        return this._store.find((term) => term["0"].equals(ect));
-    }
-
-    public size(): number {
-        return this._store.length;
-    }
-
-    public store(): Array<[ExtractedCandidateTerm, number]> {
-        return this._store;
-    }
-
-    public toSortedString(): string {
-        const terms = this._store.map(([ect, frequency]) => {
-            return ect.term;
-        });
-        return terms.sort().toString().split(",").join(" ");
-    }
-
-    public toStringArray(): Array<string> {
-        return this._store.map(([ect, frequency]) => {
-            return ect.term;
-        });
+        const term = split[0];
+        const type = split[1] as CandidateTermTypes;
+        return new CandidateTerm(term, type);
     }
 }

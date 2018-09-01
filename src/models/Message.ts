@@ -1,3 +1,4 @@
+import * as mongoose from "mongoose";
 import { prop, Typegoose } from "typegoose";
 
 export class Message extends Typegoose {
@@ -9,4 +10,9 @@ export class Message extends Typegoose {
     message: string;
 }
 
-export const MessageModel = new Message().getModelForClass(Message);
+export const MessageModel = new Message().getModelForClass(Message, {
+    existingConnection: mongoose.connection,
+    schemaOptions : {
+        timestamps: true
+    }
+});

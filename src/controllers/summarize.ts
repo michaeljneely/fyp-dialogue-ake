@@ -45,7 +45,11 @@ async function summarize(req: Request, res: Response) {
     }
     catch (err) {
         logger.error(err);
-        return Promise.reject(err);
+        if (err === "timeout") {
+            req.flash("errors", {msg: "You seem to have given us a lot of new words!\nYour request timed out, but please try again.\nIt will be faster this time!"});
+            res.redirect("/summarize");
+        }
+        return Promise.reject("A summary could not be provided at this time");
     }
 }
 

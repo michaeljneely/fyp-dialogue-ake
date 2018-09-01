@@ -1,13 +1,15 @@
 import CoreNLP from "corenlp";
 import { AlphaNumericRegex, stopwords } from "../../constants/filters";
+import { logger } from "../../utils/logger";
 
 /**
  * Extract all meaningful (non-stopword, alphanumeric) terms from a CoreNLP document
  * Terms are returned as lemmas (canonical forms)
  * @param {CoreNLP.simple.Document} document CoreNLP Document
- * @returns {ProcessedLemmas}
+ * @returns {Map<string, number>} Unique lemmas and their frequencies
  */
 export function extractMeaningfulLemmasFromCoreNLPDocument(document: CoreNLP.simple.Document): Map<string, number> {
+    logger.info(`extractMeaningfulLemmasFromCoreNLPDocument() - finding lemmas...`);
     const lemmas = new Map<string, number>();
     for (const sentence of document.sentences()) {
         sentence.tokens().forEach((token, index) => {
@@ -22,5 +24,6 @@ export function extractMeaningfulLemmasFromCoreNLPDocument(document: CoreNLP.sim
             }
         });
     }
+    logger.info(`Returning ${lemmas.size} unique lemmas`);
     return lemmas;
 }

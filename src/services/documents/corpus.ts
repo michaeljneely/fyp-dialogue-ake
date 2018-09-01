@@ -2,12 +2,12 @@ import CoreNLP from "corenlp";
 import * as fs from "fs-extra";
 import * as mongoose from "mongoose";
 import * as path from "path";
-import { ExtractedCandidateTerm, ExtractedCandidateTermMap } from "../../models/CandidateTerm";
-import { CorpusCandidateTerm, CorpusCandidateTermModel } from "../../models/corpusCandidateTerm";
-import { CorpusDocument, CorpusDocumentModel, referenceSummaries } from "../../models/CorpusDocument";
-import { CorpusLemma, CorpusLemmaModel } from "../../models/CorpusLemma";
+import { CandidateTerm, CorpusCandidateTerm, CorpusCandidateTermModel } from "../../models/CandidateTerm";
+import { CorpusDocument, CorpusDocumentModel } from "../../models/Document";
 import { DocumentFrequencyModel } from "../../models/DocumentFrequency";
-import { IReference } from "../../models/Reference";
+import { CorpusLemma, CorpusLemmaModel } from "../../models/Lemma";
+import { CorpusNamedEntityTerm, CorpusNamedEntityTermModel, NamedEntityTerm } from "../../models/NamedEntityTerm";
+import { IReference, ReferenceSummaries } from "../../models/Reference";
 import { replaceSmartQuotes, stripSpeakers } from "../../utils/functions";
 import { logger } from "../../utils/logger";
 import { annotate } from "../corenlp/corenlp";
@@ -102,7 +102,7 @@ export async function buildCorpus(): Promise<number> {
  * @param candidateTerms Map of Unique candidate terms and their frequencies
  * @param referenceSummaries User provided reference summaries
  */
-export async function saveCorpusDocument(title: string, speakers: Array<string>, keywords: Array<string>, annotated: CoreNLP.simple.Document, rawText: string, lemmas: Map<string, number>, candidateTerms: ExtractedCandidateTermMap, referenceSummaries: referenceSummaries): Promise<CorpusDocument & mongoose.Document> {
+export async function saveCorpusDocument(title: string, speakers: Array<string>, keywords: Array<string>, annotated: CoreNLP.simple.Document, rawText: string, lemmas: Map<string, number>, candidateTerms: Map<string, number>, referenceSummaries: ReferenceSummaries): Promise<CorpusDocument & mongoose.Document> {
     try {
         const corpusDocument = await new CorpusDocumentModel({
             title: title,
@@ -118,7 +118,7 @@ export async function saveCorpusDocument(title: string, speakers: Array<string>,
                 await addCorpusLemma(corpusDocument._id, lemma, frequency);
             }
             for (const [candidateTerm, frequency] of candidateTerms) {
-                await addCorpusCandidateTerm(corpusDocument._id, candidateTerm, frequency);
+                await addCorpusCandidateTerm(corpusDocument._id, CandidateTerm.fromString(candidateTerm), frequency);
             }
             return Promise.resolve(corpusDocument);
         }
@@ -164,7 +164,7 @@ async function addCorpusLemma(documentID: mongoose.Types.ObjectId, lemma: string
  * @param candidateTerm  Candidate Term
  * @param frequency Total occurrences in conversation
  */
-async function addCorpusCandidateTerm(documentID: mongoose.Types.ObjectId, candidateTerm: ExtractedCandidateTerm, frequency: number): Promise<CorpusCandidateTerm > {
+async function addCorpusCandidateTerm(documentID: mongoose.Types.ObjectId, candidateTerm: CandidateTerm, frequency: number): Promise<CorpusCandidateTerm > {
     try {
         const documentFrequency = new DocumentFrequencyModel({ documentID, frequency });
         let corpusCandidateTerm = await CorpusCandidateTermModel.findOne({ term: candidateTerm.term, type: candidateTerm.type });
@@ -175,6 +175,28 @@ async function addCorpusCandidateTerm(documentID: mongoose.Types.ObjectId, candi
             corpusCandidateTerm = new CorpusCandidateTermModel({term: candidateTerm.term, type: candidateTerm.type, frequencies: [documentFrequency]});
         }
         const saved = await corpusCandidateTerm.save();
+        if (saved) {
+            return Promise.resolve(saved);
+        }
+        else throw "Candidate term could not be saved";
+    }
+    catch (error) {
+        logger.error(error);
+        return Promise.reject(error);
+    }
+}
+
+async function addCorpusNamedEntity(documentID: mongoose.Types.ObjectId, namedEntity: NamedEntityTerm, frequency: number): Promise<CorpusNamedEntityTerm > {
+    try {
+        const documentFrequency = new DocumentFrequencyModel({ documentID, frequency });
+        let corpusNamedEntity = await CorpusNamedEntityTermModel.findOne({ term: namedEntity.term, type: namedEntity.type });
+        if (corpusNamedEntity) {
+            corpusNamedEntity.frequencies.push(documentFrequency);
+        }
+        else {
+            corpusNamedEntity = new CorpusNamedEntityTermModel({term: namedEntity.term, type: namedEntity.type, frequencies: [documentFrequency]});
+        }
+        const saved = await corpusNamedEntity.save();
         if (saved) {
             return Promise.resolve(saved);
         }

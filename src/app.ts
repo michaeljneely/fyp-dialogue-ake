@@ -178,26 +178,26 @@ limiter({
 });
 
 // Limit Summarizing (large load on CoreNLP server, CPU, and DBpedia)
-limiter({
-    path: "/summarize",
-    method: "post",
+// limiter({
+//     path: "/summarize",
+//     method: "post",
     // Limit on IP
-    lookup: ["connection.remoteAddress"],
-    total: process.env.SUMMARIZE_RATE_LIMIT_PER_HOUR,
-    expire: 1000 * 60 * 60,
+    // lookup: ["connection.remoteAddress"],
+    // total: process.env.SUMMARIZE_RATE_LIMIT_PER_HOUR,
+    // expire: 1000 * 60 * 60,
     // Whitelist admin
-    whitelist: function (req: express.Request) {
-        if (req.user && req.user.role && req.user.role === "admin") {
-            logger.info(`admin bypass of /summarize rate limit performed by ${req.user.id}.`);
-            return true;
-        }
-        return false;
-    },
-    onRateLimited: function (req: express.Request, res: express.Response, next: express.NextFunction) {
-        logger.info(`Summarizing Rate Limit Exceeded for user ${req.user.id}`);
-        res.status(429).send("Summarizing Rate Limit Exceeded.");
-    }
-});
+//     whitelist: function (req: express.Request) {
+//         if (req.user && req.user.role && req.user.role === "admin") {
+//             logger.info(`admin bypass of /summarize rate limit performed by ${req.user.id}.`);
+//             return true;
+//         }
+//         return false;
+//     },
+//     onRateLimited: function (req: express.Request, res: express.Response, next: express.NextFunction) {
+//         logger.info(`Summarizing Rate Limit Exceeded for user ${req.user.id}`);
+//         res.status(429).send("Summarizing Rate Limit Exceeded.");
+//     }
+// });
 
 // Limit Analysis (large load on CoreNLP server, CPU, and DBpedia)
 limiter({
