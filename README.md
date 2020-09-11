@@ -1,11 +1,12 @@
-[![Build Status](https://travis-ci.org/michaeljneelysd/Final-Year-Project.svg?branch=master)](https://travis-ci.org/michaeljneelysd/Final-Year-Project)
-[![Dependency Status](https://david-dm.org/michaeljneelysd/Final-Year-Project.svg)](https://david-dm.org/michaeljneelysd/Final-Year-Project)
-[![devDependencies Status](https://david-dm.org/michaeljneelysd/Final-Year-Project/dev-status.svg)](https://david-dm.org/michaeljneelysd/Final-Year-Project?type=dev)
-[![Coverage Status](https://coveralls.io/repos/github/michaeljneelysd/Final-Year-Project/badge.svg?branch=master)](https://coveralls.io/github/michaeljneelysd/Final-Year-Project?branch=master)
-[![License](https://img.shields.io/dub/l/vibe-d.svg)](https://opensource.org/licenses/MIT)
+# Development of a System for Summarization of Multi-Party Dialogue; An Exploration of Unsupervised Automatic Keyphrase Extraction Techniques
 
-# My FYP Application
+The capstone project from my Bachelor's of Computer Science and Information Technology at the National University of Ireland, Galway (NUIG).
 
-This final year project is concerned with the research and development of a model to summarize spontaneous dialog between two or more parties. A thorough examination of the domain characteristics and challenges associated with interpersonal conversations will be conducted to define an appropriate baseline system, which will be evaluated on several test collections and compared against the performance of existing models.
+## Abstract
 
-The Full Report is available [here](../master/Michael_James_Neely_NUI_GALWAY_GY350_Final_Report.pdf)
+Summarization and keyword extraction of text documents is a common Natural Language Processing task with increasingly relevant applications to computing, academic, and social domains. The majority of previous work is focused on structured textual sources, such as articles, books, and scientific papers. This project introduces the motivation for a focus on the more complex effort of summarizing unstructured multi-party dialogue. Three standard algorithms, along with a proposed novel technique, are presented and evaluated on a custom dataset of conversation transcripts. Results, future work and potential applications in this domain are discussed in detail.
+
+## Authors
+
+- Student: Michael J. Neely
+- Supervisor: [Dr. Colm o'Riordan](https://scholar.google.com/citations?user=2qi2RgwAAAAJ&hl=en)
